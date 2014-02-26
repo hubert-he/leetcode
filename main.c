@@ -11,6 +11,7 @@ int main()
 #endif
 #ifdef Simple_Tree
 	BinTree aaa("abc@@d@@e@fg@@h@@");
+	//aaa.printTree(1);
 	BinTree ccc("abc@@d@@e@fg@@h@@");
 	BinTree ddd("abd@@d@@e@fg@@h@@");
 	BinTree eee("abc@@d@@e@fg@@m@@");

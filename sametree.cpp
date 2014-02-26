@@ -6,71 +6,72 @@ bool Solution::isSameTreebyStack(TreeNode *p, TreeNode *q)
 #if 1
     // Note: The Solution object is instantiated only once and is reused by each test case.
     std::stack<TreeNode*> st0, st1;
-    st0.push(p);
-    st1.push(q);
     TreeNode *node0 = p, *node1 = q;
-    bool isR = 0;
-    while(!st0.empty() && !st1.empty())
+    while(node0 || !st0.empty())
     {
-        while(node0 && node1)
+        if(node0)
         {
+            if(node0)
+            {
+            	if(node1) return 0;
+            	if(node0->val != node1->val) return 0;
+            }
+            else return 0;
+			// go on left
+			st0.push(node0);
+			st1.push(node1);
+			node0 = node0->left;
+			node1 = node1->left;
+        }
+        else
+        {
+        	if(node1) return 0;
         	node0 = st0.top();
-        	node1 = st1.top();
-            if(node0->val != node1->val) break;
+			st0.pop();
+			node0 = node0->right;
+			if(st1.empty()) return 0;
+			node1 = st1.top();
+			st1.pop();
+			node1 = node1->right;
+        }
+    }
+    if(st0.empty() && st1.empty())
+        return 1;
+    else return 0;
+#endif
+#if 0
+    if(node0 && node1)
+    {
+        // !NULL
+        if(node0->val != node1->val) break;
+        if(node0->left && node1->left)
+        {
             st0.push(node0->left);
             st1.push(node1->left);
         }
-        // pop NULL
-        if(st0.top() != NULL ) break;
-        st0.pop();
-        st1.pop();
-        if(!st0.empty() && !st1.empty())
+        else if(!node0->left && !node1->left)
         {
-        	node0 = st0.top();
-        	node1 = st1.top();
-			st0.pop();
-			st1.pop();
-			st0.push(node0->right);
-			st0.push(node1->right);
-        }
-    }
-	if(st0.empty() && st1.empty())
-        return 1;
-    else return 0;
-#endif 
-#if 0
-        if(node0 && node1)
-        {
-            // !NULL
-            if(node0->val != node1->val) break;
-            if(node0->left && node1->left)
+            st0.pop();
+            st1.pop();
+            if(node0->right && node1->right)
             {
-                st0.push(node0->left);
-                st1.push(node1->left);
+                st0.push(node0->right);
+                st1.push(node1->right);
             }
-            else if(!node0->left && !node1->left)
+            else if(!node0->right && !node1->right)
             {
                 st0.pop();
                 st1.pop();
-                if(node0->right && node1->right)
-                {
-                    st0.push(node0->right);
-                    st1.push(node1->right);
-                }
-                else if(!node0->right && !node1->right)
-                {
-                    st0.pop();
-                    st1.pop();
-                }
-                else break;
             }
             else break;
         }
         else break;
     }
-    if(!st0.empty() || !st1.empty())
-        return 0;
-    else return 1;
+    else break;
+}
+if(!st0.empty() || !st1.empty())
+    return 0;
+else return 1;
 #endif
 }
 

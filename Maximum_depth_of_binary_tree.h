@@ -15,8 +15,12 @@ class BinTree
 		TreeNode *tree;
 		void createTree();
 		void createTree2();
+		void pre();
+		void mid();
+		void post();
 	public:
 		BinTree(char *formate);
 		TreeNode * getTree() { return tree; }
+		void printTree(int opt);
 };
 #endif
