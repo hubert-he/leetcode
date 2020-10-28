@@ -20,5 +20,6 @@ func main()  {
 	fmt.Println(Tree.PrintBiTree(root, Tree.PreOrderIter))
 	fmt.Println(Tree.PrintBiTree(root, Tree.MidOrder))
 	fmt.Println(Tree.PrintBiTree(root, Tree.PostOrder))
+	fmt.Println("PostOrder Iter: ", Tree.PrintBiTree(root, Tree.PostOrderIter))
 	fmt.Println(Tree.PrintBiTree(root, Tree.LayerOrder))
 }

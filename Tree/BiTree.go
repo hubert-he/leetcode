@@ -135,16 +135,19 @@ func postOrderIter(root *BiTreeNode) []interface{} {
 		curr := stack[len(stack) - 1]
 		if curr.Right == nil && curr.Left == nil {
 			serial = append(serial, curr.Val)
+			stack = stack[:len(stack)-1]
 			prev = curr
-		} else if prev != nil && () {
+		} else if prev != nil && (prev == curr.Left || prev == curr.Right) {//向上回溯
 			serial = append(serial, curr.Val)
+			stack = stack[:len(stack)-1]
 			prev = curr
 		} else {
-			if curr.Left != nil {
-				stack = append(stack, curr.Left)
-			}
+			// 必须先右后左, 匹配栈的先进先出
 			if curr.Right != nil {
 				stack = append(stack, curr.Right)
+			}
+			if curr.Left != nil {
+				stack = append(stack, curr.Left)
 			}
 		}
 	}
