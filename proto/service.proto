@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package proto;
+
+message Request {
+  int64 a = 1;
+  int64 b = 2;
+}
+
+message Response {
+  int64 result = 1;
+}
+
+service AddService {
+  rpc Add(Request) returns (Response);
+  rpc Multiply(Request) returns (Response);
+}
+/*
+在当前目录运行，产生proto.go文件
+fibombp019:awesomeProject hezh$ protoc --proto_path=proto --go_out=plugins=grpc:proto service.proto
+2020/11/09 18:18:17 WARNING: Missing 'go_package' option in "service.proto",
+please specify it with the full Go package path as
+a future release of protoc-gen-go will require this be specified.
+See https://developers.google.com/protocol-buffers/docs/reference/go-generated#package for more information.
+
+fibombp019:awesomeProject hezh$
+ */
