@@ -11,6 +11,10 @@ message Response {
   int64 result = 1;
 }
 
+// service 定义
+// unary RPC     Client Streaming RPC      Server Streaming RPC    Bidi Streaming RPC
+// rpc GetFeature(Point) returns (Feature)
+// rpc RouteChat(steam RouteNote) returns (stream RouteNote)
 service AddService {
   rpc Add(Request) returns (Response);
   rpc Multiply(Request) returns (Response);
