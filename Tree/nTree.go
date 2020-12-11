@@ -93,3 +93,18 @@ func layerOrderNTree(root *TreeNode) []interface{} {
 	}
 	return serial
 }
+
+func deserial(s string) *TreeNode {
+	const (
+		SPACE = iota
+		LBRACKET
+		RBRACKET
+		NUM
+	)
+	const (
+		START = iota
+
+	)
+	var root *TreeNode = nil
+	return root
+}
