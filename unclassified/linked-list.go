@@ -43,10 +43,13 @@ func Run() {
 	//PrintLinkedList(headt1)
 	//PrintLinkedList(reverseBetween(headt1, 2, 4))
 
-	PrintLinkedList(reverseKGroup(headt1,2))
+//	PrintLinkedList(reverseKGroup(headt1,2))
 
 //	PrintLinkedList(headt2)
 //	PrintLinkedList(reverseBetween(headt2, 1, 4))
+
+//	PrintLinkedList(oddEvenList(headt1))
+	PrintLinkedList(reorderList(headt1))
 }
 func GenerateLinkedList(nums []int) *ListNode {
 	if len(nums) <= 0 {
@@ -171,6 +174,77 @@ func reverseKGroup(head *ListNode, k int) *ListNode {
 		curse = end
 		//curse = curse.Next 此时变换掉了
 		cnt++
+	}
+	return head
+}
+
+func oddEvenList(head *ListNode) *ListNode {
+	var odd,even,tmpeven *ListNode
+	cur := head
+	isodd := true
+	for cur != nil {
+		t := cur.Next  // 此位置设置cur.Next = nil 可避免最后结果出现环 忘记清理尾节点Next指针导致
+		if isodd {
+			if odd == nil {
+				odd = cur
+			} else {
+				odd.Next = cur
+				odd = odd.Next
+			}
+			isodd = false
+		}else {
+			if even == nil {
+				even = cur
+				tmpeven = even
+			} else {
+				even.Next = cur
+				even = even.Next
+			}
+			isodd = true
+		}
+		cur.Next = nil
+		cur = t
+	}
+	if odd != nil { // 遗漏点： [] 空链表情况处理
+		odd.Next = tmpeven
+	}
+	return head
+}
+
+func reorderList(head *ListNode) *ListNode {
+	if head == nil {
+		return nil
+	}
+	fast, slow := head,head
+	var pre *ListNode
+	for fast != nil {
+		if fast.Next != nil {
+			fast = fast.Next.Next
+		} else {
+			fast = nil
+		}
+		pre = slow
+		slow = slow.Next
+	}
+	cur  := slow
+	pre.Next = nil
+	for cur != nil {
+		tmp := cur.Next
+		cur.Next = pre.Next
+		pre.Next = cur
+		cur = tmp
+	}
+	post := pre.Next
+	pre.Next = nil
+	pre = head
+	for pre != nil && post != nil {
+		t1 := pre.Next
+		t2 := post.Next
+
+		pre.Next = post
+		post.Next = t1
+		pre = t1
+		post = t2
 	}
 	return head
 }
