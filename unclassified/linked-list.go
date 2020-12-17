@@ -1,6 +1,9 @@
 package unclassified
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 /**
 给定一个链表，判断链表中是否有环。
@@ -50,6 +53,13 @@ func Run() {
 
 //	PrintLinkedList(oddEvenList(headt1))
 	PrintLinkedList(reorderList(headt1))
+	t2 := []int{1,2,1}
+	headt2 := GenerateLinkedList(t2)
+	fmt.Println(isPalindrome(headt2))
+
+	t3 := []int {1,0,0,1,0,0,1,1,1,0,0,0,0,0,0}
+	headt3 := GenerateLinkedList(t3)
+	fmt.Println(getDecimalValue(headt3))
 }
 func GenerateLinkedList(nums []int) *ListNode {
 	if len(nums) <= 0 {
@@ -211,6 +221,93 @@ func oddEvenList(head *ListNode) *ListNode {
 	return head
 }
 
+func isPalindrome(head *ListNode) bool {
+	if head == nil || head.Next == nil {
+		return true  // 快慢指针操作，先排除特殊情况，简化代码
+	}
+	dummyhead := &ListNode{Next: nil}
+	slow,fast := head,head.Next.Next
+	odd := false
+	for fast != nil {
+		tmp := slow.Next
+		if fast.Next != nil { // 不可放到最后，因为slow 要修改位置
+			fast = fast.Next.Next
+			odd = false
+		}else {
+			odd = true
+			fast = nil
+		}
+		slow.Next = dummyhead.Next
+		dummyhead.Next = slow
+		slow = tmp
+	}
+	tmp := slow.Next
+	if !odd { // 考虑奇 偶性
+		slow.Next = dummyhead.Next
+		dummyhead.Next = slow
+	}
+	slow = tmp
+	cur := dummyhead.Next
+	for slow != nil {
+		if slow.Val != cur.Val{
+			return false
+		}
+		slow = slow.Next
+		cur = cur.Next
+	}
+	if cur == nil && slow == nil {
+		return true
+	}
+	return false
+}
+
+func reverseList(head *ListNode) *ListNode { // 反转链表标准操作
+	var prev, cur *ListNode = nil, head
+	for cur != nil {
+		nextTmp := cur.Next
+		cur.Next = prev
+		prev = cur
+		cur = nextTmp
+	}
+	return prev
+}
+
+func endOfFirstHalf(head *ListNode) *ListNode { // 找中点标准操作
+	fast := head
+	slow := head
+	for fast.Next != nil && fast.Next.Next != nil {
+		fast = fast.Next.Next
+		slow = slow.Next
+	}
+	return slow
+}
+
+func isPalindromeII(head *ListNode) bool {
+	if head == nil {
+		return true
+	}
+
+	// 找到前半部分链表的尾节点并反转后半部分链表
+	firstHalfEnd := endOfFirstHalf(head)
+	secondHalfStart := reverseList(firstHalfEnd.Next)
+
+	// 判断是否回文
+	p1 := head
+	p2 := secondHalfStart
+	result := true
+	for result && p2 != nil {
+		if p1.Val != p2.Val {
+			result = false
+		}
+		p1 = p1.Next
+		p2 = p2.Next
+	}
+
+	// 还原链表并返回结果
+	firstHalfEnd.Next = reverseList(secondHalfStart)
+	return result
+}
+
 func reorderList(head *ListNode) *ListNode {
 	if head == nil {
 		return nil
@@ -247,6 +344,36 @@ func reorderList(head *ListNode) *ListNode {
 		post = t2
 	}
 	return head
+}
+
+
+func getDecimalValueII(head *ListNode) int {
+	length := 0
+	cur := head
+	for cur != nil {
+		length++
+		cur = cur.Next
+	}
+	cur = head
+	sum := 0
+	for cur != nil {
+		sum += cur.Val*int(math.Pow(2,float64(length-1)))
+		length--
+		cur = cur.Next
+	}
+	return sum
+}
+func getDecimalValue(head *ListNode) int {
+	// 2进制转10进制 归纳求和方式
+	// abcd ==> a*2^3 + b*2^2 + c*2^1 + d*2^0
+	//      ==> [(a*2+b)*2+c]*2+d ==> {[(0*2+a)*2+b]*2+c}*2+d
+	cur := head
+	sum := 0
+	for cur != nil {
+		sum = sum*2+cur.Val
+		cur = cur.Next
+	}
+	return sum
 }
 
 func hasCycle(head *ListNode) bool {
