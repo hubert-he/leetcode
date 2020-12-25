@@ -68,7 +68,8 @@ func Run() {
 	fmt.Println(nextLargerNodes_stack(GenerateLinkedList([]int{2,7,4,3,5})))
 */
 	PrintLinkedList(sortList_merge(GenerateLinkedList([]int{2,7,4,3,5})))
-//	PrintLinkedList(sortList_insert(ll0))
+	PrintLinkedList(mergeSortListIter(GenerateLinkedList([]int{2,7,4,3,5})))
+//	PrintLinkedList(sortList_merge(ll0))
 }
 func GenerateLinkedList(nums []int) *ListNode {
 	if len(nums) <= 0 {
@@ -448,23 +449,24 @@ func sortList_merge(head *ListNode) *ListNode {
 	if head == nil || head.Next == nil {
 		return head
 	}
-	slow,fast := head,head
+	// 易错点：查找中点位置起始，确认长度为2的链表，分割区别必须是前闭后开，否则导致递归死循环
+	slow,fast := head,head.Next.Next
 	for fast != nil {
 		slow = slow.Next
 		if fast.Next != nil {
 			fast = fast.Next.Next
-		}else {
+		} else {
 			fast = nil
 		}
 	}
-	slow.Next = nil
-	first := sortList_merge(head)
 	second := sortList_merge(slow.Next)
+	slow.Next = nil  // 断开，或者递归函数加参数设置末尾节点，分割链表时进行判断
+	first := sortList_merge(head)
 	return mergeList(first, second)
 }
 func mergeList (l1 *ListNode, l2 *ListNode) *ListNode {
 	dummyHead := &ListNode{Next:nil}
-	pre := dummyHead.Next
+	pre := dummyHead
 	for l1 != nil && l2 != nil {
 		if l1.Val <= l2.Val{
 			pre.Next = l1
@@ -482,6 +484,52 @@ func mergeList (l1 *ListNode, l2 *ListNode) *ListNode {
 		pre.Next = l2
 	}
 	return dummyHead.Next
+}
+
+func mergeSortListIter(head *ListNode) *ListNode {
+	length := lengthList(head)
+	if length < 2{
+		return head
+	}
+	dummyhead := &ListNode{Next: head}
+	for sublen := 1; sublen <= length; sublen <<= 1{
+		pre,cur := dummyhead,dummyhead.Next
+		for cur != nil {
+			head1 := cur
+			// for i := 0; i < sublen && cur.Next != nil; i++ { 从0开始的话，就是2个为最小单位了
+			for i := 1; i < sublen && cur.Next != nil; i++ {
+				cur = cur.Next
+			}
+			head2 := cur.Next
+			cur.Next = nil // 断链 后续合并处理
+			cur = head2
+			// 判断cur是否到尾巴
+			for i := 1; i < sublen && cur != nil && cur.Next != nil; i++ {
+				cur = cur.Next
+			}
+			var next *ListNode
+			if cur != nil {
+				next = cur.Next
+				cur.Next = nil
+			}
+			pre.Next = mergeList(head1, head2)
+			// 找合并后的新pre
+			pre = pre.Next
+			for pre.Next != nil {
+				pre = pre.Next
+			}
+			cur = next
+		}
+	}
+	return dummyhead.Next
+}
+
+func lengthList(head *ListNode) int {
+	var sum int
+	for sum = 0; head != nil; sum++ {
+		head = head.Next
+	}
+	return sum
 }
 
 func hasCycle(head *ListNode) bool {
