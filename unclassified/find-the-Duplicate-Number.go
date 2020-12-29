@@ -23,7 +23,8 @@ import (
 
 func FindDuplicate(nums []int) int {
 	//return binarySearchFind(nums)
-	return findDuplicate_bit(nums)
+	//return findDuplicate_bit(nums)
+	return findDuplicate_flydCircle(nums)
 }
 
 func normalFind(nums []int) int {
@@ -138,5 +139,18 @@ func findDuplicate_bit(nums []int) int{
 链接：https://leetcode-cn.com/problems/find-the-duplicate-number/solution/287-6chong-jie-fa-si-lu-xiang-xi-fen-xi-zong-jie-b/
  */
 func findDuplicate_flydCircle(nums []int) int{
-	return 0
+	slow,fast := nums[0],nums[0]
+	for {
+		slow = nums[slow]
+		fast = nums[nums[fast]]
+		if fast < len(nums) &&	 slow == fast {
+			break
+		}
+	}
+	slow = nums[0]
+	for fast < len(nums) && slow != fast{
+		slow = nums[slow]
+		fast = nums[fast]
+	}
+	return slow
 }

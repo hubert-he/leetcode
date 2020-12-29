@@ -30,10 +30,10 @@ func test1() {
 }
 func main() {
 	// test1()
-	nums := []int{1,3,4,2,2}
+	//nums := []int{1,3,4,2,2}
 	//nums := []int{2,2,2,2,2}
-	fmt.Println("FindDuplicate-->", unclassified.FindDuplicate(nums))
-	fmt.Println("FindDuplicate-->", unclassified.FindDuplicate([]int{1,1}))
+	//fmt.Println("FindDuplicate-->", unclassified.FindDuplicate(nums))
+	fmt.Println("FindDuplicate-->", unclassified.FindDuplicate([]int{2,6,4,1,3,1,5}))
 	unclassified.Run()
 	a := monotoneIncreasingDigitsII(2331)
 	fmt.Println(a)
