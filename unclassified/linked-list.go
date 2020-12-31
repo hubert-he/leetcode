@@ -82,6 +82,15 @@ func Run() {
 
 	tree := sortedListToBSTImp(GenerateLinkedList([]int{-10, -3, 0, 5, 9}))
 	fmt.Println("leetcode-109: ", Tree.PrintBiTree((*Tree.BiTreeNode)(tree), Tree.LayerOrder))
+	fmt.Println("leetcode-1171")
+	PrintLinkedList(removeZeroSumSublists(GenerateLinkedList([]int{1,2,-3,3,1})))
+	PrintLinkedList(removeZeroSumSublistsNormal(GenerateLinkedList([]int{1,2,-3,3,1})))
+	PrintLinkedList(removeZeroSumSublists(GenerateLinkedList([]int{1,-1})))
+	PrintLinkedList(removeZeroSumSublistsNormal(GenerateLinkedList([]int{1,-1})))
+	PrintLinkedList(removeZeroSumSublists(GenerateLinkedList([]int{0, 0})))
+	PrintLinkedList(removeZeroSumSublistsNormal(GenerateLinkedList([]int{0, 0})))
+
+
 }
 func GenerateLinkedList(nums []int) *ListNode {
 	if len(nums) <= 0 {
@@ -653,15 +662,44 @@ func findMid(head *ListNode, eof *ListNode) *ListNode {
 	}
 	return slow
 }
-
+// leetcode-1171 从链表中删去总和值为零的连续节点
+// 前缀和
 func removeZeroSumSublists(head *ListNode) *ListNode {
-	dup := true
-	dummyHead := &ListNode{Next: head}
-	for dup {
-		for pre,cur := dummyHead,head; cur != nil;{
-
+	prefixSum := map[int]*ListNode{}
+	//dummyHead := &ListNode{Next: head}
+	// 伪头部是为了解决[1,-1]此类情况，判断前缀和本身为0的情况，即从开头算和为0的情况
+	dummyHead := &ListNode{0,head}
+	// 建立前缀和，与普通前缀和不同，这里采用hashmap
+	// 若同一和出现多次会覆盖，即记录该sum出现的最后一次节点
+	for sum,cur := 0,head; cur != nil; cur = cur.Next{
+		sum += cur.Val
+		prefixSum[sum] = cur
+	}
+	for sum,cur := 0,dummyHead; cur != nil; cur = cur.Next{
+		sum += cur.Val
+		if item,ok := prefixSum[sum]; ok {
+			cur.Next = item.Next
 		}
 	}
+	return dummyHead.Next
+}
+
+func removeZeroSumSublistsNormal(head *ListNode) *ListNode {
+	dummyHead := &ListNode{Next: head}
+	for c1 := dummyHead; c1 != nil; {
+		c2 := c1.Next
+		for sum := 0; c2 != nil ; c2 = c2.Next{
+			sum += c2.Val
+			if sum == 0{
+				c1.Next = c2.Next
+				break
+			}
+		}
+		if c2 == nil { // 防止 [0,0] 情况
+			c1 = c1.Next
+		}
+	}
+	return dummyHead.Next
 }
 
 func hasCycle(head *ListNode) bool {
