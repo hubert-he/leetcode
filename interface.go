@@ -34,6 +34,12 @@ func main(){
 	u := user{"Bill", "bill@ex.com"}
 	// sendNotification(u) 注意notify接收者是指针类型，如果参数为类型值类型的话，是无法找到interface对应方法实现的
 	sendNotification(&u)
+	//sendNotification(u)
+	// 在直接使用类型实例调用类型的方法时，无论值类型变量还是指针类型变量都可以调用所有方法，原因是编译器辅助完成了自动转换；而在接口值中，无法自动转换，原因如下
+	// 接口是在动态运行时解析的，产生指针 就会产生引用
+	// 在接口中，因为不是总能获取一个值的地址，因此接口值的方法集只包括使用值接收者实现的方法！
+	//var n notifier = u // cannot use u (type user) as type notifier in assignment:user does not implement notifier (notify method has pointer receiver)
+	//n.notify2()
 	u.notify()
 	u.notify2()
 

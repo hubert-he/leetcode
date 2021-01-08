@@ -39,6 +39,8 @@ func main() {
 	fmt.Println(a)
 
 	unclassified.RunArray()
+
+	unclassified.HeapRun()
 }
 
 func monotoneIncreasingDigits(n int) int {
