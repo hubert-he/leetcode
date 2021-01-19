@@ -3,6 +3,7 @@ package main
 import (
 	"./Reflect"
 	"fmt"
+	"github.com/fatih/structs"
 	"reflect"
 	"time"
 )
@@ -46,12 +47,43 @@ func main() {
 	fmt.Println(vxx)
 
 	Reflect.Print(time.Hour)
+	Test()
 /*
 	var testType reflect.Type
 	var testValue reflect.Value
 	Reflect.Print(testType)
 	Reflect.Print(testValue)
  */
+}
+
+// UserInfo 用户信息
+type UserInfo struct {
+	Name string `json:"name" structs:"name"`
+	Age  int    `json:"age" structs:"age"`
+	Profile `json:"profile" structs:"profile"`
+}
+
+// Profile 配置信息
+type Profile struct {
+	Hobby string `json:"hobby" structs:"hobby"`
+}
+
+func Test(){
+	u1 := UserInfo{Name: "q1mi", Age: 18, Profile: Profile{"双色球"}}
+	m3 := structs.Map(&u1)
+
+	for k, v := range m3 {
+		if o, ok := v.(map[string]interface{}); ok {
+			fmt.Println(ok," ",o)
+		}
+		switch value := v.(type){
+		case map[string]interface{}:
+			for ek, ev := range value {
+				fmt.Println(ek,ev)
+			}
+		}
+		fmt.Printf("key:%v value:%v value type:%T\n", k, v, v)
+	}
 }
 
 

@@ -78,12 +78,22 @@ func removeUsage() {
 
 	// 从中间位置删除
 	// 对于删除中间的元素，需要对剩余的元素进行一次整体挪动，同样可以用 append 或 copy 原地完成
+
 	a = []int{1, 2, 3, 4, 5, 6}
 	i := 3
 	a = append(a[:i], a[i+1:]...)  // 删除中间1个元素
 	a = append(a[:i], a[i+N:]...)  // 删除中间N个元素
+	a = []int{1, 2, 3, 4, 5, 6}
+	i = 3
 	a = a[:i+copy(a[i:], a[i+1:])] // 删除中间1个元素
 	a = a[:i+copy(a[i:], a[i+N:])] // 删除中间N个元素
+
+	// 从尾部删除一个元素
+	a = []int{1,2,3,4,5}
+	a = a[:len(a) - 1] // 从尾部删除1个元素
+	printSlice(a)
+	a = a[:len(a) - N] // 从尾部删除N个元素
+	printSlice(a)
 }
 
 func printSlice(value interface{}) {
