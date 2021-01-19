@@ -80,8 +80,9 @@ func removeUsage() {
 	// 对于删除中间的元素，需要对剩余的元素进行一次整体挪动，同样可以用 append 或 copy 原地完成
 
 	a = []int{1, 2, 3, 4, 5, 6}
-	i := 3
-	a = append(a[:i], a[i+1:]...)  // 删除中间1个元素
+	i := 5
+	a = append(a[:i], a[i+1:]...)  // 删除中间1个元素,也可以删除尾元素
+	fmt.Println(a)
 	a = append(a[:i], a[i+N:]...)  // 删除中间N个元素
 	a = []int{1, 2, 3, 4, 5, 6}
 	i = 3

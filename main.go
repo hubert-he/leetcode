@@ -19,8 +19,6 @@ func init() {
 	}
 }
 
-
-
 func main() {
 	r,err := http.Get(os.Args[1])
 	if err != nil {

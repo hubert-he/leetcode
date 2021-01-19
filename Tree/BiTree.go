@@ -11,6 +11,11 @@ type BiTreeNode struct {
 	Right *BiTreeNode
 }
 
+type ListNode struct {
+    Val int
+    Next *ListNode
+}
+
 const (
 	PreOrder = iota
 	PreOrderIter
@@ -342,3 +347,64 @@ func layerDFS(list *[][]interface{}, root *BiTreeNode, height int) {
 	layerDFS(list, root.Left, height+1)
 	layerDFS(list, root.Right, height+1)
 }
+
+// leetcode-114  二叉树原地转换为单链表, 均用Left 连接
+func flatten_left(root *BiTreeNode)  {
+	if root == nil || root.Right == nil {
+		return
+	}
+	flatten_left(root.Right)
+	flatten_left(root.Left)
+	pre,cur := root,root
+	for cur != nil {
+		pre = cur
+		cur = cur.Left
+	}
+	pre.Left = root.Right
+	root.Right = nil // 遗漏点： 把原来的链断开
+}
+// 都在Left 和 都在Right，注意区分，先序遍历
+// 如果是flatten_left 这与先序遍历一致
+// 若是flatten_right 与原先序遍历不一致，需要调整
+func flatten_right(root *BiTreeNode) {
+	if root == nil {
+		return
+	}
+	tmp := root.Right
+	flatten_right(root.Left)
+	root.Right = root.Left
+	flatten_right(tmp)
+	pre,cur := root,root
+	for cur != nil {
+		pre = cur
+		cur = cur.Right
+	}
+	pre.Right = tmp
+	root.Left = nil
+}
+// leetcode-1367 Linked List in Binary Tree
+func isSubPath(head *ListNode, root *BiTreeNode) bool {
+	if root == nil {
+		return false
+	}
+	return isSubDFS(head, root) || isSubPath(head, root.Left) || isSubPath(head, root.Right)
+}
+
+func isSubDFS(head *ListNode, root *BiTreeNode) bool{
+	if head == nil { // 1. 链表已经全部匹配完，匹配成功，返回True
+		return true
+	}
+	// 2. 二叉树访问到了空节点，匹配失败，返回False
+	// 3. 当前匹配的二叉树上节点的值与链表节点的值不相等，匹配失败，返回 False
+	if root == nil || root.Val != head.Val{
+		return false
+	}
+	// 4. 前三种情况都不满足，说明匹配成功了一部分，我们需要继续递归匹配
+	return isSubDFS(head.Next, root.Left) || isSubDFS(head.Next, root.Right)
+}
+/*
+/bin/sh -c '
+    cd /mysql-backup;
+	mysqldump --host=$MYSQL_HOST --port=$MYSQL_PORT --user=$MYSQL_BACKUP_USER --password=$MYSQL_BACKUP_USER_PASSWORD --set-gtid-purged=OFF --single-transaction --databases dmp --events --routines --triggers > mysql-`date +"%Y%m%d"`.sql;
+	rm -f `ls -t | tail -n +11;`;'
+*/
