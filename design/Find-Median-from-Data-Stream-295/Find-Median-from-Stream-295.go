@@ -5,9 +5,14 @@ import (
 	"fmt"
 	"sort"
 )
+// 描述struct 匿名字段（隐式字段）的概念，一个struct包含了一个匿名字段，那么它将继承这个匿名字段的多有字段。同样的，如果匿名字段实现了某些method，那么该struct也能调用该method。
 // 只有内嵌的匿名结构体，子结构体可以继承其方法和类型， 注意其引用方式，直接通过类型操作
 type intHeap struct {
 	sort.IntSlice
+}
+func (h intHeap) Less(i, j int) bool {
+	fmt.Println("low heap less => ",h.IntSlice[i], h.IntSlice[j] )
+	return h.IntSlice[i] < h.IntSlice[j]
 }
 func (h *intHeap) Push(i interface{}){
 	h.IntSlice = append(h.IntSlice, i.(int))
@@ -20,6 +25,7 @@ func (h *intHeap) Pop() interface{}{
 	return tmp
 }
 func (h *intHeap) push(i interface{}){
+	fmt.Printf("==> %#v\n", h)
 	heap.Push(h, i)
 }
 func (h *intHeap) pop() int{
@@ -28,7 +34,15 @@ func (h *intHeap) pop() int{
 type BigHeap struct {
 	intHeap
 }
-func (h *BigHeap) Less(i, j int) bool {
+func (h *BigHeap) push(i interface{}){
+	fmt.Printf("==> %#v\n", h)
+	heap.Push(h, i)
+}
+func (h *BigHeap) pop() int{
+	return heap.Pop(h).(int)
+}
+func (h BigHeap) Less(i, j int) bool {
+	fmt.Println("big heap less => ",h.IntSlice[i], h.IntSlice[j] )
 	return h.IntSlice[i] > h.IntSlice[j]
 }
 
@@ -52,9 +66,11 @@ func (this *MedianFinder) AddNum(num int) {
 
 func (this *MedianFinder) addNum_dheap(num int) {
 	this.low.push(num)
-	for this.low.Len() > this.high.Len() {
-		x := this.low.pop()
-		this.high.push(x)
+	x := this.low.pop()
+	this.high.push(x)
+	for this.high.Len() - this.low.Len() > 1 {
+		x := this.high.pop()
+		this.low.push(x)
 	}
 }
 
