@@ -402,9 +402,3 @@ func isSubDFS(head *ListNode, root *BiTreeNode) bool{
 	// 4. 前三种情况都不满足，说明匹配成功了一部分，我们需要继续递归匹配
 	return isSubDFS(head.Next, root.Left) || isSubDFS(head.Next, root.Right)
 }
-/*
-/bin/sh -c '
-    cd /mysql-backup;
-	mysqldump --host=$MYSQL_HOST --port=$MYSQL_PORT --user=$MYSQL_BACKUP_USER --password=$MYSQL_BACKUP_USER_PASSWORD --set-gtid-purged=OFF --single-transaction --databases dmp --events --routines --triggers > mysql-`date +"%Y%m%d"`.sql;
-	rm -f `ls -t | tail -n +11;`;'
-*/
