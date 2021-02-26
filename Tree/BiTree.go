@@ -322,7 +322,7 @@ func layerOrder2(root *BiTreeNode) []interface{} {
 	return serial
 }
 
-func layerOrderDFS(root *BiTreeNode) []interface{} {
+func  layerOrderDFS(root *BiTreeNode) []interface{} {
 	list := [][]interface{}{}
 
 	layerDFS(&list, root, 0)
@@ -346,6 +346,35 @@ func layerDFS(list *[][]interface{}, root *BiTreeNode, height int) {
 	}
 	layerDFS(list, root.Left, height+1)
 	layerDFS(list, root.Right, height+1)
+}
+
+func Serialization(root *BiTreeNode) []interface{} {
+	if root == nil {
+		return nil
+	}
+	result := []interface{}{}
+	q := []*BiTreeNode{root}
+	for len(q) != 0{
+		tmp := []*BiTreeNode{}
+		var megerd bool = false
+		for _, elem := range q{
+			if elem != nil{
+				result = append(result, elem.Val)
+				if elem.Left != nil || elem.Right != nil{
+					megerd = true
+				}
+				tmp = append(tmp, elem.Left, elem.Right)
+			}else{
+				result = append(result, nil)
+			}
+		}
+		if megerd{
+			q = tmp
+		}else{
+			q = nil
+		}
+	}
+	return result
 }
 
 // leetcode-114  二叉树原地转换为单链表, 均用Left 连接
@@ -401,4 +430,122 @@ func isSubDFS(head *ListNode, root *BiTreeNode) bool{
 	}
 	// 4. 前三种情况都不满足，说明匹配成功了一部分，我们需要继续递归匹配
 	return isSubDFS(head.Next, root.Left) || isSubDFS(head.Next, root.Right)
+}
+
+func HasPathSum(root *BiTreeNode, targetSum int) bool {
+	if root == nil {
+		return false  // 每次开始先解决特殊情况
+	}
+	return hasPathSum(root, targetSum, 0)
+}
+// 注意，题目要求，是根到叶子节点所有和
+func hasPathSum(root *BiTreeNode, targetSum, pathSum int) bool {
+	pathSum += root.Val.(int)
+	if root.Left == nil && root.Right == nil{
+		if targetSum == pathSum{
+			return true
+		}else{
+			return false
+		}
+	}
+	if root.Left != nil && hasPathSum(root.Left, targetSum, pathSum) {
+		return true
+	}
+	if root.Right != nil && hasPathSum(root.Right, targetSum, pathSum) {
+		return true
+	}
+	return false
+}
+
+func InvertBiTree(root *BiTreeNode) *BiTreeNode{
+	if root == nil {
+		return nil
+	}
+	tmp := root.Right
+	root.Right = InvertBiTree(root.Left)
+	root.Left  = InvertBiTree(tmp)
+	return root
+}
+
+//257:  Binary Tree 的所有路径: root 到leaf的所有路径
+func BinaryTreePaths(root *BiTreeNode) []string {
+	if root == nil {
+		return nil
+	}
+	paths := []string{}
+	binaryTreePaths(root, "", &paths)
+	return paths
+}
+
+func binaryTreePaths(root *BiTreeNode, subPath string, paths *[]string){
+	if subPath == ""{
+		subPath = fmt.Sprintf("%d", root.Val)
+	}else{
+		subPath = fmt.Sprintf("%s->%d", subPath, root.Val)
+	}
+	if root.Left == nil && root.Right == nil {
+		*paths = append(*paths, subPath)
+	}
+	if root.Left != nil {
+		binaryTreePaths(root.Left, subPath, paths)
+	}
+	if root.Right != nil {
+		binaryTreePaths(root.Right, subPath, paths)
+	}
+}
+
+//404: 左叶子之和
+func SumOfLeftLeaves(root *BiTreeNode) int {
+	if root == nil || (root.Left == nil && root.Right == nil) {
+		return 0
+	}
+	sumlf := 0
+	sumOfLeftLeaves(root, false, &sumlf)
+	return sumlf
+}
+func sumOfLeftLeaves(root *BiTreeNode, fromLeft bool, sum *int) {
+	if root.Left == nil && root.Right == nil {
+		if fromLeft{
+			*sum += root.Val.(int)
+		}
+	}
+	if root.Left != nil {
+		sumOfLeftLeaves(root.Left, true, sum)
+	}
+	if root.Right != nil {
+		sumOfLeftLeaves(root.Right, false, sum)
+	}
+}
+
+//563: 求坡度
+func FindTilt(root *BiTreeNode) int {
+	tilt, _ := findTilt(root)
+	return tilt
+}
+
+func findTilt(root *BiTreeNode) (tiltSum, sum int){
+	if root == nil {
+		return 0,0
+	}
+	ltilt, lsum := findTilt(root.Left)
+	rtilt, rsum := findTilt(root.Right)
+	// self
+	tiltSum += (ltilt + rtilt)
+	if lsum > rsum{
+		tiltSum += (lsum - rsum)
+	}else {
+		tiltSum += (rsum - lsum)
+	}
+	sum = lsum + rsum + root.Val.(int)
+	return
+}
+
+//543: 求直径
+func diameterOfBinaryTree(root *BiTreeNode) int {
+	return 0
+}
+
+//235：LCA: 求最近公共祖先
+func lowestCommonAncestor(root, p, q *BiTreeNode) *BiTreeNode {
+	return nil
 }
