@@ -100,3 +100,19 @@ func TestFindTilt(t *testing.T) {
 		}
 	}
 }
+
+func TestDiameterOfBinaryTree(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []interface{}
+		want int
+	}{
+		{[]interface{}{}, 0},
+		{[]interface{}{1,2,3,4,5}, 3},
+	}{
+		tree := GenerateBiTree(testCase.nums)
+		result := DiameterOfBinaryTree(tree)
+		if result != testCase.want{
+			t.Errorf("case-%d: result = %d, but want %d", caseId, result, testCase.want)
+		}
+	}
+}

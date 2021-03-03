@@ -541,8 +541,26 @@ func findTilt(root *BiTreeNode) (tiltSum, sum int){
 }
 
 //543: 求直径
-func diameterOfBinaryTree(root *BiTreeNode) int {
-	return 0
+func DiameterOfBinaryTree(root *BiTreeNode) int {
+	diameter := 0
+	diameterOfBinaryTree(root, &diameter)
+	return diameter
+}
+func diameterOfBinaryTree(root *BiTreeNode, diameter *int) int {
+	if root == nil {
+		return 0
+	}
+	left := diameterOfBinaryTree(root.Left, diameter)
+	right := diameterOfBinaryTree(root.Right, diameter)
+	path := left + right // 是path ，而非高度
+	if *diameter < path{
+		*diameter = path
+	}
+	if left > right{
+		return left + 1
+	}else{
+		return right + 1
+	}
 }
 
 //235：LCA: 求最近公共祖先
