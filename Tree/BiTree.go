@@ -19,12 +19,15 @@ type ListNode struct {
 const (
 	PreOrder = iota
 	PreOrderIter
+	PreOrderMorris
 	MidOrder
 	MidOrderIter
+	MidOrderMorris
 	PostOrder
 	PostOrderIter
 	PostOrderIterII
 	PostOrderIterIII
+	PostOrderMorris
 	LayerOrder
 )
 
@@ -68,6 +71,8 @@ func PrintBiTree(root *BiTreeNode, t int) []interface{} {
 		return preOrder(root)
 	case PreOrderIter:
 		return preOrderIter(root)
+	case PreOrderMorris:
+		return preOrderMorris(root)
 	case PostOrder:
 		return postOrder(root)
 	case PostOrderIter:
@@ -80,11 +85,37 @@ func PrintBiTree(root *BiTreeNode, t int) []interface{} {
 		return midOrder(root)
 	case MidOrderIter:
 		return midOrderIter(root)
+	case MidOrderMorris:
+		return midOrderMorris(root)
 	case LayerOrder:
 		return layerOrderDFS(root)
 	default:
 		return nil
 	}
+}
+
+func preOrderMorris(root *BiTreeNode) (list []interface{}) {
+	cur := root
+	for cur != nil {
+		if cur.Left == nil{
+			list = append(list, cur.Val)
+			cur = cur.Right
+			continue
+		}
+		prev := cur.Left
+		for prev.Right != nil && prev.Right != cur{
+			prev = prev.Right
+		}
+		if prev.Right == nil{
+			list = append(list, cur.Val)
+			prev.Right = cur
+			cur = cur.Left
+		}else{ // prev.Right == prev的序列后继cur
+			prev.Right = nil // 恢复树结构
+			cur = cur.Right
+		}
+	}
+	return
 }
 
 func preOrder(root *BiTreeNode) []interface{} {
@@ -121,6 +152,29 @@ func preOrderIter(root *BiTreeNode) []interface{} {
 	return serial
 }
 
+func midOrderMorris(root *BiTreeNode) (list []interface{}){
+	cur := root
+	for cur != nil{
+		if cur.Left == nil{
+			list = append(list, cur.Val)
+			cur = cur.Right
+			continue
+		}
+		prev := cur.Left
+		for prev.Right != nil && prev.Right != cur{
+			prev = prev.Right
+		}
+		if prev.Right == nil{
+			prev.Right = cur
+			cur = cur.Left
+		}else{
+			list = append(list, cur.Val)
+			prev.Right = nil
+			cur = cur.Right
+		}
+	}
+	return
+}
 func midOrder(root *BiTreeNode) []interface{} {
 	var serial = []interface{}{}
 	if root == nil {
@@ -157,6 +211,28 @@ func midOrderIter(root *BiTreeNode) []interface{} {
 	return serial
 }
 
+func postOrderMorris(root *BiTreeNode) (list []interface{}) {
+	dump := &BiTreeNode{nil, root, nil}
+	cur := dump
+	for cur != nil {
+		if cur.Left == nil {
+			cur = cur.Right
+			continue
+		}
+		prev := cur.Left
+		for prev.Right != nil && prev.Right != cur {
+			prev = prev.Right
+		}
+		if prev.Right == nil {
+			prev.Right = cur
+			cur = cur.Left
+		}else{
+			prev.Right = nil
+			cur = cur.Right
+		}
+	}
+	return
+}
 func postOrder(root *BiTreeNode) []interface{} {
 	var serial = []interface{}{}
 	if root == nil {
@@ -564,6 +640,100 @@ func diameterOfBinaryTree(root *BiTreeNode, diameter *int) int {
 }
 
 //235：LCA: 求最近公共祖先
-func lowestCommonAncestor(root, p, q *BiTreeNode) *BiTreeNode {
+func LowestCommonAncestor(root, p, q *BiTreeNode) *BiTreeNode {
 	return nil
 }
+
+//572: subtree of another tree
+func IsSubtree_kmp(s, t *BiTreeNode){
+
+}
+func kmp(s, t []int) bool{
+	
+}
+func getDfsOrder(t *BiTreeNode, list []int, lNull, rNull int) []int{
+	if t == nil{
+		return list
+	}
+	list = append(list, t.Val.(int))
+	if t.Left != nil {
+		list = getDfsOrder(t.Left, list, lNull, rNull)
+	}else{
+		list = append(list, lNull)
+	}
+	if t.Right != nil {
+		list = getDfsOrder(t.Right, list, lNull, rNull)
+	}else{
+		list = append(list, rNull)
+	}
+	return list
+}
+func getMaxElement(t *BiTreeNode, maxEle *int){
+	if t == nil {
+		return
+	}
+	if t.Val.(int) > *maxEle{
+		*maxEle = t.Val.(int)
+	}
+	getMaxElement(t.Left, maxEle)
+	getMaxElement(t.Right, maxEle)
+}
+func IsSubtree_2dfs(s *BiTreeNode, t*BiTreeNode) bool{
+	if s == nil {
+		return false
+	}
+	return isEqual(s,t) || IsSubtree_2dfs(s.Left, t) || IsSubtree_2dfs(s.Right, t)
+}
+func isEqual(s *BiTreeNode, t *BiTreeNode) bool {
+	if s == nil && t == nil {
+		return true
+	}
+	if s== nil || t == nil { // 上次条件判断，排除了全nil情况
+		return false
+	}
+	if s.Val == t.Val{
+		return isEqual(s.Left, t.Left) && isEqual(s.Right, t.Right)
+	}
+	return false
+}
+/* 实现比较渣
+func IsSubtree_2dfs(s *BiTreeNode, t *BiTreeNode)( bool) {
+	if s == nil{
+		return false
+	}
+	is_subtree := isEqual(s, t)
+	if is_subtree{
+		return true
+	}
+	is_subtree = IsSubtree(s.Left,  t)
+	if is_subtree{
+		return true
+	}
+	is_subtree = IsSubtree(s.Right, t)
+	if is_subtree{
+		return true
+	}
+	return false
+}
+
+func isEqual(s *BiTreeNode, t *BiTreeNode) (equal bool){
+	if s == nil && t == nil {
+		return true
+	}
+	if (s == nil && t != nil) || (s != nil && t == nil){
+		return false
+	}
+	if s.Val != t.Val{
+		return false
+	}
+	left := isEqual(s.Left, t.Left)
+	if left == false{
+		return false
+	}
+	right := isEqual(s.Right, t.Right)
+	if right == false{
+		return false
+	}
+	return true
+}
+ */

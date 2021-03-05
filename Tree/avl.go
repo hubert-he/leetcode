@@ -254,13 +254,35 @@ func search(root *avlTreeNode, key Interface) *avlTreeNode{
 func(tree *AVLTree) IsBST() bool{
 	return true
 }
-
+// 剑指 Offer 55 - II
 func(tree *AVLTree) IsBalanced() bool{
-	if tree == nil || tree.root == nil{
+	if tree == nil {
 		return true
 	}
-	_, isBalance := isBalanced(tree.root)
-	return isBalance
+	var dfs func(*avlTreeNode)(int, bool)
+	dfs = func(node *avlTreeNode)(height int, isbalanced bool){
+		if node == nil {
+			return 0,true
+		}
+		l, isbalanced := dfs(node.Left)
+		if isbalanced == false{
+			return l+1, false
+		}
+		r, isbalanced := dfs(node.Right)
+		if isbalanced == false{
+			return r+1, false
+		}
+		diff := l - r
+		height = max(l, r) + 1
+		switch {
+		case diff < -1 || diff > 1:
+			return height, false
+		default:
+			return height, true
+		}
+	}
+	_, isB := dfs(tree.root)
+	return isB
 }
 func isBalanced(root *avlTreeNode) (height int, balanced bool) {
 	if root == nil{

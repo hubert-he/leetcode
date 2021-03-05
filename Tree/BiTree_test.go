@@ -2,6 +2,27 @@ package Tree
 
 import "testing"
 
+func TestPrintBiTree(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums	[]interface{}
+		want	[]interface{}
+	}{
+		{[]interface{}{}, []interface{}{}},
+		{[]interface{}{1}, []interface{}{1}},
+		{[]interface{}{5,4,8,11,nil,13,4,7,2,nil,nil,nil,1, 22}, []interface{}{5,4,11,7,22,2,8,13,4,1}},
+		{[]interface{}{2, 1, 3, nil, 4, nil, 7, nil, nil, 5, 6}, []interface{}{2,1,4,3,7,5,6}},
+	}{
+		tree := GenerateBiTree(testCase.nums)
+		list := PrintBiTree(tree, PreOrderMorris)
+		for idx, value := range testCase.want {
+			if value != list[idx] {
+				t.Errorf("case-%d result: %#v, want: %#v", caseId, list, testCase.want)
+				break
+			}
+		}
+	}
+}
+
 func TestHasPathSum(t *testing.T) {
 	for _, test := range []struct{
 		nums 		[]interface{}
