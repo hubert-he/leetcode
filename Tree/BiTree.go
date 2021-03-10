@@ -2,6 +2,7 @@ package Tree
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -639,17 +640,53 @@ func diameterOfBinaryTree(root *BiTreeNode, diameter *int) int {
 	}
 }
 
-//235：LCA: 求最近公共祖先
+//235：LCA: 求最近公共祖先-Lowest Common Ancestor
 func LowestCommonAncestor(root, p, q *BiTreeNode) *BiTreeNode {
 	return nil
 }
 
 //572: subtree of another tree
-func IsSubtree_kmp(s, t *BiTreeNode){
+// 在判断「ss 的深度优先搜索序列包含 tt 的深度优先搜索序列」的时候，可以暴力匹配，也可以使用KMP 或者Rabin-Karp 算法，
+//在使用Rabin-Karp 算法的时候，要注意串中可能有负值。
 
+func IsSubtree_kmp(s, t *BiTreeNode) bool{
+	maxEle := math.MinInt32
+	getMaxElement(s, &maxEle)
+	getMaxElement(t, &maxEle)
+	lNull := maxEle + 1
+	rNull := maxEle + 2
+	s1, t1 := getDfsOrder(s, []int{}, lNull, rNull), getDfsOrder(t, []int{}, lNull, rNull)
+	return kmp(s1, t1)
 }
 func kmp(s, t []int) bool{
-	
+	sLen, tLen := len(s), len(t)
+	fail := make([]int, tLen)
+	for i := 0; i < tLen; i++ {
+		fail[i] = -1
+	}
+	for i, j := 1, -1; i < tLen; i++{
+		for j != -1 && t[i] != t[j+1]{
+			j = fail[j]
+		}
+		if t[i] == t[j+1]{
+			j++
+		}
+		fail[i] = j
+	}
+	// 主搜索部分
+	for i, j := 0, -1; i < sLen; i++ {
+		// 内涵一层：失配，并且为开始状态，直接i++ 主串进一步
+		for j != -1 && s[i] != t[j+1]{ // 失配，若非起始状态，则依据next数组移动位置
+			j = fail[j]
+		}
+		if s[i] == t[j+1]{ //若两个字符相等，则主串和模式串各进一步
+			j++
+		}
+		if j == tLen - 1{ // 匹配成功，返回。注：标准KMP算法中，是重置状态，继续匹配下一个位置
+			return true
+		}
+	}
+	return false
 }
 func getDfsOrder(t *BiTreeNode, list []int, lNull, rNull int) []int{
 	if t == nil{
@@ -737,3 +774,58 @@ func isEqual(s *BiTreeNode, t *BiTreeNode) (equal bool){
 	return true
 }
  */
+// 剑指 Offer 27. 二叉树的镜像
+func MirrorTree(root *BiTreeNode) *BiTreeNode {
+	var dfs func(*BiTreeNode)
+	dfs = func(node *BiTreeNode){
+		if node == nil {
+			return
+		}
+		dfs(node.Left)
+		dfs(node.Right)
+		tmp := node.Left
+		node.Left = node.Right
+		node.Right = tmp
+	}
+	dfs(root)
+	return root
+}
+// 剑指 Offer 28. Symmetric Binary tree
+func IsSymmetric(root *BiTreeNode) bool {
+	var dfs func(*BiTreeNode, *BiTreeNode)bool
+	dfs = func(node1 *BiTreeNode, node2 *BiTreeNode) bool{
+		if node1 == nil && node2 == nil {
+			return true
+		}
+		if node1 == nil || node2 == nil {
+			return false
+		} // 提前结束
+		if dfs(node1.Left, node2.Right){
+			if node1.Val != node2.Val{
+				return false
+			}else{
+				return dfs(node1.Right, node2.Left)
+			}
+		}else{
+			return false
+		}
+	}
+	return  dfs(root, root)
+}
+// 更简短，先序遍历
+func IsSymmetric2(root *BiTreeNode) bool {
+	if root == nil {
+		return true
+	}
+	var dfs func(*BiTreeNode, *BiTreeNode)bool
+	dfs = func(node1 *BiTreeNode, node2 *BiTreeNode)bool{
+		if node1 == nil && node2 == nil {
+			return true
+		}
+		if node1 == nil || node2 == nil || node1.Val != node2.Val{
+			return false
+		}
+		return dfs(node1.Left, node2.Right) && dfs(node1.Right, node2.Left)
+	}
+	return dfs(root.Left, root.Right)
+}

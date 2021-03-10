@@ -232,6 +232,72 @@ func (tree *BinarySearchTree)ConvertBiNode() {
 	tree.root = head
 }
 
+//235: 二叉搜索树种的 LCA 问题
+/*
+方法一：
+  当我们分别得到了从根节点到p和q的路径之后，我们就可以很方便地找到它们的最近公共祖先了。
+  显然，p和q的最近公共祖先就是从根节点到它们路径上的「分岔点」，也就是最后一个相同的节点。
+  因此，如果我们设从根节点到p的路径为数组path_p，从根节点到q的路径为数组path_q，那么只要找出最大的编号i，其满足
+   path_p[i]=path_q[i]
+  那么对应的节点就是「分岔点」，即p和q的最近公共祖先就是path_p[i]（或path_q[i]）
+
+方法二
+我们从根节点开始遍历；
+如果当前节点的值大于p和q的值，说明p和q应该在当前节点的左子树，因此将当前节点移动到它的左子节点；
+如果当前节点的值小于p和q的值，说明p和q应该在当前节点的右子树，因此将当前节点移动到它的右子节点；
+如果当前节点的值不满足上述两条要求，那么说明当前节点就是「分岔点」。此时，p和q要么在当前节点的不同的子树中，要么其中一个就是当前节点。
+ */
+func (tree *BinarySearchTree) LowestCommonAncestor(p, q *BiTreeNode) *BiTreeNode {
+	return lowestCommonAncestor(tree.root, p, q)
+}
+// 用迭代实现 空间复杂O(1)
+func lowestCommonAncestor(root, p, q *BiTreeNode) (ancestor *BiTreeNode){
+	ancestor = root
+	rv, pv, qv := ancestor.Val.(int), p.Val.(int), q.Val.(int)
+	for {
+		rv = ancestor.Val.(int)
+		switch {
+		case rv > pv && rv > qv:
+			ancestor = ancestor.Left
+		case rv < pv && rv < qv:
+			ancestor = ancestor.Right
+		default:
+			return
+		}
+	}
+}
+// 递归实现，代价高
+func lowestCommonAncestor2(root, p, q *BiTreeNode) *BiTreeNode {
+	switch {
+	case root.Val.(int) > p.Val.(int) && root.Val.(int) > q.Val.(int):
+		return lowestCommonAncestor2(root.Left, p, q)
+	case root.Val.(int) < p.Val.(int) && root.Val.(int) < q.Val.(int):
+		return lowestCommonAncestor2(root.Right, p, q)
+	default:
+		return root
+	}
+}
+//剑指 Offer 54  二叉搜索树的第k大节点  关联问题为 逆序打印BST
+func (tree *BinarySearchTree) KthLargest(k int) interface{} {
+	var dfs func(*BiTreeNode)
+	cnt := 0
+	var target interface{}
+	dfs = func(node *BiTreeNode){
+		if node == nil{
+			return
+		}
+		dfs(node.Right)
+		cnt++
+		if cnt == k{
+			target = node.Val
+			return
+		}
+		dfs(node.Left)
+	}
+	dfs(tree.root)
+	return target
+}
+
 
 
 
