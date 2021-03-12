@@ -1,7 +1,6 @@
 package Tree
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -318,7 +317,6 @@ func (tree *BinarySearchTree) ClosestValue(target float64) (it *BiTreeNode){
 			if (v - target) < diff{
 				diff = v - target
 				it = node
-				fmt.Println(v, diff, it)
 			}
 			dfs(node.Left)
 		}
