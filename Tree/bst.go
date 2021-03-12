@@ -1,6 +1,7 @@
 package Tree
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -297,6 +298,35 @@ func (tree *BinarySearchTree) KthLargest(k int) interface{} {
 	dfs(tree.root)
 	return target
 }
+
+//270. 最接近的二叉搜索树值
+func (tree *BinarySearchTree) ClosestValue(target float64) (it *BiTreeNode){
+	var dfs func(node *BiTreeNode)
+	var diff float64 = math.MaxFloat64
+	dfs = func(node *BiTreeNode){
+		if node == nil {
+			return
+		}
+		v := float64(node.Val.(int))
+		if v < target{
+			if (target - v) < diff{
+				diff = target - v
+				it = node
+			}
+			dfs(node.Right)
+		}else{
+			if (v - target) < diff{
+				diff = v - target
+				it = node
+				fmt.Println(v, diff, it)
+			}
+			dfs(node.Left)
+		}
+	}
+	dfs(tree.root)
+	return
+}
+
 
 
 

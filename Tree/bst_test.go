@@ -78,3 +78,24 @@ func TestConvertBiNode(t *testing.T) {
 		}
 	}
 }
+
+func TestClosestValue(t *testing.T)  {
+	for caseId, testCase := range []struct{
+		nums []interface{}
+		target float64
+		want int
+	}{
+	//	{[]interface{}{}, },
+	//	{[]interface{}{1}, },
+		{[]interface{}{4,2,5,1,3}, 3.714286, 4},
+		{[]interface{}{2,0,33,nil,1,25,40,nil,nil,11,31,34,45,10,18,29,32,nil,36,43,46,4,nil,12,24,26,30,nil,nil,35,39,42,44,nil,48,3,9,nil,14,22,nil,nil,27,nil,nil,nil,nil,38,nil,41,nil,nil,nil,47,49,nil,nil,5,nil,13,15,21,23,nil,28,37,nil,nil,nil,nil,nil,nil,nil,nil,8,nil,nil,nil,17,19,nil,nil,nil,nil,nil,nil,nil,7,nil,16,nil,nil,20,6}, 0.428571, 0},
+	//	{[]interface{}{4,2,5,1,3,nil,6,0}, []interface{}{0, nil, 1, nil, 2, nil, 3, nil, 4, nil, 5, nil,6}},
+	} {
+		tree := NewBSTFromPlainList(testCase.nums)
+		result := tree.ClosestValue(testCase.target)
+
+		if result == nil || result.Val.(int) != testCase.want{
+			t.Errorf("case-%d: result is %v should be %d", caseId, result, testCase.want)
+		}
+	}
+}
