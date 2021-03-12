@@ -66,6 +66,112 @@ func GenerateBiTree(values []interface{}) *BiTreeNode {
 	return root
 }
 
+func Serialization(root *BiTreeNode) []interface{} {
+	if root == nil {
+		return nil
+	}
+	result := []interface{}{}
+	q := []*BiTreeNode{root}
+	for len(q) != 0{
+		tmp := []*BiTreeNode{}
+		var megerd bool = false
+		for _, elem := range q{
+			if elem != nil{
+				result = append(result, elem.Val)
+				if elem.Left != nil || elem.Right != nil{
+					megerd = true
+				}
+				tmp = append(tmp, elem.Left, elem.Right)
+			}else{
+				result = append(result, nil)
+			}
+		}
+		if megerd{
+			q = tmp
+		}else{
+			q = nil
+		}
+	}
+	return result
+}
+/* 思维方式不对
+func Tree2str(root *BiTreeNode) string{
+	serial := []byte{}
+	var dfs func(node *BiTreeNode)
+	dfs = func(node *BiTreeNode){
+		if node == nil{
+			serial = append(serial, '(', ')')
+			return
+		}
+		v := byte(node.Val.(int))
+		serial  = append(serial, '(', '0'+v)
+		if node.Left != nil || node.Right != nil{
+			dfs(node.Left)
+			dfs(node.Right)
+		}else if node.Left != nil{
+			dfs(node.Left)
+		}else if node.Right != nil{
+			dfs(node.Right)
+		}
+		serial = append(serial, ')' )
+	}
+	dfs(root)
+	return string(serial[1:len(serial)-1])
+}
+ */
+/*
+分4种情况：
+	1. 如果当前节点有两个孩子，那我们在递归时，需要在两个孩子的结果外都加上一层括号；
+	2. 如果当前节点没有孩子，那我们不需要在节点后面加上任何括号；
+	3. 如果当前节点只有左孩子，那我们在递归时，只需要在左孩子的结果外加上一层括号，而不需要给右孩子加上任何括号；
+	4. 如果当前节点只有右孩子，那我们在递归时，需要先加上一层空的括号()表示左孩子为空，再对右孩子进行递归，并在结果外加上一层括号。
+ */
+func Tree2str(root *BiTreeNode) string {
+	if root == nil{
+		return ""
+	}
+	v := fmt.Sprintf("%d", root.Val.(int))
+	if root.Left == nil && root.Right == nil{
+		return v
+	}
+	if root.Right == nil{
+		return fmt.Sprintf("%s(%s)", v, Tree2str(root.Left))
+	}
+	return fmt.Sprintf("%s(%s)(%s)", v, Tree2str(root.Left), Tree2str(root.Right))
+}
+
+func Tree2strIter(root *BiTreeNode) (serial string){
+	if root == nil{
+		return ""
+	}
+	stack := []*BiTreeNode{root}
+	// 迭代得到前序遍历的方法略有不同，由于这里需要输出额外的括号，因此我们还需要用一个集合存储所有遍历过的节点
+	// 当再次访问到节点时，出栈 以及 加闭括号 )
+	visited := map[*BiTreeNode]interface{}{}  // 节省资源的 map 只关心key
+	for len(stack) > 0{
+		top := stack[0] // GoLang 中栈的便宜操作
+		if _, ok := visited[top]; ok {
+			stack = stack[1:]
+			serial += ")"
+		}else{
+			visited[top]=nil
+			// 先在答案末尾添加一个 (，表示一个节点的开始，然后判断该节点的子节点个数
+			// 根据4种情况分别设置
+			serial = fmt.Sprintf("%s(%d", serial, top.Val.(int))
+			if top.Left == nil && top.Right != nil{
+				// 如果它只有右孩子，那么我们在答案末尾添加一个 () 表示空的左孩子，再将右孩子入栈
+				serial += "()"
+			}
+			if top.Right != nil{ // 前序遍历，右子树先入栈
+				stack = append([]*BiTreeNode{top.Right}, stack...)
+			}
+			if top.Left != nil{
+				stack = append([]*BiTreeNode{top.Left}, stack...)
+			}
+		}
+	}
+	return serial[1:len(serial)-1]
+}
 func PrintBiTree(root *BiTreeNode, t int) []interface{} {
 	switch t {
 	case PreOrder:
@@ -425,35 +531,6 @@ func layerDFS(list *[][]interface{}, root *BiTreeNode, height int) {
 	layerDFS(list, root.Right, height+1)
 }
 
-func Serialization(root *BiTreeNode) []interface{} {
-	if root == nil {
-		return nil
-	}
-	result := []interface{}{}
-	q := []*BiTreeNode{root}
-	for len(q) != 0{
-		tmp := []*BiTreeNode{}
-		var megerd bool = false
-		for _, elem := range q{
-			if elem != nil{
-				result = append(result, elem.Val)
-				if elem.Left != nil || elem.Right != nil{
-					megerd = true
-				}
-				tmp = append(tmp, elem.Left, elem.Right)
-			}else{
-				result = append(result, nil)
-			}
-		}
-		if megerd{
-			q = tmp
-		}else{
-			q = nil
-		}
-	}
-	return result
-}
-
 // leetcode-114  二叉树原地转换为单链表, 均用Left 连接
 func flatten_left(root *BiTreeNode)  {
 	if root == nil || root.Right == nil {
@@ -642,9 +719,118 @@ func diameterOfBinaryTree(root *BiTreeNode, diameter *int) int {
 
 //235：LCA: 求最近公共祖先-Lowest Common Ancestor
 func LowestCommonAncestor(root, p, q *BiTreeNode) *BiTreeNode {
-	return nil
+	if root == nil {
+		return nil
+	}
+	if root.Val == p.Val || root.Val == q.Val{
+		// 找到目标节点后，直接返回，不需要继续向下遍历
+		return root
+	}
+	left := LowestCommonAncestor(root.Left, p, q)
+	right := LowestCommonAncestor(root.Right, p, q)
+	if left != nil && right != nil {
+		// 其左右子树存在p和q，即找到LCA
+		return root
+	}
+	if left == nil{
+		return right
+	}
+	return left
 }
-
+/* golang map用法 - 1
+func LowestCommonAncestorHashMap(root, p, q *BiTreeNode) (lca *BiTreeNode) {
+	// 匿名结构体充当map值，后面赋值不方便
+	type Parent map[*BiTreeNode]struct{
+		parent	*BiTreeNode
+		visited	bool
+	}
+	parMap := Parent{}
+	var dfs func(node *BiTreeNode)*BiTreeNode
+	dfs = func(node *BiTreeNode)*BiTreeNode{
+		if node == nil{
+			return nil
+		}
+		left := dfs(node.Left)
+		right := dfs(node.Right)
+		if left != nil{
+			parMap[left] = struct{
+				parent	*BiTreeNode
+				visited	bool
+			}{node, false}
+		}
+		if right != nil{
+			parMap[right] = struct{
+				parent	*BiTreeNode
+				visited	bool
+			}{node, false}
+		}
+		return node
+	}
+	dfs(root)
+	for i := p; i != nil;{
+		if _, ok := parMap[i]; !ok{
+			break
+		}
+		parMap[i] = struct{
+			parent	*BiTreeNode
+			visited	bool
+		}{parMap[i].parent, true}
+		i = parMap[i].parent
+	}
+	for i := q; i != nil;{
+		if _, ok := parMap[i]; !ok || parMap[i].visited{
+			lca = i
+			break
+		}
+		i = parMap[i].parent
+	}
+	return lca
+}
+*/
+func LowestCommonAncestorHashMap(root, p, q *BiTreeNode) (lca *BiTreeNode) {
+	type ParNodeInfo struct {
+		parent	*BiTreeNode
+		visited	bool
+	}
+	type Parent map[*BiTreeNode]ParNodeInfo
+	parMap := Parent{}  // parMap 值为 Tree.Parent{}
+	var parMap2 Parent  // parMap2 值为 nil
+	fmt.Printf("%#v  %#v %#v\n", parMap, parMap2, parMap[nil])
+	// 输出 Tree.Parent{}  Tree.Parent(nil)  Tree.ParNodeInfo{parent:(*Tree.BiTreeNode)(nil), visited:false}
+	// 如果map中对应的key不存在，就返回： value类型的零值
+	var dfs func(node *BiTreeNode)*BiTreeNode
+	dfs = func(node *BiTreeNode)*BiTreeNode{
+		if node == nil{
+			return nil
+		}
+		left := dfs(node.Left)
+		right := dfs(node.Right)
+		if left != nil{
+			parMap[left] = ParNodeInfo{node, false}
+		}
+		if right != nil{
+			parMap[right] = ParNodeInfo{node, false}
+		}
+		return node
+	}
+	dfs(root)
+	for i := p; i != nil;{
+		if _, ok := parMap[i]; !ok{
+			break
+		}
+		// 非指针，嵌入结构体必须整体赋值
+		parMap[i] = ParNodeInfo{parMap[i].parent, true}
+		i = parMap[i].parent
+	}
+	for i := q; i != nil;{
+		if _, ok := parMap[i]; !ok || parMap[i].visited{
+			lca = i
+			break
+		}
+		i = parMap[i].parent
+	}
+	return lca
+}
 //572: subtree of another tree
 // 在判断「ss 的深度优先搜索序列包含 tt 的深度优先搜索序列」的时候，可以暴力匹配，也可以使用KMP 或者Rabin-Karp 算法，
 //在使用Rabin-Karp 算法的时候，要注意串中可能有负值。
@@ -828,4 +1014,58 @@ func IsSymmetric2(root *BiTreeNode) bool {
 		return dfs(node1.Left, node2.Right) && dfs(node1.Right, node2.Left)
 	}
 	return dfs(root.Left, root.Right)
+}
+
+func LeafSimilar(root1 *BiTreeNode, root2 *BiTreeNode) bool {
+	s1 := LeafSequence(root1)
+	s2 := LeafSequence(root2)
+	if len(s1) != len(s2){
+		return false
+	}
+	for idx, value := range s1{
+		if value != s2[idx]{
+			return false
+		}
+	}
+	return true
+}
+
+func LeafSequence(root *BiTreeNode)(leafs []interface{}){
+	var dfs func(node *BiTreeNode)
+	if root == nil{
+		return
+	}
+	dfs = func(node *BiTreeNode){
+		if node.Left == nil && node.Right == nil{
+			leafs = append(leafs, node.Val)
+		}
+		if node.Left != nil{
+			dfs(node.Left)
+		}
+		if node.Right != nil{
+			dfs(node.Right)
+		}
+	}
+	dfs(root)
+	return
+}
+//653: two sum问题，可以双指针或者hashMap
+func FindTwoSum(root *BiTreeNode, sum int)(target []*BiTreeNode) {
+	hashMap := map[int]*BiTreeNode{}
+	var dfs func(node *BiTreeNode)
+	dfs = func(node *BiTreeNode){
+		if node == nil{
+			return
+		}
+		u := node.Val.(int)
+		if v, ok := hashMap[sum - u]; ok{
+			target = append(target, node, v)
+		}else{
+			hashMap[u] = node
+		}
+		dfs(node.Left)
+		dfs(node.Right)
+	}
+	dfs(root)
+	return
 }

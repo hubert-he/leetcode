@@ -137,3 +137,106 @@ func TestDiameterOfBinaryTree(t *testing.T) {
 		}
 	}
 }
+
+func TestLowestCommonAncestorHashMap(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []interface{}
+		nodes []int
+		want int
+	}{
+		{[]interface{}{3,5,1,6,2,0,8,nil,nil,7,4}, []int{5,1}, 3},
+	}{
+		tree := GenerateBiTree(testCase.nums)
+		result := LowestCommonAncestorHashMap(tree, locateTreeNode(tree, testCase.nodes[0]), locateTreeNode(tree, testCase.nodes[1]))
+		if result == nil || result.Val.(int) != testCase.want{
+			t.Errorf("case-%d: result = %#v, but want %d", caseId, result, testCase.want)
+		}
+	}
+}
+
+func TestLowestCommonAncestor(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []interface{}
+		nodes []int
+		want int
+	}{
+		{[]interface{}{3,5,1,6,2,0,8,nil,nil,7,4}, []int{5,1}, 3},
+	}{
+		tree := GenerateBiTree(testCase.nums)
+		result := LowestCommonAncestor(tree, locateTreeNode(tree, testCase.nodes[0]), locateTreeNode(tree, testCase.nodes[1]))
+		if result == nil || result.Val.(int) != testCase.want{
+			t.Errorf("case-%d: result = %#v, but want %d", caseId, result, testCase.want)
+		}
+	}
+}
+
+func locateTreeNode(root *BiTreeNode, value interface{})*BiTreeNode{
+	if root == nil {
+		return nil
+	}
+	if root.Val == value{
+		return root
+	}
+	l := locateTreeNode(root.Left, value)
+	if l != nil {
+		return l
+	}
+	r := locateTreeNode(root.Right, value)
+	if r != nil{
+		return r
+	}
+	return  nil
+}
+
+func TestLeafSequence(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []interface{}
+		want []interface{}
+	}{
+		{[]interface{}{3,5,1,6,2,9,8,nil,nil,7,4}, []interface{}{6,7,4,9,8}},
+		{[]interface{}{3,5,1,6,7,4,2,nil,nil,nil,nil,nil,nil,9,11,nil,nil,8,10}, []interface{}{6,7,4,9,8,10}},
+	}{
+		tree := GenerateBiTree(testCase.nums)
+		result := LeafSequence(tree)
+		for idx, value := range result{
+			if testCase.want[idx] != value{
+				t.Errorf("case-%d: result = %#v, but want %d", caseId, result, testCase.want)
+				break
+			}
+		}
+	}
+}
+
+func TestLeafSimilar(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []interface{}
+		nums2 []interface{}
+		want bool
+	}{
+		{[]interface{}{3,5,1,6,2,9,8,nil,nil,7,4}, []interface{}{3,5,1,6,7,4,2,nil,nil,nil,nil,nil,nil,9,8}, true},
+		{[]interface{}{3,5,1,6,7,4,2,nil,nil,nil,nil,nil,nil,9,11,nil,nil,8,10}, []interface{}{3,5,1,6,2,9,8,nil,nil,7,4},false},
+	} {
+		tree := GenerateBiTree(testCase.nums)
+		tree2 := GenerateBiTree(testCase.nums2)
+		result := LeafSimilar(tree, tree2)
+		if result != testCase.want {
+			t.Errorf("case-%d: result = %#v, but want %v", caseId, result, testCase.want)
+		}
+	}
+}
+
+func TestTree2str(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []interface{}
+		want string
+	}{
+		{[]interface{}{1,2,3,4}, "1(2(4))(3)"},
+		{[]interface{}{1,2,3,nil,4}, "1(2()(4))(3)"},
+	}{
+		tree := GenerateBiTree(testCase.nums)
+		result := Tree2str(tree)
+		if result != testCase.want{
+			t.Errorf("case-%d: result = %s, but want %s", caseId, result, testCase.want)
+		}
+	}
+}
