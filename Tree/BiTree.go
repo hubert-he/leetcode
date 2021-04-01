@@ -92,7 +92,15 @@ func Serialization(root *BiTreeNode) []interface{} {
 			q = nil
 		}
 	}
-	return result
+	// TODO: 如何清理掉最后多余的nil
+	last := len(result)
+	for last > 0{
+		if result[last-1] != nil {
+			break;
+		}
+		last--
+	}
+	return result[:last]
 }
 /* 思维方式不对
 func Tree2str(root *BiTreeNode) string{
@@ -188,6 +196,8 @@ func PrintBiTree(root *BiTreeNode, t int) []interface{} {
 		return postOrderIterII(root)
 	case PostOrderIterIII:
 		return postOrderIterIII(root)
+	case PostOrderMorris:
+		return postOrderMorris(root)
 	case MidOrder:
 		return midOrder(root)
 	case MidOrderIter:
@@ -318,23 +328,28 @@ func midOrderIter(root *BiTreeNode) []interface{} {
 	return serial
 }
 
-func postOrderMorris(root *BiTreeNode) (list []interface{}) {
-	dump := &BiTreeNode{nil, root, nil}
-	cur := dump
+func postOrderMorris(root *BiTreeNode) (serial []interface{}) {
+	dumbRoot := &BiTreeNode{nil, root, nil}
+	cur := dumbRoot
 	for cur != nil {
 		if cur.Left == nil {
 			cur = cur.Right
 			continue
 		}
-		prev := cur.Left
-		for prev.Right != nil && prev.Right != cur {
-			prev = prev.Right
+		predecessor := cur.Left
+		for predecessor.Right != nil && predecessor.Right != cur {
+			predecessor = predecessor.Right
 		}
-		if prev.Right == nil {
-			prev.Right = cur
+		if predecessor.Right == nil {
+			predecessor.Right = cur
 			cur = cur.Left
 		}else{
-			prev.Right = nil
+			predecessor.Right = nil
+			tmp := []interface{}{}
+			for i := cur.Left; i != nil; i = i.Right{
+				tmp = append([]interface{}{i.Val}, tmp...)
+			}
+			serial = append(serial, tmp...)
 			cur = cur.Right
 		}
 	}
@@ -358,6 +373,9 @@ func postOrder(root *BiTreeNode) []interface{} {
    若非上述两种情况，则将P的右孩子和左孩子依次入栈，这样就保证了每次取栈顶元素的时候，左孩子在右孩子前面被访问，左孩子和右孩子都在根结点前面被访问。
 */
 func postOrderIter(root *BiTreeNode) []interface{} {
+	if root == nil {
+		return nil
+	}
 	var prev *BiTreeNode
 	serial := []interface{}{}
 	stack := []*BiTreeNode{root}
@@ -387,6 +405,23 @@ func postOrderIter(root *BiTreeNode) []interface{} {
 /*
 此方法是 仿照前序遍历方式，然后再逆转。注意此与前序不同点 在于先left进栈， 后right进栈,即先访问右 再左
 */
+func postOrderIterII(root *BiTreeNode) (serial []interface{}) {
+	stack := []*BiTreeNode{}
+	cur := root
+	for cur != nil || len(stack) > 0 {
+		if cur != nil {
+			// 逆向插入，不需要后面整体reverse: 后序遍历： 左 右 根
+			serial = append([]interface{}{cur.Val}, serial...)
+			stack = append([]*BiTreeNode{cur}, stack...)
+			cur = cur.Right // 因为是逆向插入，先插入右边
+		}else{
+			cur = stack[0].Left
+			stack = stack[1:]
+		}
+	}
+	return
+}
+/* 不够简洁
 func postOrderIterII(root *BiTreeNode) []interface{} {
 	serial := []interface{}{}
 	stack := []*BiTreeNode{root}
@@ -407,9 +442,11 @@ func postOrderIterII(root *BiTreeNode) []interface{} {
 	}
 	return serial
 }
+ */
 
 /*
-   对于任一结点P，将其入栈，然后沿其左子树一直往下搜索，直到搜索到没有左孩子的结点，此时该结点出现在栈顶，但是此时不能将其出栈并访问，因此其右孩子还为被访问。
+   对于任一结点P，将其入栈，然后沿其左子树一直往下搜索，直到搜索到没有左孩子的结点，此时该结点出现在栈顶，但是此时不能将其出栈并访问，
+   因为其右孩子还为被访问。
    所以接下来按照相同的规则对其右子树进行相同的处理，当访问完其右孩子时，该结点又出现在栈顶，此时可以将其出栈并访问。这样就保证了正确的访问顺序。
     可以看出，在这个过程中，每个结点都两次出现在栈顶，只有在第二次出现在栈顶时，才能访问它。因此需要多设置一个变量标识该结点是否是第一次出现在栈顶。
 */
@@ -441,6 +478,41 @@ func postOrderIterIII(root *BiTreeNode) []interface{} {
 		}
 	}
 	return serial
+}
+
+func Find(root *BiTreeNode, key interface{}) (node *BiTreeNode){
+	if root == nil {
+		return
+	}
+	st := []*BiTreeNode{root}
+	for len(st) > 0 {
+		if st[0].Val == key{
+			return st[0]
+		}
+		tmp := []*BiTreeNode{}
+		if st[0].Left != nil {
+			tmp = append(tmp, st[0].Left)
+		}
+		if st[0].Right != nil {
+			tmp = append(tmp, st[0].Right)
+		}
+		st = append(tmp, st[1:]...)
+	}
+	return
+}
+
+func addParent(root *BiTreeNode) ( map[*BiTreeNode]*BiTreeNode) {
+	parents := make(map[*BiTreeNode]*BiTreeNode)
+	var dfs func(*BiTreeNode, *BiTreeNode)
+	dfs = func(node, parent *BiTreeNode){
+		if node != nil{
+			parents[node] = parent
+			dfs(node.Left, node)
+			dfs(node.Right, node)
+		}
+	}
+	dfs(root, nil)
+	return parents
 }
 
 func layerOrder(root *BiTreeNode) []interface{} {
@@ -1068,4 +1140,423 @@ func FindTwoSum(root *BiTreeNode, sum int)(target []*BiTreeNode) {
 	}
 	dfs(root)
 	return
+}
+
+// 1469 寻找所有的独生节点
+/*
+二叉树中，如果一个节点是其父节点的唯一子节点，则称这样的节点为 “独生节点” 。
+ 二叉树的根节点不会是独生节点，因为它没有父节点。
+给定一棵二叉树的根节点 root ，返回树中 所有的独生节点的值所构成的数组 。
+ 数组的顺序 不限 。
+示例 1：
+输入：root = [1,2,3,null,4]
+输出：[4]
+解释：浅蓝色的节点是唯一的独生节点。
+节点 1 是根节点，不是独生的。
+节点 2 和 3 有共同的父节点，所以它们都不是独生的。
+提示：
+tree 中节点个数的取值范围是 [1, 1000]。
+每个节点的值的取值范围是 [1, 10^6]。
+*/
+func GetLonelyNodes(root *BiTreeNode) (nodes []interface{}) {
+	var dfs func(node, parent *BiTreeNode)
+	dfs = func(node, parent *BiTreeNode){
+		if node == nil{
+			return
+		}
+		if parent != nil{
+			if !(parent.Left != nil && parent.Right != nil){
+				nodes = append(nodes, node.Val)
+			}
+		}
+		dfs(node.Left, node)
+		dfs(node.Right, node)
+	}
+	dfs(root, nil)
+	return
+}
+// 623. Add One Row to Tree
+func AddOneRow(root *BiTreeNode, val int, depth int) *BiTreeNode {
+	if depth == 1{
+		return &BiTreeNode{Val: val, Left: root}
+	}
+	var dfs func(*BiTreeNode, int)
+	dfs = func(node *BiTreeNode, height int){
+		if node == nil{
+			return
+		}
+		if height == depth - 1{
+			node.Left = &BiTreeNode{Val: val, Left: node.Left}
+			node.Right = &BiTreeNode{Val: val, Right: node.Right}
+		}
+		dfs(node.Left, height + 1)
+		dfs(node.Right, height + 1)
+	}
+	dfs(root, 1)
+	return root
+}
+// depth直接与高度一致来做判断，条件判断多
+func AddOneRow1(root *BiTreeNode, val int, depth int) *BiTreeNode {
+	if depth <= 1{
+		if root != nil{
+			return &BiTreeNode{Val: val, Left: root}
+		}else{
+			return &BiTreeNode{Val: val}
+		}
+	}
+	var dfs func(*BiTreeNode, *BiTreeNode, int)
+	dfs = func(node, parent *BiTreeNode, height int){
+		if node == nil{
+			return
+		}
+		if height == depth-1{
+			node.Left = &BiTreeNode{Val:val, Left: node.Left}
+			node.Right = &BiTreeNode{Val:val, Right: node.Right}
+			return
+		}
+		dfs(node.Left, node, height+1)
+		dfs(node.Right, node, height+1)
+	}
+	dfs(root, nil, 1)
+	return root
+}
+func AddOneRow2(root *BiTreeNode, val int, depth int) *BiTreeNode {
+	if depth <= 1{
+		if root != nil{
+			return &BiTreeNode{Val: val, Left: root}
+		}else{
+			return &BiTreeNode{Val: val}
+		}
+	}
+	var dfs func(*BiTreeNode, *BiTreeNode, int, bool)
+	dfs = func(node, parent *BiTreeNode, height int, left bool){
+		if height == depth{
+			if left {
+				parent.Left = &BiTreeNode{Val: val, Left: node}
+			}else{
+				parent.Right = &BiTreeNode{Val: val, Right: node}
+			}
+			return
+		}
+		if node == nil{
+			return
+		}
+		dfs(node.Left, node, height+1, true)
+		dfs(node.Right, node, height+1, false)
+	}
+	dfs(root, nil, 1, true)
+	return root
+}
+
+// 652. Find Duplicate Subtrees
+func FindDuplicateSubtrees(root *BiTreeNode) (subTreeRoot []*BiTreeNode) {
+	serials := map[string]int{}
+	count := map[string]bool{}
+	var dfs func(node *BiTreeNode)int
+	factor := 1
+	dfs = func(node *BiTreeNode) int{
+		if node == nil{
+			return 0
+		}
+		tupleString := fmt.Sprintf("%d#%d#%d", node.Val, dfs(node.Left), dfs(node.Right))
+		if _,ok := serials[tupleString]; !ok{
+			factor++
+			serials[tupleString] = factor
+			count[tupleString] = true
+		}else{
+			if count[tupleString]{
+				subTreeRoot = append([]*BiTreeNode{node}, subTreeRoot...)
+				count[tupleString] = false
+			}
+		}
+		return serials[tupleString]
+	}
+	dfs(root)
+	return
+}
+
+func FindDuplicateSubtrees_TupleThing(root *BiTreeNode) (subTreeRoot []*BiTreeNode) {
+	type tuple struct{
+		root,left,right int
+	}
+	serials := map[tuple]int{}
+	count := map[tuple]bool{}
+	var dfs func(node *BiTreeNode)int
+	factor := 1
+	dfs = func(node *BiTreeNode) int{
+		if node == nil{
+			return 0
+		}
+		tupleThing := tuple{node.Val.(int), dfs(node.Left), dfs(node.Right)}
+		if _,ok := serials[tupleThing]; !ok{
+			factor++
+			serials[tupleThing] = factor
+			count[tupleThing] = true
+		}else{
+			if count[tupleThing]{
+				subTreeRoot = append([]*BiTreeNode{node}, subTreeRoot...)
+				count[tupleThing] = false
+			}
+		}
+		return serials[tupleThing]
+	}
+	dfs(root)
+	return
+}
+
+// 863. All Nodes Distance K in Binary Tree
+func DistanceK(root *BiTreeNode, target *BiTreeNode, K int) []int {
+	//adj := make([][]bool, 8)
+	adj := [][]bool{}
+	nodes := map[*BiTreeNode]int{}
+	index := 0
+	var dfs func(node, parent *BiTreeNode)
+	dfs = func(node, parent *BiTreeNode){
+		if node == nil {
+			return
+		}
+		nodes[node] = index
+		index++
+		adj = append(adj, make([]bool, index))
+		if parent != nil{
+			adj[nodes[node]][nodes[parent]] = true
+			//adj[nodes[parent]][nodes[node]] = true 二叉树的邻接矩阵是个对称矩阵
+		}
+		dfs(node.Left, node)
+		dfs(node.Right, node)
+	}
+	dfs(root, nil)
+	// 输出邻接矩阵
+	//fmt.Println(adj)
+	t := []int{nodes[target]}
+	pre := []int{}
+	for i := 0; i < K; i++{
+		tmp := []int{}
+		for _, value := range t{
+			length := len(adj[value])
+			for i := 0; i < len(adj); i++{
+				v := false
+				if length <= i{
+					v = adj[i][value]
+				}else{
+					v = adj[value][i]
+				}
+				if v {
+					m := 0
+					for m < len(pre){
+						if pre[m] == i{
+							break
+						}
+						m++
+					}
+					if m >= len(pre){
+						tmp = append(tmp, i)
+					}
+				}
+			}
+		}
+		pre = t
+		t = tmp
+	}
+	answer := []int{}
+	for _, v := range t{
+		for key,value := range nodes{
+			if v == value{
+				answer = append(answer, key.Val.(int))
+				break
+			}
+		}
+	}
+	fmt.Println(answer)
+	return nil
+}
+
+func DistanceK2(root *BiTreeNode, target *BiTreeNode, K int) []interface{} {
+	answer := []interface{}{}
+	var dfs func(node *BiTreeNode) int
+	var findInSubTree func(node *BiTreeNode, disc int)
+	dfs = func(node *BiTreeNode) int{
+		if node == nil {
+			return -1
+		}
+		if node == target{
+			findInSubTree(target, K)
+			return K
+		}
+		lk := dfs(node.Left)
+		rk := dfs(node.Right)
+		switch {
+		case lk < 0 && rk < 0:
+			return -1
+		case lk < 0:
+			if rk == 1{
+				answer = append(answer, node.Val)
+			}else{
+				findInSubTree(node.Left, rk - 2)
+			}
+			return rk - 1
+		case rk < 0:
+			if lk == 1{
+				answer = append(answer, node.Val)
+			}else{
+				findInSubTree(node.Right, lk - 2)
+			}
+		}
+		return lk - 1
+	}
+	findInSubTree = func(node *BiTreeNode, disc int){
+		if node != nil {
+			if disc == 0{
+				answer = append(answer, node.Val)
+			}else{
+				findInSubTree(node.Left, disc - 1)
+				findInSubTree(node.Right, disc - 1)
+			}
+		}
+	}
+	dfs(root)
+	return answer
+}
+
+func DistanceK3(root, target *BiTreeNode, K int) (answer []interface{}) {
+	var dfs func(node *BiTreeNode) (disc int)
+	var findKinSubtree func(*BiTreeNode, int)
+	dfs = func(node *BiTreeNode)(disc int){
+		if node == nil{
+			return -1
+		}
+		// 情况1：子树中距离target节点的距离为K的所有节点加入answer
+		if node == target{
+			findKinSubtree(node, 0)
+			return 0 // 定义target到target节点的距离位0
+			//return 1 // 定义target到target节点的距离位1
+		}
+		// target 节点必定在node的左子树或者右子树上，不可能同时在左和右子树
+		lk := dfs(node.Left)
+		rk := dfs(node.Right)
+		// 情况2： target在node左子树中：假设target距离node的距离为lk+1，找出右子树中距离target节点K-lk-1距离的所有节点加入结果集
+		if lk != -1 {
+		//  if lk == K { // 定义target到target节点的距离为1
+			if lk + 1 == K{// 定义target到target节点的距离为0
+				answer = append(answer, node.Val)
+			}
+			//转右子树找K-lk-1的节点
+			//findKinSubtree(node.Right, lk + 1) // 定义target到target节点的距离位1
+			findKinSubtree(node.Right, lk + 2) // 定义target到target节点的距离为0，+2原因是左右两支
+			return lk + 1
+		}
+		// 情况3：target在node的右子树中
+		if rk != -1 {
+		//	if rk == K{ // 定义target到target节点的距离为1
+			if rk + 1 == K{ // 定义target到target节点的距离为0
+				answer = append(answer, node.Val)
+			}
+			//findKinSubtree(node.Left, rk + 1)
+			findKinSubtree(node.Left, rk + 2)
+			return rk + 1
+		}
+		//情况4：target 不在节点的子树中，无需处理
+		return -1
+	}
+	findKinSubtree = func(node *BiTreeNode, disc int){
+		if node == nil{
+			return
+		}
+		if disc == K{
+			answer = append(answer, node.Val)
+			return
+		}
+		findKinSubtree(node.Left, disc + 1)
+		findKinSubtree(node.Right, disc + 1)
+	}
+	dfs(root)
+	return
+}
+// 对所有节点添加一个指向父节点的引用
+func DistanceK4(root, target *BiTreeNode, K int) (answer []interface{}) {
+	parents := addParent(root)
+	queue := []*BiTreeNode{target}
+	cnt := 0
+	visited := make(map[*BiTreeNode]interface{})
+	for len(queue) != 0 && cnt < K{
+		tmp := []*BiTreeNode{}
+		seen := make(map[*BiTreeNode]interface{})
+		for _, value := range queue{
+			seen[value] = nil
+			if _, ok := visited[value.Left]; !ok && value.Left != nil {
+				tmp = append(tmp, value.Left)
+			}
+			if _, ok := visited[value.Right]; !ok && value.Right != nil {
+				tmp = append(tmp, value.Right)
+			}
+			if _, ok := visited[parents[value]]; !ok && parents[value] != nil {
+				tmp = append(tmp, parents[value])
+			}
+		}
+		queue = tmp
+		visited = seen
+		cnt++
+	}
+	for _, value := range queue{
+		answer = append(answer, value.Val)
+	}
+	return
+}
+
+/*
+  类似于斐波那契数列的求解：
+   令 FBT(N) 作为所有含 N 个结点的可能的满二叉树的列表。
+   每个满二叉树 T 含有 3 个或更多结点，在其根结点处有 2 个子结点。这些子结点 left 和 right 本身就是满二叉树。
+   因此，对于N ≥ 3，我们可以设定如下的递归策略：FBT(N)=[对于所有的 xx，所有的树的左子结点来自FBT(x) 而右子结点来自FBT(N−1−x)]。
+优化：
+  	1. 通过简单的计数参数，没有满二叉树具有正偶数个结点。
+	2. 我们应该缓存函数FBT之前的结果，这样我们就不必在递归中重新计算它们
+ */
+func AllPossibleFBT(n int) []*BiTreeNode {
+	cache := make(map[int][]*BiTreeNode) // 优化：缓存中间结果
+	var dfs func(N int)[]*BiTreeNode
+	dfs = func(N int)[]*BiTreeNode{
+		if N == 1{
+			return []*BiTreeNode{&BiTreeNode{}}
+		}
+		// 优化：N 必须是奇数 否则不能构成FST
+		if N % 2 == 0{
+			return nil
+		}
+		// 优化：缓存中间结果
+		if _, ok := cache[N]; ok {
+			return cache[N]
+		}
+		var rootSet []*BiTreeNode
+		for i := 0; i < N; i++{
+			j := N - i - 1
+			for _, left := range dfs(i){
+				for _, right := range dfs(j) {
+					root := &BiTreeNode{}
+					root.Left = left
+					root.Right = right
+					rootSet = append(rootSet, root)
+				}
+			}
+		}
+		// 优化：缓存中间结果
+		cache[N] = rootSet
+		return rootSet
+	}
+	return dfs(n)
+}
+// 1325. Delete Leaves With a Given Value
+func RemoveLeafNodes(root *BiTreeNode, target int) *BiTreeNode {
+	if root == nil{
+		return nil
+	}
+	if root.Left == nil && root.Right == nil && root.Val == target{
+		return nil
+	}
+	root.Left = RemoveLeafNodes(root.Left, target)
+	root.Right = RemoveLeafNodes(root.Right, target)
+	if root.Left == nil && root.Right == nil && root.Val == target{
+		return nil
+	}
+	return root
 }

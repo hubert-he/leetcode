@@ -58,6 +58,40 @@ func TestBinarySearchTree_FindMode(t *testing.T) {
 	}
 }
 
+func TestDeleteNode(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums 	[]interface{}
+		key 	int
+		want 	[]interface{}
+	}{
+		{[]interface{}{}, 0, []interface{}{}},
+		{[]interface{}{1}, 0, []interface{}{1}},
+		{[]interface{}{1}, 1, []interface{}{}},
+		{[]interface{}{2, 1}, 2, []interface{}{1}},
+		{[]interface{}{2, 1}, 1, []interface{}{2}},
+		{[]interface{}{50,30,70,nil,40,60,80}, 50,[]interface{}{60,30,70,nil,40,nil,80}}, // 删root
+		{[]interface{}{5,3,6,2,4,nil,7}, 7,[]interface{}{5,3,6,2,4}}, // 删叶子
+		{[]interface{}{5,3,6,2,4,nil,7}, 3,[]interface{}{5,4,6,2,nil,nil,7}}, // 删中间节点
+		{[]interface{}{5,3,6,2,nil,nil,7}, 3,[]interface{}{5,2,6,nil,nil,nil,7}}, // 删中间节点,没有右子树
+		{[]interface{}{10,5,11,2,9,nil,nil,nil,nil,7,nil,nil,8}, 5, []interface{}{10,7,11,2,9,nil,nil,nil,nil, 8}},
+		{[]interface{}{5,3,6,2,4,nil,7}, 0,[]interface{}{5,3,6,2,4,nil,7}}, // 删不存在可以
+	}{
+		tree := NewBSTFromPlainList(testCase.nums)
+		tree.DeleteNode2(testCase.key)
+		result := Serialization(tree.root)
+		if len(result) != len(testCase.want){
+			t.Errorf("case-%d: result is %d should be %d", caseId, result, testCase.want)
+			break
+		}
+		for idx, value := range result{
+			if value != testCase.want[idx]{
+				t.Errorf("case-%d: result is %d should be %d", caseId, result, testCase.want)
+				break
+			}
+		}
+	}
+}
+
 func TestConvertBiNode(t *testing.T) {
 	for caseId, testCase := range []struct{
 		nums []interface{}
