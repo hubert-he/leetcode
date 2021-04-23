@@ -41,4 +41,9 @@ func main() {
 	num = []interface{}{0,nil,1,nil,2,nil,3,4}
 	tree = Tree.GenerateBiTree(num)
 	fmt.Println(Tree.DistanceK4(tree, Tree.Find(tree, 2), 2))
+
+	//Tree.ConstructFromPrePost([]int{1,2,4,5,3,6,7}, []int{4,5,2,6,7,3,1})
+	bstree := Tree.NewBSTFromPlainList([]interface{}{6,4,nil,3,5,1,nil,nil,nil,nil,2})
+	fmt.Println(Tree.BSTSequences(bstree))
+
 }

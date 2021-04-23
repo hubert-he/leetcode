@@ -1,11 +1,35 @@
 package Tree
 
 import (
+	"fmt"
 	"math"
 )
 
 type BinarySearchTree struct {
 	root *BiTreeNode
+}
+// 173. Binary Search Tree Iterator
+type BSTIterator struct {
+	stack	[]*BiTreeNode
+	cur		*BiTreeNode
+}
+
+func Constructor(root *BiTreeNode) BSTIterator {
+	return BSTIterator{cur: root}
+}
+
+func (this *BSTIterator) Next() interface{}{
+	for node := this.cur; node != nil; node = node.Left{
+		this.stack = append([]*BiTreeNode{node}, this.stack...)
+	}
+	this.cur, this.stack = this.stack[0], this.stack[1:]
+	val := this.cur.Val
+	this.cur = this.cur.Right
+	return val
+}
+
+func (this *BSTIterator) HasNext() bool {
+	return this.cur != nil || len(this.stack) > 0
 }
 
 func (tree * BinarySearchTree)GetRoot() *BiTreeNode{
@@ -477,8 +501,73 @@ func traval(root *BiTreeNode, ch chan interface{}) {
 	close(ch)
 }
 
-
-
+// 04.09. 二叉搜索树序列
+/* backtracking
+  1. 确定回溯函数返回值以及参数
+  2. 确定回溯函数终止条件
+  3. 确定回溯函数遍历过程
+模板：
+  void backtracking(参数) {
+     if 终止条件 {
+ 		存放结果
+		return
+     }
+	for 选择：本层集合中元素 {
+		处理结点
+		backtracking(路径，选择列表)
+		回溯，撤销处理结果
+	}
+  }
+	回溯算法除了要维护一个path用来保存路径之外，还需要额外维护一个候选节点队列dq
+	择使用双端队列来维护候选队列，这样每次插入和回溯的时间复杂度都可以降到O(1).
+ */
+func BSTSequences(tree *BinarySearchTree) (result [][]interface{}) {
+	root := tree.root
+	if root == nil {
+		// return nil 会返回 []int{}
+		return [][]interface{}{}
+	}
+	dq := []*BiTreeNode{root}
+	var dfs func(path []interface{}, dq []*BiTreeNode)
+	cnt := 0
+	dfs = func(path []interface{}, dq []*BiTreeNode){
+		size := len(dq)
+		if size == 0{
+			result = append(result, append([]interface{}{}, path...))
+			//result = append(result, path)  底层数据存在共享，因此需要copy
+			return
+		}
+		cc := cnt
+		cnt++
+		for i := 0; i < size; i++{
+			fmt.Printf("~%d~%d: ", cc,i)
+			for _,value := range dq{
+				fmt.Printf("%v ", value.Val)
+			}
+			fmt.Println("")
+			cur := dq[0]
+			dq = dq[1:]
+			path = append(path, cur.Val)
+			if cur.Left != nil {
+				dq = append(dq, cur.Left)
+			}
+			if cur.Right != nil {
+				dq = append(dq, cur.Right)
+			}
+			dfs(path, dq)
+			fmt.Printf("-%d-%d: ", cc,i)
+			for _,value := range dq{
+				fmt.Printf("%v ", value.Val)
+			}
+			fmt.Println(path, size)
+			dq = dq[0:size - 1]
+			dq = append(dq, cur)
+			path = path[:len(path) - 1]
+		}
+	}
+	dfs([]interface{}{}, dq)
+	return
+}
 
 
 

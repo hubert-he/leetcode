@@ -809,6 +809,37 @@ func LowestCommonAncestor(root, p, q *BiTreeNode) *BiTreeNode {
 	}
 	return left
 }
+
+func LowestCommonAncestorII(root, p, q *BiTreeNode) *BiTreeNode {
+	var lca *BiTreeNode
+	var dfs func(node *BiTreeNode) *BiTreeNode
+	dfs = func(node *BiTreeNode) *BiTreeNode{
+		if node == nil {
+			return  nil
+		}
+		left := dfs(node.Left)
+		right := dfs(node.Right)
+		// node是lca 区分2种情况，node 是 p q 其中一个，或者 left right 都不为空
+		if node == p || node == q{
+			if left != nil || right != nil {
+				lca = node
+			}
+			return node
+		}else{
+			if left != nil && right != nil {
+				lca = node
+				return node
+			}
+			if left != nil || right != nil {
+				return node
+			}
+		}
+		return nil
+	}
+	dfs(root)
+	return lca
+}
+
 /* golang map用法 - 1
 func LowestCommonAncestorHashMap(root, p, q *BiTreeNode) (lca *BiTreeNode) {
 	// 匿名结构体充当map值，后面赋值不方便
@@ -1559,4 +1590,106 @@ func RemoveLeafNodes(root *BiTreeNode, target int) *BiTreeNode {
 		return nil
 	}
 	return root
+}
+// 889. Construct Binary Tree from Preorder and Postorder Traversal
+func ConstructFromPrePostorder(pre []int, post []int) *BiTreeNode {
+	if len(pre) == 0{
+		return  nil
+	}
+	//fmt.Println(pre, post)
+	root := &BiTreeNode{Val: pre[0]}
+	if len(pre) == 1{
+		return root
+	}
+	/* 逻辑混乱
+	locPost := FindElemFromSlice(post, pre[1])
+	locPre := 0
+	if locPost != 0{
+		locPre = FindElemFromSlice(pre, post[locPost - 1])
+	}
+	fmt.Println(locPost, locPre, post, pre)
+	root.Left = ConstructFromPrePost(pre[1:locPre+1], post[:locPost+1])
+	root.Right = ConstructFromPrePost(pre[locPre+1:], post[locPost+1:len(post)-1])
+	 */
+	/*
+	   我们令左分支有 L 个节点。我们知道左分支的头节点为 pre[1]，但它也出现在左分支的后序表示的最后。
+	   所以 pre[1] = post[L-1]（因为结点的值具有唯一性），因此 L = post.indexOf(pre[1]) + 1。
+	   现在在我们的递归步骤中，左分支由 pre[1 : L+1] 和 post[0 : L] 重新分支，而右分支将由 pre[L+1 : N] 和 post[L : N-1] 重新分支。
+	 */
+	L := FindElemFromSlice(post, pre[1]) + 1 // 左分支节点个数
+	fmt.Println(pre, post, L)
+	root.Left = ConstructFromPrePostorder(pre[1:L+1], post[:L])
+	root.Right = ConstructFromPrePostorder(pre[L+1:], post[L:len(post) - 1])
+	return root
+}
+func FindElemFromSlice(a []int, target int)int{
+	for idx, value := range a{
+		if target == value{
+			return idx
+		}
+	}
+	return -1
+}
+
+// 105. Construct Binary Tree from Preorder and Inorder Traversal
+func ContructTreeFromPreInorder(preorder []int, inorder []int) *BiTreeNode {
+	if len(preorder) <= 0{
+		return nil
+	}
+	root := BiTreeNode{Val: preorder[0]}
+	pos := FindElemFromSlice(inorder, root.Val.(int))
+	root.Left = ContructTreeFromPreInorder(preorder[1:pos+1], inorder[:pos])
+	root.Right = ContructTreeFromPreInorder(preorder[pos+1:], inorder[pos+1:])
+	return &root
+}
+
+// 105. 迭代版
+func ContructTreeFromPreInorder_iter(preorder []int, inorder []int) *BiTreeNode {
+	if len(preorder) <= 0{
+		return nil
+	}
+	root := &BiTreeNode{Val: preorder[0]}
+	st := []*BiTreeNode{root}
+	index := 0
+	for _, value := range preorder[1:]{
+		if st[0].Val == inorder[index]{ // 栈顶节点没有左孩子，value必须为栈中某个节点的右孩子,如何找到此节点
+			// 栈中的节点的顺序和它们在前序遍历中出现的顺序是一致的，而且每一个节点的右儿子都还没有被遍历过，
+			//那么这些节点的顺序和它们在中序遍历中出现的顺序一定是相反的
+			node := st[0]
+			for len(st) > 0 && st[0].Val == inorder[index]{
+				node = st[0]
+				st = st[1:]
+				index++
+			}
+			node.Right = &BiTreeNode{Val: value}
+			st = append([]*BiTreeNode{node.Right}, st...)
+		}else{
+			st[0].Left = &BiTreeNode{Val: value}
+			st = append([]*BiTreeNode{st[0].Left}, st...)
+		}
+	}
+	return root
+}
+
+// 106. Construct Binary Tree from Inorder and Postorder Traversal
+func ContructTreeFromInPostorder(inorder []int, postorder []int) *BiTreeNode {
+	if len(postorder) <= 0 {
+		return nil
+	}
+	value := postorder[len(postorder) - 1]
+	root := BiTreeNode{Val: value}
+	pos := FindElemFromSlice(inorder, value)
+	root.Left = ContructTreeFromInPostorder(inorder[:pos], postorder[:pos])
+	root.Right = ContructTreeFromInPostorder(inorder[pos+1:], postorder[pos:len(postorder)-1])
+	return &root
+}
+/*
+对于后序遍历中的任意两个连续节点 u 和 v（在后序遍历中，u 在 v 的前面），根据后序遍历的流程，我们可以知道 u 和 v 只有两种可能的关系：
+1. u 是 v 的右儿子。这是因为在遍历到 u 之后，下一个遍历的节点就是 v 的双亲节点，即 v；
+2. v 没有右儿子，并且 u 是 v 的某个祖先节点（或者 v 本身）的左儿子。
+   如果 v 没有右儿子，那么上一个遍历的节点就是 v 的左儿子。
+   如果 v 没有左儿子，则从 v 开始向上遍历 v 的祖先节点，直到遇到一个有左儿子（且 v 不在它的左儿子的子树中）的节点va, 那么u 就是 va 的左儿子。
+ */
+func ContructTreeFromInPostorder_iter(inorder []int, postorder []int) *BiTreeNode {
+	return nil
 }

@@ -1,6 +1,10 @@
 package Tree
 
-import "testing"
+import (
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
 
 func TestBinarySearchTree_GetMinimumDifference(t *testing.T) {
 	for caseId, testCase := range []struct{
@@ -131,5 +135,21 @@ func TestClosestValue(t *testing.T)  {
 		if result == nil || result.Val.(int) != testCase.want{
 			t.Errorf("case-%d: result is %v should be %d", caseId, result, testCase.want)
 		}
+	}
+}
+
+func TestBSTSequences(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []interface{}
+		want [][]interface{}
+	}{
+		{[]interface{}{}, [][]interface{}{}},
+		//	{[]interface{}{1}, },
+		{[]interface{}{6,4,nil,3,5,1,nil,nil,nil,nil,2}, [][]interface{}{{6,4,3,5,1,2},{6,4,3,1,5,2},{6,4,3,1,2,5},{6,4,5,3,1,2}}},
+	} {
+		tree := NewBSTFromPlainList(testCase.nums)
+		result := BSTSequences(tree.root)
+
+		assert.Equal(t, result, testCase.want, fmt.Sprintf("case-%d result=%v want=%v", caseId, result, testCase.want))
 	}
 }
