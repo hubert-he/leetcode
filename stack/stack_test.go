@@ -106,6 +106,27 @@ func TestStack_Top(t *testing.T) {
 			{[]interface{}{}, nil},
 		}{
 			st := Construct(testCase.arr)
-			assert.Equal(t, testCase.want, st.Top(), fmt.Sprintf("case-%d failed: top=%v shoule be %v", caseId, st.Top(), testCase.want))
+			status := assert.Equal(t, testCase.want, st.Top(), fmt.Sprintf("case-%d failed: top=%v shoule be %v", caseId, st.Top(), testCase.want))
+			if !status{
+				break
+			}
 		}
+}
+
+func TestEvalRPN(t *testing.T) {
+	for caseId, testCase := range []struct{
+		tokens		[]string
+		want		int
+	}{
+		{[]string{"18"}, 18}, // 特殊的例子
+		{[]string{"2","1","+","3","*"}, 9},
+		{[]string{"4","13","5","/","+"}, 6},
+		{[]string{"10","6","9","3","+","-11","*","/","*","17","+","5","+"}, 22},
+	}{
+		result := EvalRPN(testCase.tokens)
+		status := assert.Equal(t, testCase.want, result, fmt.Sprintf("case-%d failed: result=%d want=%d", caseId, result, testCase.want))
+		if !status{
+			break
+		}
+	}
 }
