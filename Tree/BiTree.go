@@ -7,9 +7,11 @@ import (
 )
 
 type BiTreeNode struct {
-	Val   interface{}
-	Left  *BiTreeNode
-	Right *BiTreeNode
+	Val		interface{}
+	Left	*BiTreeNode
+	Right	*BiTreeNode
+	Next	*BiTreeNode // for next problem
+	Parent	*BiTreeNode
 }
 
 type ListNode struct {
@@ -38,7 +40,7 @@ func GenerateBiTree(values []interface{}) *BiTreeNode {
 		return nil
 	}
 	var Queue = []*BiTreeNode{}
-	root = &BiTreeNode{values[0], nil, nil}
+	root = &BiTreeNode{Val: values[0], Left: nil, Right: nil}
 	Queue = append(Queue, root)
 	index := 1
 	for len(Queue) != 0 {
@@ -54,11 +56,11 @@ func GenerateBiTree(values []interface{}) *BiTreeNode {
 		cursor = Queue[0]
 		Queue = Queue[1:]
 		if left != nil {
-			cursor.Left = &BiTreeNode{left, nil, nil}
+			cursor.Left = &BiTreeNode{Val: left, Left: nil, Right: nil}
 			Queue = append(Queue, cursor.Left)
 		}
 		if right != nil {
-			cursor.Right = &BiTreeNode{right, nil, nil}
+			cursor.Right = &BiTreeNode{Val: right, Left: nil, Right: nil}
 			Queue = append(Queue, cursor.Right)
 		}
 
@@ -1693,3 +1695,52 @@ func ContructTreeFromInPostorder(inorder []int, postorder []int) *BiTreeNode {
 func ContructTreeFromInPostorder_iter(inorder []int, postorder []int) *BiTreeNode {
 	return nil
 }
+// 116. Populating Next Right Pointers in Each Node
+func Connect(root *BiTreeNode) *BiTreeNode {
+	if root == nil {
+		return nil
+	}
+	var dfs func(node1, node2 *BiTreeNode)
+	dfs = func(node1, node2 *BiTreeNode){
+		if node1 == nil {
+			return
+		}
+		node1.Next = node2
+		dfs(node1.Left, node1.Right)
+		dfs(node2.Left, node2.Right)
+		dfs(node1.Right, node2.Left)
+	}
+	dfs(root.Left, root.Right)
+	return root
+}
+/* 使用已建立的next指针
+	1. 从根节点开始，第0层只有一个节点，故不需要连接，直接为第1层节点建立next指针即可。
+    该算法中需要注意的一点是，当为第N层节点建立next指针时，处于第N-1层。当第 N 层节点的next指针全部建立完成后，转移至第N层，建立N+1层节点的next指针
+    2. 遍历某一层的节点时，这层节点的next指针已经建立。因此只需知道这一层的最左节点 就可以按照链表方式遍历，不需要队列
+    伪代码：
+    leftmost = root
+    while (leftmost.left != null){
+        head = leftmost
+        while head != null {
+           1> left right child connection
+		   2> using next pointer
+           head = head.next
+        }
+        leftmost = leftmost.left
+   }
+ */
+func Connect2(root *BiTreeNode) *BiTreeNode {
+	if root == nil {
+		return nil
+	}
+	for leftmost := root; leftmost.Left != nil; leftmost = leftmost.Left {
+		for head := leftmost; head != nil;head = head.Next {
+			head.Left.Next = head.Right
+			if head.Next != nil {
+				head.Right.Next = head.Next.Left
+			}
+		}
+	}
+	return root
+}
+
