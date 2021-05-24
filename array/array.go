@@ -2,7 +2,10 @@ package array
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 /*
@@ -497,3 +500,870 @@ func CombineII(n int, k int) (ans [][]int) {
 	}
 	return
 }
+
+/* Union Find 并查集
+	0. 设定相距为1的值，为一个集合
+    1. 用map记录 数字和对应的索引
+    2. 用例有重复数字，map处理
+    3. 连通数字和索引对应关系
+    4. 遍历并查集数组，集合最大即为最长连续子序列
+ */
+// 128. Longest Consecutive Sequence
+type UnionFindSet struct {
+	id		[]int // 记录指向
+	sz		[]int // 记录并查集某一子集大小
+	count	int
+}
+func NewUnionFindSet(n int) *UnionFindSet {
+	id, sz := make([]int, n), make([]int, n)
+	for i := range id {
+		id[i] = i
+	}
+	for i := range sz {
+		sz[i] = 1
+	}
+	return &UnionFindSet{id: id, sz: sz, count: n}
+}
+func (u *UnionFindSet) Find(p int) int {
+	for p != u.id[p] {
+		p = u.id[p]
+	}
+	return p
+}
+func (u *UnionFindSet) Merge(p, q int){
+	i := u.Find(p)
+	j := u.Find(q)
+	if i == j {
+		return
+	}
+	if u.sz[i] < u.sz[j] {
+		u.id[i] = j
+		u.sz[j] += u.sz[i]
+	}else{
+		u.id[j] = i
+		u.sz[i] += u.sz[j]
+	}
+	u.count--
+}
+func LongestConsecutiveUnionFind(nums []int) int {
+	uf := NewUnionFindSet(len(nums))
+	m := map[int]int{}
+	for i := 0; i < len(nums); i++{
+		cur := nums[i]
+		if _,ok := m[cur]; ok {
+			continue
+		}
+		m[cur] = i
+		if idx, ok := m[cur - 1]; ok {
+			uf.Merge(i, idx)
+		}
+		if idx, ok := m[cur + 1]; ok {
+			uf.Merge(i, idx)
+		}
+	}
+	res := 0
+	for _,v := range uf.sz{
+		if v > res{
+			res = v
+		}
+	}
+	return res
+}
+
+// 并查集写法2
+func LongestConsecutiveUnionFind2(nums []int) int {
+	if len(nums) <= 0 {
+		return 0
+	}
+	ans := 1
+	// 初始化并查集
+	rt,sz := map[int]int{}, map[int]int{}
+	var find func(int)int
+	var merge func(int, int)int
+	find = func(v int)int{
+		if rt[v] != v{
+			rt[v] = find(rt[v])
+		}
+		return rt[v]
+	}
+	merge = func(u, v int) int{
+		u = find(u)
+		v = find(v)
+		if u != v{ // u与v不在一个集合,将v合并到u的集合中去
+			sz[u] += sz[v]
+			rt[v] = rt[u]
+		}
+		return sz[u] // 返回当前集合的大小
+	}
+	for _,i := range nums {
+		rt[i] = i;// rt[v] = v 代表v是自己所在的集合的根
+		sz[i] = 1;
+	}
+	for _,i := range nums {
+		// 连续数组，只需考虑v与v-1就能覆盖掉所有边的情况
+		if _,ok := rt[i-1]; ok {
+			length := merge(i, i-1)
+			if ans < length{
+				ans = length
+			}
+		}
+	}
+	return ans
+}
+
+// 并查集写法3
+type unionFindSet struct{
+	fa map[int]int
+	sz map[int]int
+}
+func unionFindSetNew(nums []int) *unionFindSet{
+	ufs := unionFindSet{fa: map[int]int{}, sz: map[int]int{}}
+	for _,u := range nums{
+		ufs.fa[u] = u
+		ufs.sz[u] = 1
+	}
+	return &ufs
+}
+/* 优化1-路径压缩
+  find执行的操作：从一个节点，不停的通过parent向上去寻找他的根节点，
+  在这个过程中，我们相当于把从这个节点到根节点的这条路径上的所有的节点都给遍历了一遍，
+  那么，让我们想一想，在find的同时，是否可以顺便加上一些其它的操作使得树的层数尽量变得更少呢？答案是可以的。
+请看下面的例子：
+  对于一个集合树来说，它的根节点下面可以依附着许多的节点，因此，我们可以尝试在find的过程中，
+  从底向上，如果此时访问的节点不是根节点的话，那么我们可以把这个节点尽量的往上挪一挪，减少数的层数，
+  这个过程就叫做路径压缩
+ */
+func (ufs *unionFindSet) Find(p int) int{
+	for p != ufs.fa[p] {
+		// 优化1：路径压缩
+		// ufs.fa[p] = ufs.fa[ufs.fa[p]] // 方案一，只能压缩一部分，不能压缩至最低
+		ufs.fa[p] = ufs.Find(ufs.fa[p]) // 方案二, 递归实现可转循环 将所有元素直接指向根节点，最低压缩
+		p = ufs.fa[p]
+	}
+	return p
+}
+/* 优化2： 按秩合并减少树高度
+   按秩合并是一种启发式合并，主要思想是合并的时候把小的树合并到大的树以减少工作量。
+   秩的定义： 1. 树的高度  2. 树的节点数
+   我们在路径压缩之后一般采用第二种，因为第一种在路径压缩之后就已经失去意义了，按照第二种合并可以减少一定的路径压缩的工作量
+   单独采用按秩合并的话平摊查询时间复杂度同样为O(logN)
+   如果我们把路径压缩和按秩合并合起来一起使用的话可以把查询复杂度下降到O(α(n))，其中α(n)为反阿克曼函数。
+   阿克曼函数是一个增长极其迅速的函数，而相对的反阿克曼函数是一个增长极其缓慢的函数，所以我们在算时间复杂度的时候可以把他视作一个常数看待。
+ */
+func (ufs *unionFindSet) Merge(p, q int) int {
+	// find p q 的根
+	set1 := ufs.Find(p)
+	set2 := ufs.Find(q)
+	// 如果p q 有相同的根，即 set1 == set2，则直接返回
+	// 表示当前的数与之前数已经构成连续序列
+	if set1 == set2 {
+		return ufs.sz[set1]
+	}
+	// 子树合并优化2： 压缩合并树的高度
+	// 将较高的树作为根节点，将较矮的树连在其上
+	// 两棵树高度相同时，不管哪个作为根节点，另一个脸上它之后，整棵树的高度就要加1
+	// 后两种情况，合并后树的最大高度不变
+	if ufs.sz[set1] < ufs.sz[set2]{
+		ufs.fa[set1] = set2
+		ufs.sz[set2] += ufs.sz[set1]
+		return ufs.sz[set2]
+	}else {
+		ufs.fa[set2] = set1
+		ufs.sz[set1] += ufs.sz[set2]
+		return ufs.sz[set1]
+	}
+	// 子树合并
+	ufs.fa[set2] = set1
+	ufs.sz[set1] += ufs.sz[set2]
+	return ufs.sz[set1]
+}
+func LongestConsecutiveUFSHash(nums []int) (count int) {
+	ufs := unionFindSetNew(nums)
+	for _,item := range nums{
+		if _,ok := ufs.fa[item+1]; ok {
+			length := ufs.Merge(item+1, item)
+			if length > count {
+				count = length
+			}
+		}
+	}
+	return
+}
+
+
+
+
+/*  leetcode官方解法
+   考虑数组中每个数x,考虑以其为起点，不断尝试匹配 x+1 x+2 ... 是否存在，假设匹配到了x+y，那么以x起点的最长连续序列即为 x x+1 ... x+y 长度为
+   y+1，然后不断的枚举并更新答案即可。
+   对于匹配的过程，暴力的方法是 O(n) 遍历数组去看是否存在这个数，但其实更高效的方法是用一个哈希表存储数组中的数，
+   这样查看一个数是否存在即能优化至 O(1)的时间复杂度
+
+ */
+func LongestConsecutiveHash(nums []int) int {
+	if len(nums) == 0{
+		return 0
+	}
+	length := 1
+	uniqueNums := map[int]bool{}
+	for _,elem := range nums{
+		uniqueNums[elem] = true
+	}
+	for elem,_ := range uniqueNums{
+		start := elem
+		cnt := 0
+		_, ok := uniqueNums[start]
+		for ok {
+			start++
+			_, ok = uniqueNums[start]
+			cnt++
+		}
+		if cnt > length{
+			length = cnt
+		}
+	}
+	return length
+}
+// 优化法
+/*
+ 我们会发现其中执行了很多不必要的枚举，如果已知有一个x,x+1,x+2,⋯,x+y 的连续序列，而我们却重新从x+1 x+2 或者是 x+y 处开始尝试匹配
+ 那么得到的结果肯定不会优于枚举 x 为起点的答案，因此我们在外层循环的时候碰到这种情况跳过即可。
+
+那么怎么判断是否跳过呢？由于我们要枚举的数 x 一定是在数组中不存在前驱数x−1 的，
+不然按照上面的分析我们会从 x−1 开始尝试匹配，因此我们每次在哈希表中检查是否存在 x−1 即能判断是否需要跳过了。
+
+ */
+func LongestConsecutiveHashImprove(nums []int) int {
+	if len(nums) == 0{
+		return 0
+	}
+	length := 1
+	uniqueNums := map[int]bool{}
+	for _,elem := range nums{
+		uniqueNums[elem] = true
+	}
+	for elem := range uniqueNums{
+		//检查 elem - 1
+		if _,ok := uniqueNums[elem - 1]; ok {
+			continue
+		}
+		cnt := 1
+		for uniqueNums[elem+1] {
+			elem++
+			cnt++
+		}
+		if cnt > length{
+			length = cnt
+		}
+	}
+	return length
+}
+func LongestConsecutive(nums []int) int {
+	if len(nums) <= 0{
+		return 0
+	}
+	mark := map[int]int{}
+	ans := 1
+	for _,elem := range nums{
+		if _,ok := mark[elem]; !ok {
+			mark[elem] = elem // 刚插入时，v的左右边界都是他本身
+			for _,v := range []int{elem-1, elem+1} {// 遍历左右邻居
+				if _,ok := mark[v]; ok {// 如果邻居已经在mark表中
+					x,y := mark[elem], mark[v] // 用x代表v的另一端位置，用y代表v+i的另一端位置
+					// 两个端点分别记录位置
+					mark[x] = y
+					mark[y] = x
+					length := y - x
+					if x > y{
+						length = x - y
+					}
+					if ans < length+1{
+						ans = length + 1
+					}
+				}
+			}
+		}
+	}
+	return ans
+}
+/* DP 未优化版本，提交会超时
+    对于每个v我们都从v向v+1连一条线的话，输入数据就会成为一个有向无环图；
+    也即求有向无环图求最长路的方法
+    可以用一个基于hash的map记录答案。 mp[v]代表以v为起点的最长路的长度，同时有
+	递推式：mp[v] = mp[v+1] + 1, if v+1 in mp
+	基情况: mp[v] = 0, if v not in mp
+ */
+func LongestConsecutiveDP(nums []int) int {
+	umap := map[int]int{}
+	answer := 0
+	var dfs func(int) int
+	dfs = func(item int) (length int){
+		if _,ok := umap[item];!ok{
+			return 0
+		}
+		return dfs(item + 1) +1
+	}
+	for _,elem := range nums {
+		umap[elem] = 0
+	}
+	for _,elem := range nums{
+		length := dfs(elem)
+		if length > answer{
+			answer = length
+		}
+	}
+	return answer
+}
+func LongestConsecutiveDPImprove(nums []int) int {
+	umap := map[int]int{}
+	answer := 0
+	var dfs func(int) int
+	dfs = func(item int) (length int){
+		if _,ok := umap[item];!ok{
+			return 0
+		}
+		if umap[item] != 0{
+			return umap[item] //缓存剪枝
+		}
+		return dfs(item + 1) +1
+	}
+	for _,elem := range nums {
+		umap[elem] = 0
+	}
+	for _,elem := range nums{
+		length := dfs(elem)
+		umap[elem] = length // 缓存剪枝
+		if length > answer{
+			answer = length
+		}
+	}
+	return answer
+}
+
+//721: Account name
+// 可以处理用户名不同，但有相同邮箱地址的情况
+func AccountsMerge(accounts [][]string) [][]string {
+	total := len(accounts)
+	ufs := make([]int, total)
+	for i := 0; i < total; i++{
+		ufs[i] = i
+	}
+	var find func(int) int
+	var union func(int,int)
+	find = func(i int) int {
+		if i != ufs[i]{// 路径压缩
+			return find(ufs[i])
+		}
+		return i
+	}
+	union = func(i, j int) {
+		pi := find(i)
+		pj := find(j)
+		if pi != pj{
+			ufs[pi] = pj
+		}
+	}
+	// 开始处理,找到要合并的项
+	emailMap := map[string][]int{}
+	for i := 0; i < total; i++{
+		for _,mail := range accounts[i][1:]{
+			if _,ok := emailMap[mail]; ok {
+				emailMap[mail] = append(emailMap[mail], i)
+			}else{
+				emailMap[mail] = []int{i}
+			}
+		}
+	}
+	// union
+	for _,values := range emailMap{
+		length := len(values)
+		if length != 0{
+			start := values[0]
+			for i := 1; i < length; i++{
+				// union(start, i) 晕了晕了
+				union(start, values[i])
+			}
+		}
+	}
+	// 核算结果
+	result := map[int][]string{}
+	for idx,account := range accounts{
+		class := find(idx)
+		if _,ok := result[class]; ok {
+			result[class] = append(result[class], account[1:]...)
+		}else{
+			result[class] = append(result[class], account...)
+		}
+	}
+	// answer
+	answer := [][]string{}
+	for _,item := range result {
+		sort.Strings(item[1:])
+		itemCopy := []string{item[0]}
+		for i := 1; i < len(item); i++{
+			if item[i] != item[i-1]{
+				itemCopy = append(itemCopy, item[i])
+			}
+		}
+		answer = append(answer, itemCopy)
+	}
+	return answer
+}
+
+// 官方解法
+func accountsMerge(accounts [][]string) (ans [][]string) {
+	email2index := map[string]int{}
+	email2Name := map[string]string{}
+	for _,account := range accounts {
+		name := account[0]
+		for _,mail := range account[1:]{
+			if _, ok := email2index[mail]; !ok {
+				email2index[mail] = len(email2index)
+				email2Name[mail] = name //名称必定相同
+			}
+		}
+	}
+	// 并查集初始化
+	parent := make([]int, len(email2index)) // 用每个email做集合
+	for i := range parent{
+		parent[i] = i
+	}
+	var find func(int) int
+	find = func(i int) int {
+		if parent[i] != i{ // 路径压缩
+			parent[i] = find(parent[i])
+		}
+		return parent[i]
+	}
+	union := func(from, to int){
+		pf, pt := find(from), find(to)
+		parent[pf] = pt
+	}
+	// 分组合并，条件是 所属同一个用户
+	for _, account := range accounts{
+		firstIndex := email2index[account[1]]
+		for _, email := range account[2:] {
+			union(firstIndex, email2index[email])
+		}
+	}
+	// 核算结果
+	index2email := map[int][]string{}
+	for email, idx := range email2index{
+		idx = find(idx)
+		index2email[idx] = append(index2email[idx], email)
+	}
+	for _,emails := range index2email{
+		sort.Strings(emails)
+		account := append([]string{email2Name[emails[0]]}, emails...)
+		ans = append(ans, account)
+	}
+	return
+}
+// 抽象成邻接图， 使用dfs 计算图的 连通性
+func AccountsMergeDfs(accounts [][]string) (ans [][]string) {
+	// build graph 忽略姓名，直接把关联的账户连接起来即可
+	graph := map[string][]string{}
+	for _,account := range accounts{
+		master := account[1]
+		for _, email := range account[2:]{
+			graph[master] = append(graph[master], email)
+			graph[email] = append(graph[email], master)
+		}
+	}
+	res := [][]string{}
+	visited := map[string]bool{} // 集合实现
+	var dfs func(string)[]string
+	dfs = func(email string)(emails []string){
+		if visited[email]{
+			return
+		}
+		visited[email] = true
+		emails = append(emails, email)
+		for _, neighbor := range graph[email]{
+			emails = append(emails, dfs(neighbor)...)
+		}
+		return
+	}
+
+	for _, account := range accounts{
+		emails := dfs(account[1])
+		if len(emails) > 0{
+			data := []string{account[0]}
+			sort.Strings(emails)
+			data = append(data, emails...)
+			res = append(res, data)
+		}
+	}
+	return res
+}
+
+//17.07. Baby Names LCCI
+func TrulyMostPopular(names []string, synonyms []string) []string {
+	babyNames := map[string]int64{}
+	map2index := map[string]int{}
+	index2map := map[int]string{}
+	for _, name := range names{
+		r, err := regexp.Compile(`([a-zA-Z]+)\(([0-9]+)\)`)
+		if err != nil {
+			continue
+		}
+		tmp := r.FindStringSubmatch(name)
+		if len(tmp) < 3{
+			continue
+		}
+		babyNames[tmp[1]], err = strconv.ParseInt(tmp[2], 10, 64)
+		if err != nil {
+			continue
+		}
+		map2index[tmp[1]] = len(babyNames)-1
+		index2map[len(babyNames)-1] = tmp[1]
+	}
+	ufs := make([]int, len(babyNames))
+	for idx,_ := range ufs{
+		ufs[idx] = idx
+	}
+	fmt.Println(index2map)
+	var find func(int)int
+	var union func(int, int)
+	find = func(i int) int{
+		if ufs[i] != i{
+			ufs[i] = find(ufs[i])
+		}
+		return ufs[i]
+	}
+	union = func(i, j int){
+		pi, pj := find(i), find(j)
+		if pi != pj{
+			tmp := []string{index2map[pi], index2map[pj]}
+			sort.Strings(tmp)
+			ufs[map2index[tmp[1]]] = ufs[map2index[tmp[0]]]
+			babyNames[tmp[0]] += babyNames[tmp[1]]
+		}
+	}
+	for _, item := range synonyms {
+		r, err := regexp.Compile(`\(([a-zA-Z]+),([a-zA-Z]+)\)`)
+		if err != nil {
+			continue
+		}
+		tmp := r.FindStringSubmatch(item)
+		if len(tmp) < 3{
+			continue
+		}
+		union(map2index[tmp[1]], map2index[tmp[2]])
+	}
+	res := map[string]int64{}
+	for key,_ := range babyNames{
+		p := find(map2index[key])
+		if _, ok := res[index2map[p]]; !ok{
+			res[index2map[p]] = babyNames[index2map[p]]
+		}
+	}
+	ans := []string{}
+	for key, value := range res{
+		ans = append(ans, fmt.Sprintf("%s(%d)", key, value))
+	}
+	return ans
+}
+// 结构体表示
+func TrulyMostPopularII(names []string, synonyms []string) []string {
+	type node struct {
+		freq 		uint64
+		setName 	string // 类别
+	}
+	babyNames := map[string]node{}
+	for _, name := range names{
+		 r, _ := regexp.Compile(`([A-Za-z]+)\(([0-9]+)\)`)
+		 tmp := r.FindStringSubmatch(name)
+		 freq,_ := strconv.ParseUint(tmp[2], 10, 64)
+		 babyNames[tmp[1]]=node{freq: freq, setName: tmp[1]}
+	}
+	var find func(i string)string
+	find = func(i string)string{
+		// 需要注意 names不含有synonyms的情况
+		if _,ok := babyNames[i]; !ok{
+			return i
+		}
+		if i != babyNames[i].setName{
+			cache := babyNames[i]
+			cache.setName = find(cache.setName)// 路径压缩
+			babyNames[i] = cache
+			return babyNames[i].setName
+		}
+		return i
+		//return babyNames[i].setName
+	}
+	var union func(i, j string)
+	union = func(i, j string){
+		pi := find(i)
+		pj := find(j)
+		if pi != pj{
+			//babyNames[pi].freq += babyNames[pj].freq
+			// 按照字典序合并, 字典序小的作为根
+			picknames := []string{pi, pj}
+			sort.Strings(picknames)
+			namePicked := picknames[0]
+			freq := babyNames[pi].freq + babyNames[pj].freq
+			// TODO: 按秩合并
+			cache := babyNames[pj]
+			cache.setName = namePicked
+			cache.freq = freq
+			babyNames[pj] = cache
+			babyNames[pi] = cache
+		}
+	}
+	for _, name := range synonyms{
+		r, _ := regexp.Compile(`\(([A-Za-z]+),([A-Za-z]+)\)`)
+		tmp := r.FindStringSubmatch(name)
+		union(tmp[1], tmp[2])
+	}
+	visited := map[string]bool{}
+	ans := []string{}
+	for _, item := range babyNames{
+		setName := find(item.setName)
+		freq := babyNames[setName].freq
+		if !visited[setName]{
+			visited[setName] = true
+			//ans = append(ans, fmt.Sprintf("%s(%d)", item.setName, item.freq))  错误： 不能直接用item， 确定 item所在类的head的名子
+			//ans = append(ans, fmt.Sprintf("%s(%d)", setName, item.freq)) 错误：freq不能直接去item的 需要取真正类head的freq，因为集合中有些元素没有更新freq
+			ans = append(ans, fmt.Sprintf("%s(%d)", setName, freq))
+		}
+	}
+	return ans
+}
+// 不使用正则表达式
+func TrulyMostPopularIII(names []string, synonyms []string) []string {
+	type node struct {
+		freq 		uint64
+		setName 	string // 类别
+	}
+	babyNames := map[string]node{}
+	for i := 0 ; i < len(names);  i ++{
+		a := strings.Index(names[i],"(")
+		b := strings.Index(names[i],")")
+		name := names[i][:a]
+		temp := names[i][a+1:b]
+		freq, _ := strconv.ParseUint(temp, 10, 64)
+		babyNames[name]=node{freq: freq, setName: name}
+	}
+	var find func(i string)string
+	find = func(i string)string{
+		// 需要注意 names不含有synonyms的情况
+		if _,ok := babyNames[i]; !ok{
+			return i
+		}
+		if i != babyNames[i].setName{
+			cache := babyNames[i]
+			cache.setName = find(cache.setName)// 路径压缩
+			babyNames[i] = cache
+			return babyNames[i].setName
+		}
+		return i
+		//return babyNames[i].setName
+	}
+	var union func(i, j string)
+	union = func(i, j string){
+		pi := find(i)
+		pj := find(j)
+		if pi != pj{
+			//babyNames[pi].freq += babyNames[pj].freq
+			// 按照字典序合并, 字典序小的作为根
+			picknames := []string{pi, pj}
+			sort.Strings(picknames)
+			namePicked := picknames[0]
+			freq := babyNames[pi].freq + babyNames[pj].freq
+			// TODO: 按秩合并
+			cache := babyNames[pj]
+			cache.setName = namePicked
+			cache.freq = freq
+			babyNames[pj] = cache
+			babyNames[pi] = cache
+		}
+	}
+	for i := 0 ; i < len(synonyms) ; i ++{
+		a := strings.Index(synonyms[i],"(")
+		b := strings.Index(synonyms[i],",")
+		c := strings.Index(synonyms[i],")")
+		temp1 := synonyms[i][a+1:b]
+		temp2 := synonyms[i][b+1:c]
+		union(temp1,temp2)
+	}
+	visited := map[string]bool{}
+	ans := []string{}
+	for _, item := range babyNames{
+		setName := find(item.setName)
+		freq := babyNames[setName].freq
+		if !visited[setName]{
+			visited[setName] = true
+			//ans = append(ans, fmt.Sprintf("%s(%d)", item.setName, item.freq))  错误： 不能直接用item， 确定 item所在类的head的名子
+			//ans = append(ans, fmt.Sprintf("%s(%d)", setName, item.freq)) 错误：freq不能直接去item的 需要取真正类head的freq，因为集合中有些元素没有更新freq
+			ans = append(ans, fmt.Sprintf("%s(%d)", setName, freq))
+		}
+	}
+	return ans
+}
+// 200. Number of islands
+/*
+知识点：1. golang 中 数组是可以比较的 2. 数组可以作为map的key
+ */
+func NumIslands(grid [][]byte) int {
+	index2map := map[[2]int][2]int{}
+	for i, row := range grid{
+		for j,elem := range row{
+			if elem == '1'{
+				loc := [2]int{i,j}
+				index2map[loc] = loc
+			}
+		}
+	}
+	var find func(m [2]int) [2]int
+	find = func(m [2]int) [2]int {
+		if m != index2map[m]{
+			return find(index2map[m])
+		}
+		return m
+	}
+	var union func(x, y [2]int)
+	union = func(x, y [2]int){
+		px, py := find(x), find(y)
+		// if px != px 错误点-1： 低级错误
+		if px != py {
+			//index2map[x] = py  错误点-2： 是类 低级错误
+			index2map[px] = py
+		}
+	}
+	rowLen := len(grid)
+	for i := 0; i < rowLen; i++ {
+		colLen := len(grid[i])
+		for j := 0; j < colLen; j++{
+			if j+1 < colLen && grid[i][j] == '1' && grid[i][j+1] == '1'{
+				union([2]int{i,j}, [2]int{i, j+1})
+			}
+			if i+1 < rowLen && grid[i][j] == '1' && grid[i+1][j] == '1'{
+				union([2]int{i,j}, [2]int{i+1, j})
+			}
+		}
+	}
+	islandSet := map[[2]int]bool{}
+	//for _,elem := range index2map{ 统计的是key， value可能重复的 低级错误
+	for elem,_ := range index2map{
+		island := find(elem)
+		if !islandSet[island]{
+			islandSet[island] = true
+		}
+	}
+	return len(islandSet)
+}
+
+func NumIslandsDFS(grid [][]byte) int {
+	total, rowLen, colLen := 0, len(grid), len(grid[0])
+	var dfs func(int, int)
+	dfs = func(r, c int){
+		grid[r][c] = 0 // 置0
+		if c+1 < colLen && grid[r][c+1] == '1'{
+			dfs(r, c+1)
+		}
+		if r+1 < rowLen && grid[r+1][c] == '1'{
+			dfs(r+1, c)
+		}
+		// dfs 与并差集不同，需要4个方向来判定
+		if c - 1 >= 0 && grid[r][c-1] == '1'{
+			dfs(r, c-1)
+		}
+		if r - 1 >= 0 && grid[r-1][c] == '1'{
+			dfs(r-1, c)
+		}
+	}
+	for i, row := range grid{
+		for j, elem := range row{
+			if elem == '1'{
+				total++ // 岛屿的数量就是我们进行dfs搜索的次数
+				dfs(i, j)
+			}
+		}
+	}
+	return total
+}
+// 利用按秩压缩
+type UnionFind struct {
+	count		int
+	parent		[]int
+	rank		[]int
+}
+
+func ConstructUnionFindByNumIslands(grid [][]byte)*UnionFind{
+	// 初始化
+	m, n, cnt := len(grid),len(grid[0]), 0
+	rank, parent := make([]int, m*n), make([]int, m*n)
+	for i := 0; i < m; i++{
+		for j := 0; j < n; j++{
+			if grid[i][j] == '1'{
+				parent[i * n + j] = i * n + j // 2. 类
+				cnt++ // 1. 计数
+			}
+			rank[i * n + j] = 0 // 3. 秩
+		}
+	}
+	return &UnionFind{count: cnt, parent: parent, rank: rank}
+
+}
+
+func (ufs *UnionFind) find(i int)int{
+	if ufs.parent[i] != i {
+		ufs.parent[i] = ufs.find(ufs.parent[i]) // 1. 路径压缩
+	}
+	return ufs.parent[i]
+}
+
+func(ufs *UnionFind) union(x, y int){
+	rootx, rooty := ufs.find(x), ufs.find(y)
+	if rootx != rooty{ // 4. 按秩压缩： 查询高度小的 插入到 查询高度大的
+		if ufs.rank[rootx] > ufs.rank[rooty]{
+			ufs.parent[rooty] = rootx
+		}else if ufs.rank[rootx] < ufs.rank[rooty]{
+			ufs.parent[rootx] = rooty
+		}else{
+			ufs.parent[rooty] = rootx
+			ufs.rank[rootx] += 1 // 2. 按秩压缩，查询高度记录
+		}
+		ufs.count-- // 3. union 后 计数递减
+	}
+}
+
+func NumIslandsUFSImprove(grid [][]byte) int {
+	if len(grid) <= 0{
+		return 0
+	}
+	nr, nc := len(grid), len(grid[0])
+	pUfs := ConstructUnionFindByNumIslands(grid)
+	for r := 0; r < nr; r++{
+		for c := 0; c < nc; c++{
+			if grid[r][c] == '1' {
+				grid[r][c] = '0'
+				cur := r * nc + c
+				if r - 1 >= 0 && grid[r-1][c] == '1'{
+					pUfs.union(cur, (r-1) * nc + c)
+				}
+				if r + 1 < nr && grid[r+1][c] == '1'{
+					pUfs.union(cur, (r+1) * nc + c)
+				}
+				if c - 1 >= 0 && grid[r][c-1] == '1'{
+					pUfs.union(cur, r * nc + c - 1)
+				}
+				if c + 1 < nc && grid[r][c+1] == '1'{
+					pUfs.union(cur, r * nc + c + 1)
+				}
+			}
+		}
+	}
+	return pUfs.count
+}
+
+
+
+
+
+
+
+
+
+

@@ -162,3 +162,63 @@ func TestCombine(t *testing.T){
 		}
 	}
 }
+
+func TestTrulyMostPopular(t *testing.T) {
+	for caseId, testCase := range []struct{
+		names		[]string
+		synonyms	[]string
+		want		[]string
+	}{
+		{[]string{"John(15)","Jon(12)","Chris(13)","Kris(4)","Christopher(19)"},
+		 []string{"(Jon,John)","(John,Johnny)","(Chris,Kris)","(Chris,Christopher)"},
+		 []string{"John(27)","Chris(36)"},
+		},
+	}{
+		result := TrulyMostPopular(testCase.names, testCase.synonyms)
+		ok := assert.ElementsMatch(t, testCase.want, result, fmt.Sprintf("case-%d: result=%v, but want=%v", caseId, result, testCase.want))
+		if !ok {
+			break
+		}
+	}
+}
+
+func TestTrulyMostPopularII(t *testing.T) {
+	for caseId, testCase := range []struct{
+		names		[]string
+		synonyms	[]string
+		want		[]string
+	}{
+		{[]string{"John(15)","Jon(12)","Chris(13)","Kris(4)","Christopher(19)"},
+			[]string{"(Jon,John)","(John,Johnny)","(Chris,Kris)","(Chris,Christopher)"},
+			[]string{"John(27)","Chris(36)"},
+		},
+		{
+			[]string{"John(15)","Jon(12)","Chris(13)","Kris(4)","Christopher(19)"},
+			[]string{"(Jon,John)","(John,Johnny)","(Chris,Kris)","(Chris,Christopher)","(Jon,J)"},
+			[]string{"J(27)","Chris(36)"},
+		},
+	}{
+		result := TrulyMostPopularII(testCase.names, testCase.synonyms)
+		ok := assert.ElementsMatch(t, testCase.want, result, fmt.Sprintf("case-%d: result=%v, but want=%v", caseId, result, testCase.want))
+		if !ok {
+			break
+		}
+	}
+}
+
+func TestNumIslandsDFS(t *testing.T) {
+	for caseId, testCase := range []struct {
+		grid	[][]byte
+		want	int
+	}{
+		{[][]byte{[]byte{'1','1','1'},[]byte{'0','1','0'},[]byte{'1','1','1'}}, 1},
+		{[][]byte{[]byte{'1','1','1','1','0'},[]byte{'1','1','0','1','0'},[]byte{'1','1','0','0','0'},[]byte{'0','0','0','0','0'}}, 1},
+		{[][]byte{[]byte{'1','1','0','0','0'},[]byte{'1','1','0','0','0'},[]byte{'0','0','1','0','0'},[]byte{'0','0','0','1','1'}}, 3},
+	}{
+		result := NumIslandsDFS(testCase.grid)
+		if result != testCase.want{
+			t.Errorf("case-%d: result = %d but want = %d", caseId, result, testCase.want)
+			return
+		}
+	}
+}
