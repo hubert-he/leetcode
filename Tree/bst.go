@@ -298,8 +298,51 @@ func (tree *BinarySearchTree) KthLargest(k int) interface{} {
 	return target
 }
 
+//938. 二叉搜索树的范围和
+func rangeSumBST(root *BiTreeNode, low int, high int) int {
+	sum := 0
+	var dfs func(*BiTreeNode)
+	dfs = func(node *BiTreeNode){
+		if node == nil{
+			return
+		}
+		v := node.Val.(int)
+		if v >= low && v <= high{
+			sum += v
+		}
+		if v >= low{ // 剪枝
+			dfs(node.Left)
+		}
+		if v <= high{
+			dfs(node.Right)
+		}
+	}
+	dfs(root)
+	return sum
+}
 
-
+// 783. 二叉搜索树节点最小距离
+func minDiffInBST(root *BiTreeNode) int {
+	var cur *BiTreeNode
+	min := math.MaxInt32
+	var dfs func(*BiTreeNode)
+	dfs = func(node *BiTreeNode){
+		if node == nil{
+			return
+		}
+		dfs(node.Left)
+		if cur != nil{
+			diff := node.Val.(int) - cur.Val.(int)
+			if diff < min{
+				min = diff
+			}
+		}
+		cur = node
+		dfs(node.Right)
+	}
+	dfs(root)
+	return min
+}
 
 
 
