@@ -1358,6 +1358,10 @@ func NumIslandsUFSImprove(grid [][]byte) int {
 	return pUfs.count
 }
 
+// 399. Evaluate Division
+func CalcEquation(equations [][]string, values []float64, queries [][]string) []float64 {
+
+}
 
 
 
