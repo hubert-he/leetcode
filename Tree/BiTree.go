@@ -936,6 +936,27 @@ func LowestCommonAncestorHashMap(root, p, q *BiTreeNode) (lca *BiTreeNode) {
 	}
 	return lca
 }
+// LCA 的离线解决： Tarjan算法
+/*
+   Tarjan算法是离线算法，即它不会在查询两个节点 LCA 这个事件发生时就及时的执行并给出答案，而是等到所有查询都给出后统一进行处理和求解
+   算法从根节点root开始搜索，每次递归搜索所有的子树，然后处理跟当前根节点相关的所有lca查询，也就是说把树的每个子树当做一个并查集来查询
+   伪代码：
+   Tarjan(u)//marge和find为并查集合并函数和查找函数
+   {
+    	for each(u,v)    //访问所有u子节点v
+    	{
+        	Tarjan(v);        //继续往下遍历
+        	marge(u,v);    //合并v到u上
+        	标记v被访问过;
+    	}
+    	for each(u,e)    //访问所有和u有询问关系的e
+    	{
+        	如果e被访问过;
+        	u,e的最近公共祖先为find(e);
+    	}
+	}
+ */
+
 //572: subtree of another tree
 // 在判断「ss 的深度优先搜索序列包含 tt 的深度优先搜索序列」的时候，可以暴力匹配，也可以使用KMP 或者Rabin-Karp 算法，
 //在使用Rabin-Karp 算法的时候，要注意串中可能有负值。

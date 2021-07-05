@@ -1358,6 +1358,119 @@ func NumIslandsUFSImprove(grid [][]byte) int {
 	return pUfs.count
 }
 
+// 327. Count of Range Sum
+/*
+	前缀和：设前缀和数组为preSum 则问题转换为 求所有的下标对(i,j)，满足 preSum[j] - preSum[i] 属于 [lower, upper]
+    O(n^2) 会超时
+ */
+func countRangeSum(nums []int, lower int, upper int) int {
+	length := len(nums)
+	if length <= 0{
+		return 0
+	}
+	// 先计算前缀和
+	preSum := []int{0} // 首元素置0，前缀和可以标识单元素
+	for i := 0; i < length; i++{
+		preSum = append(preSum, preSum[i] + nums[i])
+	}
+	ans := 0
+	// 下面是遍历preSum  此处需要优化，平方级别复杂度，见解法II 利用归并排序降低时间复杂度
+	for i := 1; i <= len(preSum); i++{
+		for j := 0; j < i; j++{
+			diff := preSum[j] - preSum[i]
+			if diff >= lower && diff <= upper{
+				ans++
+			}
+		}
+	}
+	return ans
+}
+        /*
+  1. 前缀和数组 preSum，为了找出prefixSum[1] -- prefixSum[j]之间有多少满足以下条件的 x :
+      整数x满足 lower <= prefixSum[j] - x <= upper x属于prefixSum[0...i-1]
+      ==>  prefixSum[j] - lower >= x >= prefixSum[j] - upper
+  1.1 为了找到x的数量，利用不等式等价转换，引申出2种优化方式,
+  1.1.1 preSum排好序，然后通过两次2分查找计算出有多少个x满足条件（d2 - d1）
+       	第一次查找 找出第一个大于等于 preSum - upper 的位置 d1
+		第二次查找 找出第一个大于等于 preSum - lower 的位置 d2
+ */
+type prefixSum []struct {
+	sum int // 当前前缀和
+	idx int // 前缀和所在数组的位置下标
+}
+func (this prefixSum) Len() int{
+	return len(this)
+}
+func (this prefixSum) Swap(i, j int){
+	this[i], this[j] = this[j], this[i]
+}
+func (this prefixSum) Less(i, j int) bool{
+	return this[i].sum < this[j].sum
+}
+
+func CountRangeSumByMap(nums []int, lower int, upper int) int {
+	length := len(nums)
+	if length <= 0{
+		return 0
+	}
+	prefixSumidx := prefixSum{{0, 0}}
+	for i := 0; i < length; i++{
+		prefixSumidx = append(prefixSumidx, struct{sum int; idx int}{prefixSumidx[i].sum + nums[i], i+1})
+	}
+	sort.Sort(prefixSumidx)
+	fmt.Println(prefixSumidx)
+	ans := 0
+
+	return ans
+}
+// 归并排序
+func countRangeSumII(nums []int, lower, upper int) int {
+	var mergeCount func([]int) int
+	mergeCount = func(arr []int) int {
+		n := len(arr)
+		if n <= 1{
+			return 0
+		}
+		n1 := append([]int{}, arr[:n/2]...)
+		n2 := append([]int{}, arr[n/2:]...)
+		cnt := mergeCount(n1) + mergeCount(n2)
+		// 此时 n1 和 n2 均有序，升序
+		// 算法开始：统计下标对的数量
+		l, r := 0, 0
+		for _, v := range n1{
+			for l < len(n2) && n2[l] - v < lower{
+				l++
+			}
+			for r < len(n2) && n2[r] - v <= upper {
+				r++
+			}
+			cnt += r - 1
+		}
+		// n1 和 n2 归并填入 arr
+		p1, p2 := 0, 0
+		for i := range arr {
+			if  p1 < len(n1) && (p2 == len(n2) || n1[p1] <= n2[p2]) {
+				arr[i] = n1[p1]
+				p1++
+			}else{
+				arr[i] = n2[p2]
+				p2++
+			}
+		}
+		return cnt
+	}
+	// 前缀和
+	prefixSum := make([]int, len(nums) + 1)
+	for i, v := range nums{
+		prefixSum[i+1] = prefixSum[i] + v
+	}
+	return mergeCount(prefixSum)
+}
+
+// 399. Evaluate Division
+func CalcEquation(equations [][]string, values []float64, queries [][]string) []float64 {
+	return nil
+}
 
 
 

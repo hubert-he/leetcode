@@ -222,3 +222,20 @@ func TestNumIslandsDFS(t *testing.T) {
 		}
 	}
 }
+
+func TestCountRangeSumByMap(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []int
+		lower, upper int
+		want int
+	}{
+		{[]int{-2, 5, -1}, -2, 2, 3},
+	}{
+		result := CountRangeSumByMap(testCase.nums, testCase.lower, testCase.upper)
+		t.Log(result)
+		if result != testCase.want{
+			t.Errorf("case-%d: result = %d But want = %d", caseId, result, testCase.want)
+			return
+		}
+	}
+}
