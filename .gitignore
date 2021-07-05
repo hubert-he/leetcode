@@ -3,3 +3,6 @@
 client/client
 proto/service.pb.go
 server/main
+*.pdf
+*.pprof
+go.sum

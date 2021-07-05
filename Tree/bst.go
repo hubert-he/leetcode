@@ -1,11 +1,35 @@
 package Tree
 
 import (
+	"fmt"
 	"math"
 )
 
 type BinarySearchTree struct {
 	root *BiTreeNode
+}
+// 173. Binary Search Tree Iterator
+type BSTIterator struct {
+	stack	[]*BiTreeNode
+	cur		*BiTreeNode
+}
+
+func Constructor(root *BiTreeNode) BSTIterator {
+	return BSTIterator{cur: root}
+}
+
+func (this *BSTIterator) Next() interface{}{
+	for node := this.cur; node != nil; node = node.Left{
+		this.stack = append([]*BiTreeNode{node}, this.stack...)
+	}
+	this.cur, this.stack = this.stack[0], this.stack[1:]
+	val := this.cur.Val
+	this.cur = this.cur.Right
+	return val
+}
+
+func (this *BSTIterator) HasNext() bool {
+	return this.cur != nil || len(this.stack) > 0
 }
 
 func (tree * BinarySearchTree)GetRoot() *BiTreeNode{
@@ -41,6 +65,86 @@ func sortedArrayToBST(nums []interface{}) *BiTreeNode {
 
 func NewBSTFromPlainList(array []interface{}) *BinarySearchTree{
 	return &BinarySearchTree{root: GenerateBiTree(array)}
+}
+
+// BST remove node
+func (tree *BinarySearchTree)DeleteNode(key interface{}) (node *BiTreeNode){
+	fakeParent := &BiTreeNode{Left: tree.root}
+	// 注意parent的写法，二级指针，无需判断left right 即可指定左右方向
+	parent := &(fakeParent.Left)
+	cur := fakeParent.Left
+	for cur != nil {
+		if key == cur.Val{
+			node = cur
+			break
+		}
+		if key.(int) > cur.Val.(int){
+			parent = &(cur.Right)
+			cur = cur.Right
+		}
+		if key.(int) < cur.Val.(int){
+			parent = &(cur.Left)
+			cur = cur.Left
+		}
+	}
+	if cur == nil {
+		// key 不存在
+		return nil
+	}
+	successor := cur.Right
+	if successor == nil {
+		*parent = cur.Left
+	}else{
+		parent = &(cur.Right)
+		for successor.Left != nil {
+			parent = &(successor.Left)
+			successor = successor.Left
+		}
+		cur.Val = successor.Val
+		*parent = successor.Right
+	}
+	tree.root = fakeParent.Left
+	return
+}
+// 递归
+func (tree *BinarySearchTree)DeleteNode2(key interface{}) (node *BiTreeNode){
+	var remove func(*BiTreeNode, interface{})*BiTreeNode
+	remove = func(treeNode *BiTreeNode, key interface{})*BiTreeNode{
+		if treeNode == nil {
+			return nil
+		}
+		if treeNode.Val.(int) < key.(int){
+			treeNode.Right = remove(treeNode.Right, key)
+			return treeNode
+		}
+		if treeNode.Val.(int) > key.(int){
+			treeNode.Left = remove(treeNode.Left, key)
+			return treeNode
+		}
+		// leaf remove
+		if treeNode.Right == nil && treeNode.Left == nil{
+			return nil
+		}
+		// 右子树为空，用前驱替换
+		cur := treeNode.Right
+		if cur == nil {
+			cur = treeNode.Left
+			for cur.Right != nil {
+				cur = cur.Right
+			}
+			treeNode.Val = cur.Val
+			treeNode.Left = remove(treeNode.Left, cur.Val)
+		}else{
+			for cur.Left != nil {
+				cur = cur.Left
+			}
+			treeNode.Val = cur.Val
+			treeNode.Right = remove(treeNode.Right, cur.Val)
+		}
+		return treeNode
+	}
+	tree.root = remove(tree.root, key)
+	return
 }
 
 //501: 官方优秀解法
@@ -344,6 +448,172 @@ func minDiffInBST(root *BiTreeNode) int {
 	return min
 }
 
+//270. 最接近的二叉搜索树值
+/*
+给定一个不为空的二叉搜索树和一个目标值 target，请在该二叉搜索树中找到最接近目标值 target 的数值。
+注意：
+给定的目标值 target 是一个浮点数
+题目保证在该二叉搜索树中只会存在一个最接近目标值的数
+示例：
+输入: root = [4,2,5,1,3]，目标值 target = 3.714286
+
+    4
+   / \
+  2   5
+ / \
+1   3
+
+输出: 4
+ */
+func (tree *BinarySearchTree) ClosestValue(target float64) (it *BiTreeNode){
+	var dfs func(node *BiTreeNode)
+	var diff float64 = math.MaxFloat64
+	dfs = func(node *BiTreeNode){
+		if node == nil {
+			return
+		}
+		v := float64(node.Val.(int))
+		if v < target{
+			if (target - v) < diff{
+				diff = target - v
+				it = node
+			}
+			dfs(node.Right)
+		}else{
+			if (v - target) < diff{
+				diff = v - target
+				it = node
+			}
+			dfs(node.Left)
+		}
+	}
+	dfs(tree.root)
+	return
+}
+
+// 1305 All Elements in Two Binary Search Trees
+/*
+Given two binary search trees root1 and root2.
+Return a list containing all the integers from both trees sorted in ascending order.
+*/
+
+func getAllElements(root1 *BiTreeNode, root2 *BiTreeNode) []interface{} {
+	res := []interface{}{}
+	ch1, ch2 := make(chan interface{}), make(chan interface{})
+	go traval(root1, ch1)
+	go traval(root2, ch2)
+	ok1, ok2 := true, true
+	//v1, v2 := math.MaxInt32, math.MaxInt32
+	var v1,v2 interface{}
+	for ok1 || ok2 {
+		if v1 == nil {
+			v1, ok1 = <-ch1
+		}
+		if v2 == nil {
+			v2, ok2 = <-ch2
+		}
+
+		if ok1 && ok2 {
+			if v1.(int) < v2.(int) {
+				res = append(res, v1)
+				v1 = nil
+			} else {
+				res = append(res, v2)
+				v2 = nil
+			}
+
+		} else if ok1 {
+			res = append(res, v1)
+			v1 = nil
+		}else if ok2 {
+			res = append(res, v2)
+			v2 = nil
+		}
+	}
+
+	return res
+}
+
+func traval(root *BiTreeNode, ch chan interface{}) {
+	var dfs func(*BiTreeNode)
+	dfs = func(node *BiTreeNode){
+		if node != nil {
+			dfs(node.Left)
+			ch <- node.Val
+			dfs(node.Right)
+		}
+	}
+	dfs(root)
+	close(ch)
+}
+
+// 04.09. 二叉搜索树序列
+/* backtracking
+  1. 确定回溯函数返回值以及参数
+  2. 确定回溯函数终止条件
+  3. 确定回溯函数遍历过程
+模板：
+  void backtracking(参数) {
+     if 终止条件 {
+ 		存放结果
+		return
+     }
+	for 选择：本层集合中元素 {
+		处理结点
+		backtracking(路径，选择列表)
+		回溯，撤销处理结果
+	}
+  }
+	回溯算法除了要维护一个path用来保存路径之外，还需要额外维护一个候选节点队列dq
+	择使用双端队列来维护候选队列，这样每次插入和回溯的时间复杂度都可以降到O(1).
+ */
+func BSTSequences(tree *BinarySearchTree) (result [][]interface{}) {
+	root := tree.root
+	if root == nil {
+		// return nil 会返回 []int{}
+		return [][]interface{}{}
+	}
+	dq := []*BiTreeNode{root}
+	var dfs func(path []interface{}, dq []*BiTreeNode)
+	cnt := 0
+	dfs = func(path []interface{}, dq []*BiTreeNode){
+		size := len(dq)
+		if size == 0{
+			result = append(result, append([]interface{}{}, path...))
+			//result = append(result, path)  底层数据存在共享，因此需要copy
+			return
+		}
+		cc := cnt
+		cnt++
+		for i := 0; i < size; i++{
+			fmt.Printf("~%d~%d: ", cc,i)
+			for _,value := range dq{
+				fmt.Printf("%v ", value.Val)
+			}
+			fmt.Println("")
+			cur := dq[0]
+			dq = dq[1:]
+			path = append(path, cur.Val)
+			if cur.Left != nil {
+				dq = append(dq, cur.Left)
+			}
+			if cur.Right != nil {
+				dq = append(dq, cur.Right)
+			}
+			dfs(path, dq)
+			fmt.Printf("-%d-%d: ", cc,i)
+			for _,value := range dq{
+				fmt.Printf("%v ", value.Val)
+			}
+			fmt.Println(path, size)
+			dq = dq[0:size - 1]
+			dq = append(dq, cur)
+			path = path[:len(path) - 1]
+		}
+	}
+	dfs([]interface{}{}, dq)
+	return
+}
 
 
 
