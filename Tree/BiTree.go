@@ -1142,6 +1142,36 @@ func IsSymmetric2(root *BiTreeNode) bool {
 	return dfs(root.Left, root.Right)
 }
 
+//993. 二叉树的堂兄弟节点
+func isCousins(root *BiTreeNode, x int, y int) bool {
+	xh, yh := -1, -1
+	var xpar, ypar *BiTreeNode
+	var dfs func(*BiTreeNode, *BiTreeNode, int)
+	dfs = func(node, par *BiTreeNode, depth int){
+		if node == nil {
+			return
+		}
+		v := node.Val
+		if v == x{
+			xh = depth
+			xpar = par
+		}
+		if v == y{
+			yh = depth
+			ypar = par
+		}
+		dfs(node.Left, node, depth+1)
+		dfs(node.Right,node, depth+1)
+	}
+	dfs(root, nil, 0)
+	if xh != -1 && xh == yh && xpar != nil && xpar != ypar{
+		return true
+	}else{
+		return false
+	}
+}
+
+//872. 叶子相似的树
 func LeafSimilar(root1 *BiTreeNode, root2 *BiTreeNode) bool {
 	s1 := LeafSequence(root1)
 	s2 := LeafSequence(root2)
@@ -1764,4 +1794,3 @@ func Connect2(root *BiTreeNode) *BiTreeNode {
 	}
 	return root
 }
-

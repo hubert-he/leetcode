@@ -3,6 +3,7 @@ package DP
 import (
 	"fmt"
 	"math"
+	"sort"
 )
 
 func max(i, j int)int {
@@ -613,6 +614,42 @@ func divisorGame(n int) bool {
 		}
 	}
 	return dp[n]
+}
+
+/* 322. Coin Change
+	BST: 源于 可构成一个树 或者图，找寻最短路径
+ */
+func coinChange(coins []int, amount int) int {
+	if amount == 0 {
+		return 0
+	}
+	// 优化1： 避开重复计算的情况
+	visited := map[int]bool{amount: true}
+	// 优化2： 对coins 升序
+	sort.Ints(coins)
+	q := []int{amount}
+	ans := 0
+	for len(q) > 0 {
+		tmp := []int{}
+		ans++
+		for _, item := range q{
+			for _, c := range coins{
+				if item - c == 0{
+					return ans
+				}
+				if item - c > 0{
+					if !visited[item-c]{
+						tmp = append(tmp, item - c)
+						visited[item-c] = true
+					}
+				}else{ // 由于 coins 升序排序，后面的面值会越来越大，剪枝
+					break
+				}
+			}
+		}
+		q = tmp
+	}
+	return -1 // 不可直接返回ans，无法换零 情况
 }
 
 
