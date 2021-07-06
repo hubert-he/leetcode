@@ -11,6 +11,12 @@ func max(i, j int)int {
 	}
 	return j
 }
+func min(i, j int) int {
+	if i > j {
+		return j
+	}
+	return i
+}
 
 //
 func CanWinNim(n int) bool {
@@ -523,8 +529,90 @@ func RotatedDigits(n int) int {
 	有多少种从 i 到末尾的后缀能组成一个好数。 最终的结果为 dp(0, true, false)
 	注意：N 从最高位到最低位的索引，从 0 开始增大。 第 i 位表示索引为 i 的位置。
  */
-func RotatedDigitsDP(n int) int{
 
+/*
+	定义dp[i]状态为：数字 i 的三种状态，即
+	1. i 翻装后与原数相同 记为2
+	2. i 翻装后与原数不同 记为1
+	3. i 翻装后是非法数字 记为0
+  i 为 1位数字时：
+	dp[i] = 1 when i 为 0 1 8
+	dp[i] = 2 when i 为 2 5 6 9
+	dp[i] = 0 when i 为 3 4 7
+  i > 10时
+    dp[i]的值来自于 dp[i/10] dp[i % 10] 这2个的状态 得出
+ */
+func RotatedDigitsDP2(n int) int{
+	ans, dp := 0, make([]int, n+1)
+	for i := 0; i <= n; i++{
+		if i < 10{
+			if i == 0 || i == 1 || i == 8{
+				dp[i] = 1
+			}else if i == 2 || i == 5 || i == 6 || i == 9{
+				dp[i] = 2
+				ans++
+			}
+		}else {
+			quotient, left := dp[i/10], dp[i%10]
+			if quotient == 1 && left == 1 {
+				// 前缀和个位数均是反转后是相同的数字
+				dp[i] = 1
+			} else if quotient >= 1 && left >= 1 {
+				dp[i] = 2
+				ans++
+			}
+		}
+	}
+	return ans
+}
+/* 回溯： 每步可以选当前数和不选当前数
+   LCS 01. 下载插件
+ */
+func leastMinutes(n int) int { // n 为 n 个插件
+	ans := math.MaxInt32
+	var bt func(int, int, int)
+	// cur: 当前下载数量   idx: 递归层数  cnt: 当前带宽
+	bt = func(cur, idx, cnt int){
+		if idx >= ans || cnt * 2 > math.MaxInt32{
+			return
+		}
+		if cur >= n{
+			ans = min(ans, idx)
+			return
+		}
+		bt(cur, idx + 1, cnt * 2)   // 不选当前cnt，则加倍
+		bt(cur + cnt, idx + 1, cnt) // 选择当前cnt
+	}
+	bt(0, 0, 1)
+	return ans
+}
+
+/* 1025. Divisor Game
+   n 为奇数的时候Alice（先手）必败，nn 为偶数的时候 Alice 必胜
+  博弈类的问题常常让我们摸不着头脑。当我们没有解题思路的时候，不妨试着写几项试试：
+	n = 1 的时候，区间 (0, 1) 中没有整数是 n 的因数，所以此时 Alice 败。
+	n = 2 的时候，Alice 只能拿 1，n 变成 1，Bob 无法继续操作，故 Alice 胜。
+	n = 3 的时候，Alice 只能拿 1，n 变成 2，根据 n = 2 的结论，我们知道此时 Bob 会获胜，Alice 败。
+	n = 4 的时候，Alice 能拿 1 或 2，如果 Alice 拿 1，根据 n = 3的结论，Bob 会失败，Alice 会获胜。
+	n = 5 的时候，Alice 只能拿 1，根据 n = 4 的结论，Alice 会失败。
+	Alice 处在n = k 状态时，Alice的每一步操作，必然使得 Bob处于 n = m(m < k)的状态。因此我们只要看是否存在一个 m 是必败的状态，
+    那么 Alice 直接执行对应的操作让当前的数字变成 m，Alice 就必胜了，如果没有任何一个是必败的状态的话，说明 Alice 无论怎么进行操作
+	最后都会让 Bob 处于必胜的状态，此时 Alice 是必败的
+    定义 dp[i] 表示当前数字 i 的时候先手是处于必胜态还是必败态，true 表示先手必胜， false表示先手必败。
+    从前往后递推，枚举 i 在 （0，i) 中 i 的因数 j ，看是否存在 dp[i-j]为必败态即可。
+ */
+func divisorGame(n int) bool {
+	dp := make([]bool, n + 2) // 多选一个数字 可以避开特殊条件，比如 n = 1 或 0 的情况
+	dp[1], dp[2] = false, true
+	for i := 3; i <= n; i++{
+		for j := 1; j < i; j++{
+			if i % j == 0 && !dp[i-j]{
+				dp[i] = true
+				break
+			}
+		}
+	}
+	return dp[n]
 }
 
 
