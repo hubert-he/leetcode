@@ -564,6 +564,34 @@ func coinChange(coins []int, amount int) int {
 	return -1 // 不可直接返回ans，无法换零 情况
 }
 
+// 5. Longest Palindromic Substring
+/* 暴力求出所有子串，然后逐个判断
+ */
+func longestPalindrome(s string) string{
+	var isPalindrome func([]byte) bool
+	isPalindrome = func(ss []byte) bool {
+		for i, j := 0, len(ss)-1; i < j; i,j = i+1, j-1{
+			if ss[i] != ss[j]{
+				return false
+			}
+		}
+		return true
+	}
+	length := len(s)
+	ans := []byte{}
+	for i := 0; i < length; i++{
+		for j := i; j < length; j++{
+			if isPalindrome([]byte(s[i:j+1])){
+				if len(ans) < (j-i+1){
+					ans = []byte(s[i:j+1])
+				}
+			}
+		}
+	}
+	return string(ans)
+}
+
+
 
 
 
