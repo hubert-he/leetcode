@@ -5,13 +5,24 @@ import (
 	"math"
 	"sort"
 )
-
+/*
 func max(i, j int)int {
 	if i > j {
 		return i
 	}
 	return j
 }
+ */
+func max(nums ...int)int{
+	ans := nums[0]
+	for i := 1; i < len(nums); i++{
+		if nums[i] > ans {
+			ans = nums[i]
+		}
+	}
+	return ans
+}
+
 func min(i, j int) int {
 	if i > j {
 		return j
@@ -36,6 +47,43 @@ func CanWinNim(n int) bool {
 }
 
 // 53. Maximum Subarray
+/* 暴力 */
+func maxSubArrayBurst(nums []int) int{
+	ans := nums[0]
+	for i := range nums{
+		for j := i; j < len(nums); j++{
+			tmp := 0
+			for k := i; k <= j; k++{
+				tmp += nums[k]
+			}
+			ans = max(tmp, ans)
+		}
+	}
+	return ans
+}
+func maxSubArrayBurst2(nums []int) int{
+	ans := nums[0]
+	for i := range nums{
+		acc := 0
+		for j := i; j < len(nums); j++{
+			acc += nums[j]
+			ans = max(acc, ans) // 直接处理
+		}
+	}
+	return ans
+}
+/*
+	贪心： O(n)考虑全负数情况
+ */
+func maxSubArrayGreedy(nums []int)(ans int){
+	ans = nums[0]
+	sum := 0
+	for _, num := range nums{
+		sum = max(sum + num, num) // 当前和加上当前值，与当前值 进行比较, 不能改为 判断是否为负数， 因为有全是负数情况
+		ans = max(ans, sum)
+	}
+	return
+}
 /*
   nums数组的长度是n，下标从 0 到 n-1
   dp[i]表示以第i个数结尾的 Maximum Subarray, 答案就是 max{dp[i]} i从0到n-1
@@ -100,26 +148,42 @@ func maxSubArrayPrefixSum(nums []int) int {
   线段树
  */
 type Status struct {
-	lSum, rSum, mSum, iSum int
+	lSum int // [l, r] 内以 l 为左端点的最大字段和
+	rSum int // [l, r] 内以 r 为右端点的最大字段和
+	mSum int // [l, r] 内的最大字段和
+	iSum int // [l, r] 的区间和
 }
+/* 定义一个操作get(a, l, r)表示查询a序列[l, r]区间内最大字段和
+   分治实现：对一个区间[l,r]，取 mid = (l+r) >> 1, 然后对[l,m] 和 [m+1,r]分治求解
+        当递归逐层深入直到区间长度缩小为1的时候，递归回升，然后处理 通过[l,m]区间的信息和[m+1,r]区间的信息合并成区间[l,r]的信息。
+*/
 func maxSubArrayII(nums []int) int {
-	return get(nums, 0, len(nums) - 1).mSum;
-}
-func get(nums []int, l, r int) Status{
-	if l == r {
-		return Status{nums[l], nums[l], nums[l], nums[l]}
+	var get func(int, int) Status
+	get = func(l, r int) Status{
+		if l == r{
+			return Status{nums[l],nums[l],nums[l],nums[l]}
+		}
+		m := (l+r) >> 1
+		lSub := get(l, m)
+		rSub := get(m+1, r)
+		return pushUp(lSub, rSub) // 回升
 	}
-	m := (l+r) >> 1
-	lSub := get(nums, l, m)
-	rSub := get(nums, m+1, r)
-	return pushUp(lSub, rSub)
+	return get(0, len(nums) - 1).mSum;
 }
+/* [l,m]: [l,r]的左子区间
+   [m+1,r]: [l,r]的右子区间
+	iSum: [l,r]的iSum就等于左子区间 加 右子区间的 iSum
+	lSum: 存在2种可能，要么等于左子区间的 lSum, 要么等于 左子区间的 iSum + 右子区间的 lSum， 二者取最大。
+	rSum: 要么等于右子区间的rSum, 要么等于右子区间的 iSum + 左子区间的 rSum， 二者取最大。
+	mSum: [l,r]的mSum对应的区间是否跨越 m（也可能不跨域m) 即 [l,r]的mSum 可能是 左子区间的 mSum 和 右子区间 mSum 中的一个
+          也可能是 左子区间的 rSum 和 右子区间的 lSum求和。 三者取最大。
+ */
 func pushUp(l, r Status) Status{
 	iSum := l.iSum + r.iSum
 	lSum := max(l.lSum, l.iSum + r.lSum)
 	rSum := max(r.rSum, r.iSum + l.rSum)
 	mSum := max(max(l.mSum, r.mSum), l.rSum + r.lSum)
-	return Status{lSum, rSum, mSum, iSum}
+	return Status{lSum: lSum, rSum: rSum, mSum: mSum, iSum: iSum}
 }
 
 // 121. Best Time to Buy and Sell Stock
@@ -652,12 +716,48 @@ func coinChange(coins []int, amount int) int {
 	return -1 // 不可直接返回ans，无法换零 情况
 }
 
+// LCP 07. 传递信息
+/* BFS： 在图中搜索计算方案数
+ */
+func numWays(n int, relation [][]int, k int) int {
+	q := []int{0}
+	total := len(relation)
+	for len(q) > 0{
+		if k <= 0{
+			break
+		}
+		tmp := []int{}
+		for _, elem := range q{
+			for i := 0; i < total; i++{
+				if relation[i][0] == elem {
+					tmp = append(tmp, relation[i][1])
+				}
+			}
+		}
+		q = tmp
+		k--
+	}
+	ans := 0
+	for _, item := range q{
+		if item == n - 1{
+			ans++
+		}
+	}
+	return ans
+}
 
-
-
-
-
-
+/* 计数问题，很大可能可通过 DP 优化
+ dp: 定义状态 dp[i][j] 为经过 i 轮 传递到编号 j 的玩家的方案数，其中 0 <= i <= k, 0 <= j < n
+	 由于 从编号 0 的玩家开始传递，当 i = 0时，一定位于编号0的玩家，不会传递到其他玩家
+	 dp[0][j] = 1(j = 0) 0(j != 0)
+	对于信息传递关系[src,dst], 如果第i轮传递到编号src的玩家，则第 i + 1 轮可以从编号 src 的玩家传递到编号 dst的玩家。
+	在计算dp[i+1][dst]时，需要考虑可以传递到编号dst的所在玩家。状态转移方程：
+	dp[i+1][dst] = SUM{dp[i][src]} [src,dst]属于relation
+	最终得到 dp[k][n-1]的方案数
+ */
+func numWaysDP(n int, relation [][]int, k int) int {
+	 
+}
 
 
 
