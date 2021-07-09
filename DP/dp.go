@@ -746,6 +746,33 @@ func numWays(n int, relation [][]int, k int) int {
 	return ans
 }
 
+// 5. Longest Palindromic Substring
+/* 暴力求出所有子串，然后逐个判断
+ */
+func longestPalindrome(s string) string{
+	var isPalindrome func([]byte) bool
+	isPalindrome = func(ss []byte) bool {
+		for i, j := 0, len(ss)-1; i < j; i,j = i+1, j-1{
+			if ss[i] != ss[j]{
+				return false
+			}
+		}
+		return true
+	}
+	length := len(s)
+	ans := []byte{}
+	for i := 0; i < length; i++{
+		for j := i; j < length; j++{
+			if isPalindrome([]byte(s[i:j+1])){
+				if len(ans) < (j-i+1){
+					ans = []byte(s[i:j+1])
+				}
+			}
+		}
+	}
+	return string(ans)
+}
+
 /* 计数问题，很大可能可通过 DP 优化
  dp: 定义状态 dp[i][j] 为经过 i 轮 传递到编号 j 的玩家的方案数，其中 0 <= i <= k, 0 <= j < n
 	 由于 从编号 0 的玩家开始传递，当 i = 0时，一定位于编号0的玩家，不会传递到其他玩家
