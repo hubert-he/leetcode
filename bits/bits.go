@@ -1,5 +1,15 @@
 package bits
 
+import "math/bits"
+func max(nums ...int)int{
+	ans := nums[0]
+	for i := 1; i < len(nums); i++{
+		if nums[i] > ans {
+			ans = nums[i]
+		}
+	}
+	return ans
+}
 // 190 Reverse Bits
 const (
 	m1 = 0x55555555
@@ -58,4 +68,93 @@ func isPowerOfFour(n int) bool {
 }
 func isPowerOfFour2(n int) bool{
 	return n > 0 && n & (n-1) == 0 && n % 3 == 1
+}
+
+/*	461. Hamming Distance
+	方法1：使用内置函数
+		大多数编程语言都内置了计算二进制表达中 1 的数量的函数:
+        C/C++: __builtin_popcount(x^y);
+		JAVA: Integer.bitCount(x^y);
+		GO: bits.OnesCount(uint(x^y))
+	方法2: >> 使用
+	方法3：Brian Kernighan 算法
+		核心概念：记 f(x) 表示 x 和 x-1进行 & 运算的结果, 即 f(x) = x & (x-1), 那么f(x)恰好为 x 删去其二进制表示中最右侧的 1 的结果。
+      基于该概念，当计算出 s = x ^ y后，只需要不断让 s = f(s)， 直到 s = 0 即可。这样每循环一次， s 都会删去其二进制表示中 最右侧的 1
+       最终循环的次数即为 s 的二进制表示中 1 的数量。
+ */
+func hammingDistance(x, y int) (ans int) {
+	return bits.OnesCount(uint(x^y))
+}
+func hammingDistance2(x int, y int) int {
+	ans := 0
+	for z := x ^ y; z > 0; z = z >> 1 {
+	/*	bad idea
+		if z & 1 == 1{
+			ans++
+		}
+	 */
+		ans += z & 1
+	}
+	return ans
+}
+
+func hammingDistance3(x, y int) (ans int) {
+	s := x ^ y
+	for s != 0 {
+		ans++
+		s = s & (s - 1)
+	}
+	return ans
+}
+/* 05.03. Reverse Bits LCCI
+   You have an integer and you can flip exactly one bit from a 0 to a 1.
+   Write code to find the length of the longest sequence of 1s you could create.
+ */
+// 05.03. Reverse Bits LCCI
+/*
+	自己实现的
+*/
+func reverseBits0503(num int) int {
+	bits := [33]int{}
+	for i := 32; i > 0; i--{
+		if num & 0x1 == 0x1{
+			bits[i] = 1
+		}
+		num >>= 1
+	}
+	first := true // 起始计算
+	prev, curr := 0, 0
+	ans := 0
+	for i := 0; i <= 32; i++{
+		if bits[i] == 1{
+			curr++
+		}else{
+			if first {
+				ans = max(ans, prev + curr)
+			} else {
+				ans = max(ans, prev + curr + 1)
+			}
+			prev = curr
+			curr = 0
+		}
+	}
+	return ans
+}
+
+func reverseBits05032(num int) int {
+	cur := 0 // 当前位置为止连续1的个数，遇 0 归 0， 遇 1 加 1
+	insert := 0 // 在当前位置变1， 往前数连续 1 的最大个数， 遇到 0 变为 cur + 1， 遇到 1 加 1
+	ans := 1
+	for i := 0; i < 32; i++{
+		//if num & (1 << i) == 1{  低级错误
+		if (num & (1 << i)) != 0 {
+			cur++
+			insert++
+		}else{
+			insert = cur + 1
+			cur = 0
+		}
+		ans = max(ans, insert)
+	}
+	return ans
 }

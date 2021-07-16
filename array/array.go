@@ -1423,7 +1423,9 @@ func CountRangeSumByMap(nums []int, lower int, upper int) int {
 
 	return ans
 }
-// 归并排序
+/*
+归并排序
+ */
 func countRangeSumII(nums []int, lower, upper int) int {
 	var mergeCount func([]int) int
 	mergeCount = func(arr []int) int {
@@ -1467,11 +1469,205 @@ func countRangeSumII(nums []int, lower, upper int) int {
 	return mergeCount(prefixSum)
 }
 
-// 399. Evaluate Division
+// 17.10. Find Majority Element LCCI
+/*
+	摩尔投票法
+ */
+func majorityElement(nums []int) int {
+	candidate := -1
+	count := 0
+	for _, num := range nums {
+		if count == 0{
+			candidate = num
+		}
+		if num == candidate{
+			count++
+		}else{
+			count --
+		}
+	}
+	count = 0
+	for _, num := range nums{
+		if num == candidate{
+			count++
+		}
+	}
+	if count * 2 > len(nums){
+		return candidate
+	}
+	return -1
+}
+/* 并查集 以及 图系列
+ */
+/* 399. Evaluate Division
+	抽象为并查集处理 带权有向图
+	由于变量之间的倍数关系具有传递性，处理有传递性关系的问题，可以使用「并查集」，
+	我们需要在并查集的「合并」与「查询」操作中 维护这些变量之间的倍数关系
+	1. 同在一个集合中的两个变量就可以通过某种方式计算出它们的比值。具体来说，可以把 不同的变量的比值转换成为相同的变量的比值
+	2. 如果两个变量不在同一个集合中， 返回 -1.0
+
+	对于任意两点x y  假设他们在并查集中具有共同的parent, 并且
+	v[x] / v[parent] = a
+	v[y] / v[parent] = b ==> v[x] / v[y] = a / b
+ */
+
 func CalcEquation(equations [][]string, values []float64, queries [][]string) []float64 {
-	return nil
+	// 给方程组中的每个变量编号
+	id := map[string]int{}
+	for _, op := range equations{
+		if _, ok := id[op[0]]; !ok{
+			id[op[0]] = len(id)
+		}
+		if _, ok := id[op[1]]; !ok {
+			id[op[1]] = len(id)
+		}
+	}
+	parent := make([]int, len(id))
+	w := make([]float64, len(id))
+	// 初始化
+	for i := range parent{
+		parent[i] = i
+		w[i] = 1
+	}
+
+	var find func(int)int
+	var union func(int, int, float64)
+	find = func(x int) int {
+		if parent[x] != x{
+			f := find(parent[x])
+			/* a/b=3; b/c=0.5; a/c=3*0.5 ==> a = (3*05)c*/
+			w[x] *= w[parent[x]]
+			parent[x] = f
+		}
+		return parent[x]
+	}
+	union = func(i, j int, val float64){
+		pi, pj := find(i), find(j)
+		//w[pi] = val * w[pj] / w[pi]
+		w[pi] = val * w[j] / w[i]
+		parent[pi] = pj
+	}
+	for i, eq := range equations{
+		union(id[eq[0]], id[eq[1]], values[i])
+	}
+	fmt.Println(parent, w)
+	ans := make([]float64, len(queries))
+	for i, q := range queries{
+		start, hasS := id[q[0]]
+		end, hasE := id[q[1]]
+		if hasS && hasE && find(start) == find(end) {
+			ans[i] = w[start] / w[end]
+		} else {
+			ans[i] = -1
+		}
+	}
+	return ans
+}
+/* 图BST解法
+*/
+func CalcEquationBST(equations [][]string, values []float64, queries [][]string) []float64 {
+	// 编号
+	id := map[string]int{}
+	for _, eq := range equations{
+		for i := 0; i < 2; i++{
+			if _, ok := id[eq[i]]; !ok {
+				id[eq[i]] = len(id)
+			}
+		}
+	}
+	// 构键图
+	type edge struct{
+		to		int
+		weight	float64
+	}
+	graph := make([][]edge, len(id))
+	for i, eq := range equations{
+		v, w := id[eq[0]], id[eq[1]]
+		graph[v] = append(graph[v], edge{w, values[i]})
+		graph[w] = append(graph[w], edge{v, 1/values[i]})
+	}
+	fmt.Println(graph)
+	/* bfs 遍历
+	 构建完图之后，对于任何一个查询，就可以从起点出发，通过广度优先搜索的方式，不断更新起点与当前点之间的路径长度，直到搜索到终点为止
+	*/
+	bfs := func(s, e int) float64{
+		ratios := make([]float64, len(graph))
+		ratios[s] = 1
+		q := []int{s}
+		for len(q) > 0{
+			v := q[0]
+			q = q[1:]
+			if v == e{
+				return ratios[v]
+			}
+			for _, item := range graph[v]{
+				if w := item.to; ratios[w] == 0{
+					ratios[w] = ratios[v] * item.weight
+					q = append(q, w)
+				}
+			}
+		}
+		return -1
+	}
+	// 查询
+	ans := make([]float64, len(queries))
+	for i, q := range queries{
+		start, hasS := id[q[0]]
+		end, hasE := id[q[1]]
+		if hasS && hasE {
+			ans[i] = bfs(start, end)
+		}else{
+			ans[i] = -1
+		}
+	}
+	return ans
 }
 
+/* 990. Satisfiability of Equality Equations
+	可以将每个变量看作图中的一个节点，把相等关系 == 看作是连接两个节点的边， 由于表示相等关系的等式方程具有传递性
+	即 若a==b 和 b==c 成立，则 a == c也成立。也即相等的变量属于同一个连通分量。
+	看到连通分量，因此可以 union set来处理
+	1. 遍历所有等式，构造并查集。同一个等式中的两个变量属于同一个连通分量
+	2. 遍历所有的不等式。同一个不等式中的两个变量不能属于同一个连通分量，因此对两个变量分别查找其所在的连通分量，如果两个变量在同一个连通分量中，
+       则产生矛盾，返回false
+    3. 如果遍历完所有的不等式没有发现矛盾，则返回true
+ */
+func equationsPossible(equations []string) bool {
+	parent := make([]int, 26)
+	for i := 0; i < 26; i++{
+		parent[i] = i
+	}
+	var union func(int, int)
+	var find func(int) int
+	for _, str := range equations{
+		if str[1] == '='{
+			index1 := int(str[0] - 'a')
+			index2 := int(str[3] - 'a')
+			union(index1, index2)
+		}
+	}
+
+	for _, str := range equations {
+		if str[1] == '!'{
+			index1 := int(str[0] - 'a')
+			index2 := int(str[3] - 'a')
+			if find(index1) == find(index2) {
+				return false
+			}
+		}
+	}
+	union = func(i, j int){
+		parent[find(i)] = find(j)
+	}
+	find = func(i int) int{
+		for parent[i] != i {
+			parent[i] = parent[parent[i]] // 路径压缩
+			i = parent[i]
+		}
+		return i
+	}
+	return true
+}
 
 
 

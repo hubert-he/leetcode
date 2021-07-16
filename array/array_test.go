@@ -239,3 +239,46 @@ func TestCountRangeSumByMap(t *testing.T) {
 		}
 	}
 }
+
+func TestCalcEquation(t *testing.T) {
+	for caseId, testCase := range []struct{
+		equations	[][]string
+		values 		[]float64
+		queries		[][]string
+		want		[]float64
+	}{
+		{[][]string{{"x1", "x2"}, {"x2", "x3"}, {"x1", "x4"}, {"x2", "x5"}},
+			[]float64{3.0, 0.5, 3.4, 5.6},
+			[][]string{{"x2", "x4"}, {"x1", "x5"}, {"x1", "x3"}, {"x5", "x5"},
+				{"x5", "x1"}, {"x3", "x4"}, {"x4", "x3"}, {"x6", "x6"}, {"x0", "x0"}},
+			[]float64{1.13333,16.8,1.5,1.0,0.05952,2.26667,0.44118,-1.0,-1.0},
+		},
+		{[][]string{{"a", "b"}, {"e", "f"}, {"b", "e"}},
+			[]float64{3.4, 1.4, 2.3},
+			[][]string{{"b", "a"}, {"a", "f"}, {"f", "f"}, {"e", "e"}, {"c", "c"}, {"a", "c"}, {"f", "e"}},
+			[]float64{0.29412,10.948,1.0,1.0,-1.0,-1.0,0.71429},
+		},
+		{[][]string{{"a", "b"}, {"b", "c"}},
+			[]float64{2.0, 3.0},
+			[][]string{{"a", "c"}, {"b", "a"}, {"a", "e"}, {"a", "a"}, {"x", "x"}},
+			[]float64{6.00000,0.50000,-1.00000,1.00000,-1.00000},
+		},
+		{[][]string{{"a", "b"}, {"b", "c"}, {"bc", "cd"}},
+			[]float64{1.5, 2.5, 5.0},
+			[][]string{{"a", "c"}, {"c", "b"}, {"bc", "cd"}, {"cd", "bc"}},
+			[]float64{3.75000,0.40000,5.00000,0.20000},
+		},
+		{[][]string{{"a", "b"}},
+			[]float64{0.5},
+			[][]string{{"a", "b"}, {"b", "a"}, {"a", "c"}, {"x", "y"}},
+			[]float64{0.50000,2.00000,-1.00000,-1.00000},
+		},
+	}{
+		result := CalcEquationBST(testCase.equations, testCase.values, testCase.queries)
+		ok := assert.ElementsMatch(t, result, testCase.want,
+			fmt.Sprintf("case-%d Failed result=%v but want=%v", caseId, result, testCase.want))
+		if !ok {
+			break
+		}
+	}
+}

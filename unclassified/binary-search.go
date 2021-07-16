@@ -64,3 +64,38 @@ func binarySearchII(a []int, key int) int {
 	}
 	return -1
 }
+
+/* GoLang sort 库中 Search 代码 优秀Binary Search 实现
+	arr := []int{1,3,5,7}
+	index := sort.Search(len(arr), func(i int)bool{
+		return arr[i] >= 4 // 返回2 标识 插入的下标位置
+	})
+	优势：
+	1. 当有多个元素都等于target时，实际上可以找到下标最小的那个元素
+	2. 当target不存在时，返回的下标标识了如果要将target插入，插入的位置（插入后依然保持数组有序）
+	3. 基于这种编程范式，上层只用提供一个与自身数据类型相关的比较函数
+   golang sort 提供的基础类型查找函数
+	// - 只需传入整型切片和target
+	// - 注意，该函数只能对升序数组做查找
+	func SearchInts(a []int, x int) int {
+		return Search(len(a), func(i int) bool { return a[i] >= x })
+	}
+	func SearchFloat64s(a []float64, x float64) int {
+		return Search(len(a), func(i int) bool { return a[i] >= x })
+	}
+	func SearchStrings(a []string, x string) int {
+		return Search(len(a), func(i int) bool { return a[i] >= x })
+	}
+ */
+func Search(n int, f func(int)bool) int{
+	i, j := 0, n
+	for i < j {
+		h := int(uint(i+j) >> 1) // 防止下标 相加 溢出
+		if !f(h){ // 如果序列是升序，比较函数应该用 >=   降序 <=
+			i = h + 1 // 转到右半边去处理
+		} else {
+			j = h // 并不退出循环，而是继续查找，锁定最小的下标（如果有重复元素）
+		}
+	}
+	return i
+}

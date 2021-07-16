@@ -746,6 +746,53 @@ func numWays(n int, relation [][]int, k int) int {
 	return ans
 }
 
+/*
+  DFS
+ */
+func numWaysDFS(n int, relation [][]int, k int) int {
+	ans := 0
+	var dfs func(int, int)
+	dfs = func(round, curr int){
+		if round == k{
+			if curr == n-1{
+				ans++
+			}
+			return
+		}
+		for _, r := range relation{
+			src,dst := r[0], r[1]
+			if src == curr{
+				dfs(round+1, dst)
+			}
+		}
+	}
+	dfs(0, 0)
+	return ans
+}
+/* 计数问题，很大可能可通过 DP 优化
+ dp: 定义状态 dp[i][j] 为经过 i 轮 传递到编号 j 的玩家的方案数，其中 0 <= i <= k, 0 <= j < n
+	 由于 从编号 0 的玩家开始传递，当 i = 0时，一定位于编号0的玩家，不会传递到其他玩家
+	 dp[0][j] = 1(j = 0) 0(j != 0)
+	对于信息传递关系[src,dst], 如果第i轮传递到编号src的玩家，则第 i + 1 轮可以从编号 src 的玩家传递到编号 dst的玩家。
+	在计算dp[i+1][dst]时，需要考虑可以传递到编号dst的所在玩家。状态转移方程：
+	dp[i+1][dst] = SUM{dp[i][src]} [src,dst]属于relation
+	最终得到 dp[k][n-1]的方案数
+ */
+func numWaysDP(n int, relation [][]int, k int) int {
+	 dp := make([][]int, k+1)
+	 for i := range dp{
+	 	dp[i] = make([]int, n)
+	 }
+	 dp[0][0] = 1
+	 for i := 0; i < k; i++{
+	 	for _, r := range relation{
+	 		src, dst := r[0], r[1]
+	 		dp[i+1][dst] += dp[i][src]
+		}
+	 }
+	 return dp[k][n-1]
+}
+
 // 5. Longest Palindromic Substring
 /* 暴力求出所有子串，然后逐个判断
  */
@@ -771,19 +818,6 @@ func longestPalindrome(s string) string{
 		}
 	}
 	return string(ans)
-}
-
-/* 计数问题，很大可能可通过 DP 优化
- dp: 定义状态 dp[i][j] 为经过 i 轮 传递到编号 j 的玩家的方案数，其中 0 <= i <= k, 0 <= j < n
-	 由于 从编号 0 的玩家开始传递，当 i = 0时，一定位于编号0的玩家，不会传递到其他玩家
-	 dp[0][j] = 1(j = 0) 0(j != 0)
-	对于信息传递关系[src,dst], 如果第i轮传递到编号src的玩家，则第 i + 1 轮可以从编号 src 的玩家传递到编号 dst的玩家。
-	在计算dp[i+1][dst]时，需要考虑可以传递到编号dst的所在玩家。状态转移方程：
-	dp[i+1][dst] = SUM{dp[i][src]} [src,dst]属于relation
-	最终得到 dp[k][n-1]的方案数
- */
-func numWaysDP(n int, relation [][]int, k int) int {
-	 
 }
 
 

@@ -3,9 +3,18 @@ package main
 import (
 	"./array"
 	"fmt"
+	"sort"
 )
 
 func main(){
+	arr := []int{1,3,5,7}
+	index := sort.Search(len(arr), func(i int)bool{
+		return arr[i] >= 4
+	})
+	fmt.Println(index)
+	
+
+
 	array.NumIslandsDFS([][]byte{[]byte{'1','1','1'},[]byte{'0','1','0'},[]byte{'1','1','1'}})
 	fmt.Println(array.TrulyMostPopularIII([]string{"John(15)","Jon(12)","Chris(13)","Kris(4)","Christopher(19)"},
 		[]string{"(Jon,John)","(John,Johnny)","(Chris,Kris)","(Chris,Christopher)","(Jon,J)"}))
