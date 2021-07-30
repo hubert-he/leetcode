@@ -2,7 +2,6 @@ package lru
 
 import (
 	"./simplelru"
-	"google.golang.org/genproto/googleapis/cloud/dialogflow/cx/v3"
 	"sync"
 )
 

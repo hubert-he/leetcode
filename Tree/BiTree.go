@@ -331,7 +331,7 @@ func midOrderIter(root *BiTreeNode) []interface{} {
 }
 
 func postOrderMorris(root *BiTreeNode) (serial []interface{}) {
-	dumbRoot := &BiTreeNode{nil, root, nil}
+	dumbRoot := &BiTreeNode{Val: nil, Left: root, Right: nil}
 	cur := dumbRoot
 	for cur != nil {
 		if cur.Left == nil {
@@ -658,31 +658,6 @@ func isSubDFS(head *ListNode, root *BiTreeNode) bool{
 	}
 	// 4. 前三种情况都不满足，说明匹配成功了一部分，我们需要继续递归匹配
 	return isSubDFS(head.Next, root.Left) || isSubDFS(head.Next, root.Right)
-}
-
-func HasPathSum(root *BiTreeNode, targetSum int) bool {
-	if root == nil {
-		return false  // 每次开始先解决特殊情况
-	}
-	return hasPathSum(root, targetSum, 0)
-}
-// 注意，题目要求，是根到叶子节点所有和
-func hasPathSum(root *BiTreeNode, targetSum, pathSum int) bool {
-	pathSum += root.Val.(int)
-	if root.Left == nil && root.Right == nil{
-		if targetSum == pathSum{
-			return true
-		}else{
-			return false
-		}
-	}
-	if root.Left != nil && hasPathSum(root.Left, targetSum, pathSum) {
-		return true
-	}
-	if root.Right != nil && hasPathSum(root.Right, targetSum, pathSum) {
-		return true
-	}
-	return false
 }
 
 func InvertBiTree(root *BiTreeNode) *BiTreeNode{
@@ -1794,3 +1769,5 @@ func Connect2(root *BiTreeNode) *BiTreeNode {
 	}
 	return root
 }
+
+

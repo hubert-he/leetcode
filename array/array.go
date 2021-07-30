@@ -1563,7 +1563,9 @@ func CalcEquation(equations [][]string, values []float64, queries [][]string) []
 	}
 	return ans
 }
-/* 图BST解法
+/* 图BST解法：
+   我们可以将整个问题建模成一张图：给定图中的一些点（变量），以及某些边的权值（两个变量的比值），
+   试对任意两点（两个变量）求出其路径长（两个变量的比值）
 */
 func CalcEquationBST(equations [][]string, values []float64, queries [][]string) []float64 {
 	// 编号
@@ -1575,7 +1577,7 @@ func CalcEquationBST(equations [][]string, values []float64, queries [][]string)
 			}
 		}
 	}
-	// 构键图
+	// 构键图 --- 邻接表实现
 	type edge struct{
 		to		int
 		weight	float64
@@ -1617,6 +1619,61 @@ func CalcEquationBST(equations [][]string, values []float64, queries [][]string)
 		if hasS && hasE {
 			ans[i] = bfs(start, end)
 		}else{
+			ans[i] = -1
+		}
+	}
+	return ans
+}
+/*
+  对于查询数量很多的情形，如果为每次查询都独立搜索一次，则效率会变低。为此，我们不妨对图先做一定的预处理，随后就可以在较短的时间内回答每个查询。
+  利用floyd算法预先算出任意两点间的距离
+ */
+func calcEquationFloyd(equations [][]string, values []float64, queries [][]string) []float64 {
+	nodes := map[string]int{}
+	for _, item := range equations{
+		for _, e := range item{
+			if _, ok := nodes[e]; !ok{
+				nodes[e] = len(nodes)
+			}
+		}
+	}
+	size := len(nodes)
+	// adj matrix
+	graph := make([][]float64, size)
+	for i := range graph{
+		graph[i] = make([]float64, size)
+	}
+	for i, eq := range equations{
+		n1, n2 := nodes[eq[0]], nodes[eq[1]]
+		graph[n1][n2] = values[i]
+		graph[n2][n1] = 1/values[i]
+	}
+	/* floyd alg: 复杂度为 N的立方, 空间负责度为 N 的平方
+	DP: f[k][i][j] = min{ f[k-1][i][j], f[k-1][i][k]+f[k-1][k][j] }
+	for k := 0; k < size; k++{
+		for i := 0; i < size; i++{
+			for j := 0; j < size; j++{
+				graph[i][j] = min(graph[i][j], graph[i][k]+graph[k][j])
+			}
+		}
+	}
+	 */
+	for k := range graph{
+		for i := range graph{
+			for j := range graph{
+				if graph[i][k] > 0 && graph[k][j] > 0{
+					graph[i][j] = graph[i][k]*graph[k][j]
+				}
+			}
+		}
+	}
+	ans := make([]float64, len(queries))
+	for i, q := range queries{
+		from, fromOk := nodes[q[0]]
+		to, toOk := nodes[q[1]]
+		if toOk && fromOk && graph[from][to] != 0{
+			ans[i] = graph[from][to]
+		} else{
 			ans[i] = -1
 		}
 	}

@@ -5,7 +5,7 @@ func choosePivotMedianOfThree(a []int, left, right int) int{
 	/* 方式1： (right - left + 1) / 2 ，总数为偶数时，得到的是偏右的那个元素下标
 	   方式2: (left + right) / 2, 总数为偶数时，得到的是偏左的那个元素下标
 	 */
-	mid := (left + right) / 2
+	mid := (left + right) >> 1
 	// 求中位数
 	if (a[left] - a[mid]) * (a[left] - a[right]) <= 0{
 		return left

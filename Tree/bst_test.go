@@ -148,7 +148,7 @@ func TestBSTSequences(t *testing.T) {
 		{[]interface{}{6,4,nil,3,5,1,nil,nil,nil,nil,2}, [][]interface{}{{6,4,3,5,1,2},{6,4,3,1,5,2},{6,4,3,1,2,5},{6,4,5,3,1,2}}},
 	} {
 		tree := NewBSTFromPlainList(testCase.nums)
-		result := BSTSequences(tree.root)
+		result := BSTSequences(tree)
 
 		assert.Equal(t, result, testCase.want, fmt.Sprintf("case-%d result=%v want=%v", caseId, result, testCase.want))
 	}
