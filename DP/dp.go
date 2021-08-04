@@ -23,11 +23,14 @@ func max(nums ...int)int{
 	return ans
 }
 
-func min(i, j int) int {
-	if i > j {
-		return j
+func min(nums ...int) int {
+	m := nums[0]
+	for _, n := range nums{
+		if m > n{
+			m = n
+		}
 	}
-	return i
+	return m
 }
 
 //

@@ -22,3 +22,35 @@ func TestPathSumIII(t *testing.T) {
 		}
 	}
 }
+
+func TestPathSumIV(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []int
+		want int
+	}{
+		{[]int{113,221}, 4},
+		{[]int{113, 215, 221}, 12},
+	}{
+		result := PathSumIV(testCase.nums)
+		if result != testCase.want {
+			t.Errorf("case-%d Failed: result=%d, but want %d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestPathSumIVBFS(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []int
+		want int
+	}{
+		{[]int{113,221}, 4},
+		{[]int{113, 215, 221}, 12},
+	}{
+		result := PathSumIVBFS(testCase.nums)
+		if result != testCase.want {
+			t.Errorf("case-%d Failed: result=%d, but want %d", caseId, result, testCase.want)
+			break
+		}
+	}
+}

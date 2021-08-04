@@ -615,6 +615,50 @@ func BSTSequences(tree *BinarySearchTree) (result [][]interface{}) {
 	return
 }
 
-
-
-
+/*
+  Given the root of a Binary Search Tree (BST),
+  convert it to a Greater Tree(累加树) such that every key of the original BST is changed to the original key plus sum of all keys greater than the original key in BST.
+  As a reminder, a binary search tree is a tree that satisfies these constraints:
+The left subtree of a node contains only nodes with keys less than the node's key.
+The right subtree of a node contains only nodes with keys greater than the node's key.
+Both the left and right subtrees must also be binary search trees.
+ */
+/*
+  反中序遍历-- 可以采用线索二叉树提升性能
+  Morris遍历的核心思想是利用树的大量空闲指针，实现空间开销的缩减。
+  1. 如果当前节点的Right为空， 处理当前节点，并遍历当前节点的Left
+  2. 如果当前节点的Right不为空，找到当前节点Right的最左节点（该节点为当前节点中序遍历的前驱节点）：
+ 	2.a 如果最左节点的Left为空， 将最左节点的Left指向当前节点，遍历当前节点的Right
+	2.b 如果最左节点的Left不为空， 将最左节点的Left重置为空（恢复树的原状），处理当前节点，并将当前节点置为其Left
+  3. 重复1和2
+ */
+func getSuccessor(root *BiTreeNode) (succ *BiTreeNode){
+	succ = root.Right
+	for succ.Left != nil && succ.Left != root{ // succ.Left 与 root 关系
+		succ = succ.Left
+	}
+	return
+}
+func convertBST(root *BiTreeNode) *BiTreeNode {
+	sum := 0
+	node := root
+	for node != nil {
+		if node.Right == nil{
+			sum += node.Val.(int)
+			node.Val = sum
+			node = node.Left
+		}else{
+			succ := getSuccessor(node)
+			if succ.Left == nil {
+				succ.Left = node
+				node = node.Right
+			}else{// 恢复
+				succ.Left = nil
+				sum += node.Val.(int)
+				node.Val = sum
+				node = node.Left
+			}
+		}
+	}
+	return root
+}
