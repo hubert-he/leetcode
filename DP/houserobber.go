@@ -494,9 +494,34 @@ func minCostIII(houses []int, cost [][]int, m int, n int, target int) int {
 	}
 	return ans
 }
-/* 暴力BFS
-
+/* 暴力DFS， 画出递归树 能很明显发现 可以循环迭代：递归树节点是房间号，边是颜色，如果没有neighbor限制，可以直接2层for迭代完成
+   通过代码，亦可看出这是尾递归，很容易转换为迭代
  */
 func minCostIIIBFS(houses []int, cost [][]int, m int, n int, target int) int {
-
+	ans := math.MaxInt32
+	var dfs func(curRoom, curColor, neigh, sum int)
+	dfs = func(curRoom, curColor, neigh, sum int){
+		if sum >= ans || neigh > target{ // 终止1-超过之前结算，或 neighbor 过大
+			return
+		}
+		if curRoom == m{
+			if neigh == target{
+				ans = min(ans, sum)
+			}
+			return // 终止2-正常终止
+		}
+		if houses[curRoom] == 0{ //未涂色
+			for i := 0; i < n; i++{
+				dfs(curRoom+1, i, neighCnt, sum + cost[curRoom][i])
+			}
+		}else{ // 已涂色
+			dfs(curRoom + 1, curColor, neighCnt, sum)
+		}
+	}
+	dfs(0, -1, 0, 0)
+	if ans == math.MaxInt32{
+		return -1
+	}else {
+		return ans
+	}
 }

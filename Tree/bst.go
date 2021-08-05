@@ -662,3 +662,145 @@ func convertBST(root *BiTreeNode) *BiTreeNode {
 	}
 	return root
 }
+/* 04.05. 合法二叉搜索树
+方法1： 将bst 看作链表来对待，即中序处理
+ */
+func IsValidBST(root *BiTreeNode) bool {
+	var prev *BiTreeNode
+	var dfs func(*BiTreeNode)bool
+	dfs = func(node *BiTreeNode)bool{
+		if node == nil {
+			return true
+		}
+		if dfs(node.Left){
+			if prev != nil && prev.Val.(int) >= node.Val.(int){
+				return false
+			}
+			prev = node
+			return dfs(node.Right)
+		}
+		return false
+	}
+	return dfs(root)
+}
+/* 非递归实现
+*/
+func IsValidBST2(root *BiTreeNode)bool{
+	st := []*BiTreeNode{}
+	var prev *BiTreeNode
+	for len(st) > 0 || root != nil{
+		for root != nil {
+			st = append([]*BiTreeNode{root}, st...)
+			root = root.Left
+		}
+		if prev != nil && st[0].Val.(int) <= prev.Val.(int){
+			return false
+		}
+		prev = st[0]
+		root = st[0].Right
+		st = st[1:]
+	}
+	return true
+}
+/*
+  递归：
+  如果该二叉树的左子树不为空，则左子树上所有节点的值均小于它的根节点的值；
+  若它的右子树不空，则右子树上所有节点的值均大于它的根节点的值；它的左右子树也为二叉搜索树
+ */
+func IsValidBST3(root *BiTreeNode)bool{
+	var dfs func(*BiTreeNode, int, int)bool
+	dfs = func(node *BiTreeNode, lower int, upper int)bool{
+		if node == nil {
+			return true
+		}
+		value := node.Val.(int)
+		if value <= lower || value >= upper{
+			return false
+		}
+		return dfs(node.Left, lower, value) && dfs(node.Right, value, upper)
+	}
+	return dfs(root, math.MinInt32, math.MaxInt32)
+}
+
+/* 95. Unique Binary Search Trees II
+	Given an integer n, return all the structurally unique BST's (binary search trees),
+    which has exactly n nodes of unique values from 1 to n. Return the answer in any order.
+Example 1:
+	Input: n = 3
+	Output: [[1,null,2,null,3],[1,null,3,2],[2,1,3],[3,1,null,null,2],[3,2,null,1]]
+Example 2:
+	Input: n = 1
+	Output: [[1]]
+*/
+func GenerateTreesBST(n int) []*BiTreeNode {
+	ans := []*BiTreeNode{}
+	nums := make([]int, n)
+	for i := 1; i <= n; i++{
+		nums[i-1] = i
+	}
+	var dfs func([]int)[]*BiTreeNode
+	dfs = func(nodes []int)[]*BiTreeNode{
+		if len(nodes) <= 0{
+			return []*BiTreeNode{nil} // nil 为必须，双重
+		}
+		res := []*BiTreeNode{}
+		for i := range nodes{
+			left := dfs(nodes[:i])
+			right := dfs(nodes[i+1:])
+			for _, l := range left{
+				for _, r := range right{
+					res = append(res, &BiTreeNode{Val: nodes[i], Left: l, Right: r})
+				}
+			}
+		}
+		return res
+	}
+	ans = append(ans, dfs(nums)...)
+	return ans
+}
+/*	官方题解
+*/
+func generateTrees(n int) []*BiTreeNode {
+	if n == 0{
+		return nil
+	}
+	var dfs func(int, int)[]*BiTreeNode
+	dfs = func(start, end int)[]*BiTreeNode{
+		if start > end{
+			return []*BiTreeNode{nil}
+		}
+		allTrees := []*BiTreeNode{}
+		for i := start; i <= end; i++{
+			left := dfs(start, i - 1)
+			right := dfs(i+1, end)
+			for _, l := range left{
+				for _, r := range right{
+					allTrees = append(allTrees, &BiTreeNode{Val: i, Left: l, Right: r})
+				}
+			}
+		}
+		return allTrees
+	}
+	return dfs(1, n)
+}
+/*96. Unique Binary Search Trees
+Given an integer n,
+return the number of structurally unique BST's which has exactly n nodes of unique values from 1 to n.
+Example 1:
+	Input: n = 3
+	Output: 5
+Example 2:
+	Input: n = 1
+	Output: 1
+	方程为： dp[i] = SUM(dp[j-1]*dp[i-j]) j属于[1,i]
+ */
+func numTrees(n int) int {
+	dp := make([]int, n+1)
+	dp[0], dp[1] = 1, 1
+	for i := 2; i <= n; i++{
+		for j := 1; j <= i; j++{
+			dp[i] += (dp[j-1] * dp[i-j])
+		}
+	}
+	return dp[n]
+}

@@ -153,3 +153,45 @@ func TestBSTSequences(t *testing.T) {
 		assert.Equal(t, result, testCase.want, fmt.Sprintf("case-%d result=%v want=%v", caseId, result, testCase.want))
 	}
 }
+
+func TestIsValidBST(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums []interface{}
+		want bool
+	}{
+		{[]interface{}{}, true},
+		{[]interface{}{1, 1}, false},
+		{[]interface{}{2,1,3}, true},
+		{[]interface{}{5,1,4,nil,nil,3,6}, false},
+	} {
+		tree := GenerateBiTree(testCase.nums)
+		result := IsValidBST(tree)
+		result2 := IsValidBST2(tree)
+		if result != testCase.want{
+			t.Errorf("case-%d IsValidBST Failed: result=%v but want=%v", caseId, result, testCase.want)
+		}
+		if result2 != testCase.want{
+			t.Errorf("case-%d IsValidBST2 Failed: result=%v but want=%v", caseId, result2, testCase.want)
+		}
+	}
+}
+
+func TestGenerateTreesBST(t *testing.T){
+	for caseId, testCase := range []struct{
+		num	int
+		want [][]interface{}
+	}{
+		{1, [][]interface{}{{1}}},
+		{2, [][]interface{}{{1,nil,2}, {2,1}}},
+		{3, [][]interface{}{{1, nil, 2, nil, 3}, {1, nil, 3, 2}, {2, 1, 3}, {3, 1, nil, nil, 2}, {3, 2, nil, 1}}},
+	}{
+		result := [][]interface{}{}
+		for _, root := range GenerateTreesBST(testCase.num){
+			result = append(result, Serialization(root))
+		}
+		ok := assert.ElementsMatch(t, result, testCase.want, "case-%d Failed: result=%v, want=%v", caseId, result, testCase.want)
+		if !ok {
+			break
+		}
+	}
+}
