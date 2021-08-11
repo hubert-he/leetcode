@@ -1,6 +1,7 @@
 package sorts
 
 import (
+	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
 	"time"
@@ -53,5 +54,18 @@ func getTestArr() []int {
 		testArr[i] = rand.Intn(numRand * 5)
 	}
 	return testArr
+}
+
+func TestRelativeSortArray(t *testing.T) {
+	for caseId, testCase := range []struct{
+		arr1	[]int
+		arr2	[]int
+		want	[]int
+	}{
+		{[]int{2,3,1,3,2,4,6,7,9,2,19}, []int{2,1,4,3,9,6}, []int{2,2,2,1,4,3,3,9,6,7,19}},
+	}{
+		result := RelativeSortArray(testCase.arr1, testCase.arr2)
+		assert.Equal(t, testCase.want, result, "case-%d result=%v want=%v", caseId, result, testCase.want)
+	}
 }
 

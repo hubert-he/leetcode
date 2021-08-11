@@ -2,6 +2,7 @@ package DP
 
 import (
 	"../Tree"
+	"fmt"
 	"math"
 )
 /* 198. House Robber
@@ -497,10 +498,17 @@ func minCostIII(houses []int, cost [][]int, m int, n int, target int) int {
 /* 暴力DFS， 画出递归树 能很明显发现 可以循环迭代：递归树节点是房间号，边是颜色，如果没有neighbor限制，可以直接2层for迭代完成
    通过代码，亦可看出这是尾递归，很容易转换为迭代
  */
-func minCostIIIBFS(houses []int, cost [][]int, m int, n int, target int) int {
+func MinCostIIIBFS(houses []int, cost [][]int, m int, n int, target int) int {
 	ans := math.MaxInt32
-	var dfs func(curRoom, curColor, neigh, sum int)
-	dfs = func(curRoom, curColor, neigh, sum int){
+	cache := make([][][]int, m+1)
+	for i := range cache{
+		cache[i] = make([][]int, n+1)
+		for j := range cache[i]{
+			cache[i][j] = make([]int, target + 1)
+		}
+	}
+	var dfs func(curRoom, lastColor, neigh, sum int)
+	dfs = func(curRoom, lastColor, neigh, sum int){
 		if sum >= ans || neigh > target{ // 终止1-超过之前结算，或 neighbor 过大
 			return
 		}
@@ -510,12 +518,31 @@ func minCostIIIBFS(houses []int, cost [][]int, m int, n int, target int) int {
 			}
 			return // 终止2-正常终止
 		}
+		if curRoom - neigh > int(math.Abs(float64(target - m))) {
+			fmt.Println(curRoom, neigh, target, m)
+			// 剪枝：差额超过，提前结束
+			return
+		}
+		//neighCnt := neigh
+		//fmt.Println("->", curRoom, houses[curRoom], neigh, lastColor)
 		if houses[curRoom] == 0{ //未涂色
 			for i := 0; i < n; i++{
-				dfs(curRoom+1, i, neighCnt, sum + cost[curRoom][i])
+				color := i+1 // houses里的颜色值从 1 开始计
+				neighCnt := neigh
+				if lastColor != color{ // lastColor初始为-1
+					neighCnt++
+				}
+				//fmt.Println(curRoom, neighCnt)
+				dfs(curRoom+1, color, neighCnt, sum + cost[curRoom][i])
 			}
 		}else{ // 已涂色
-			dfs(curRoom + 1, curColor, neighCnt, sum)
+			neighCnt := neigh
+			//fmt.Println(houses[curRoom])
+			if lastColor != houses[curRoom]{
+				neighCnt++
+			}
+			dfs(curRoom + 1, houses[curRoom], neighCnt, sum)
+			//dfs(curRoom + 1, lastColor, neighCnt, sum)
 		}
 	}
 	dfs(0, -1, 0, 0)

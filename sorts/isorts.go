@@ -1,5 +1,9 @@
 package sorts
 
+import (
+	"math"
+)
+
 func choosePivotMedianOfThree(a []int, left, right int) int{
 	//根据l r 计算中间位置 mid
 	/* 方式1： (right - left + 1) / 2 ，总数为偶数时，得到的是偏右的那个元素下标
@@ -129,4 +133,46 @@ func ConcurrentQuickSort(nums []int, chanSend chan struct{}){
 	<-chanReceive
 	chanSend <- struct{}{}
 	return
+}
+
+/* 剑指 Offer II 075. 数组相对排序
+给定两个数组，arr1 和 arr2，
+arr2 中的元素各不相同
+arr2 中的每个元素都出现在 arr1 中
+对 arr1 中的元素进行排序，使 arr1 中项的相对顺序和 arr2 中的相对顺序相同。未在 arr2 中出现过的元素需要按照升序放在 arr1 的末尾。
+示例：
+	输入：arr1 = [2,3,1,3,2,4,6,7,9,2,19], arr2 = [2,1,4,3,9,6]
+	输出：[2,2,2,1,4,3,3,9,6,7,19]
+ */
+func RelativeSortArray(arr1 []int, arr2 []int) []int {
+	minValue, maxValue := math.MaxInt32, math.MinInt32
+	for i := range arr1{
+		if minValue > arr1[i]{
+			minValue = arr1[i]
+		}
+		if maxValue < arr1[i]{
+			maxValue = arr1[i]
+		}
+	}
+	bucket := make([]int, maxValue - minValue + 1)
+	for _, v := range arr1{
+		bucket[v-minValue]++
+	}
+	i := 0
+	for _, v := range arr2{
+		k := v - minValue
+		for idx := bucket[k]; idx > 0; idx--{
+			arr1[i] = v
+			i++
+		}
+		bucket[k] = 0
+	}
+	for k, v := range bucket{
+		kk := k + minValue
+		for j := v; j > 0; j--{
+			arr1[i] = kk
+			i++
+		}
+	}
+	return arr1
 }

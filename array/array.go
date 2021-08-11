@@ -1725,7 +1725,51 @@ func equationsPossible(equations []string) bool {
 	}
 	return true
 }
+/* 88. Merge Sorted Array
 
+ */
+func Merge(nums1 []int, m int, nums2 []int, n int)  {
+	// two pointer
+	i, j := 0, 0
+	for i < m && j < n{
+		if nums1[i] <= nums2[j]{
+			i++
+		}else{
+			copy(nums1[i+1:], nums1[i:])
+			nums1[i] = nums2[j]
+			i++
+			m++ // m 随之增加
+			j++
+		}
+	}
+	if i >= m && j < n{
+		copy(nums1[i:], nums2[j:])
+	}
+}
+/*
+  从后往前 填充
+ */
+func Merge2(nums1 []int, m int, nums2 []int, n int)  {
+	p1, p2, tail := m-1, n-1, m+n-1;
+	for p1 >= 0 || p2 >= 0{ // 选择cur 填充到尾部
+		cur := 0
+		if p1 == -1{
+			cur = nums2[p2]
+			p2--
+		}else if p2 == -1{
+			cur = nums1[p1]
+			p1--
+		}else if nums1[p1] > nums2[p2]{
+			cur = nums1[p1]
+			p1--
+		}else{
+			cur = nums2[p2]
+			p2--
+		}
+		nums1[tail] = cur
+		tail--
+	}
+}
 
 
 

@@ -37,3 +37,32 @@ func TestMinCostI(t *testing.T){
 		}
 	}
 }
+
+func TestMinCostIIIBFS(t *testing.T){
+	for caseId, testCase := range []struct{
+		houses []int
+		cost [][]int
+		size [2]int
+		neigh int
+		want int
+	}{
+		{[]int{0,2,1,2,0}, [][]int{[]int{1,10}, []int{10, 1}, []int{10, 1}, []int{1,10}, []int{5, 1}}, [2]int{5, 2}, 3, 11},
+		{[]int{2,2,1}, [][]int{[]int{1,1}, []int{3, 4}, []int{4, 2}}, [2]int{3, 2}, 2, 0},
+		{[]int{0,0,0,0,0}, [][]int{[]int{1,10}, []int{10, 1}, []int{1, 10}, []int{10, 1}, []int{1,10}}, [2]int{5, 2}, 5, 5},
+		{[]int{0,0,0,0,0}, [][]int{[]int{1,10}, []int{10, 1}, []int{10, 1}, []int{1,10}, []int{5, 1}}, [2]int{5, 2}, 3, 9},
+		{[]int{3,1,2,3}, [][]int{[]int{1,1,1}, []int{1,1,1}, []int{1,1,1}, []int{1,1,1}}, [2]int{4, 3}, 3, -1},
+	}{
+		/*
+		result := minCostIII(testCase.houses, testCase.cost, testCase.size[0], testCase.size[1], testCase.neigh)
+		if result != testCase.want{
+			t.Errorf("case-%d: result2=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+		 */
+		result := MinCostIIIBFS(testCase.houses, testCase.cost, testCase.size[0], testCase.size[1], testCase.neigh)
+		if result != testCase.want{
+			t.Errorf("case-%d: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
