@@ -1,6 +1,6 @@
 package DP
 
-import "fmt"
+import "math"
 
 /* 62. Unique Paths
 A robot is located at the top-left corner of a m x n grid (marked 'Start' in the diagram below).
@@ -142,7 +142,8 @@ Example 3:
 func UniquePathsIII(grid [][]int) int {
 	row := len(grid)
 	ans := 0
-	cnt := 1
+	cnt := 0
+	total := 1 // 额外增加 起始节点
 	if row == 0{
 		return ans
 	}
@@ -156,18 +157,17 @@ func UniquePathsIII(grid [][]int) int {
 		if i < 0 || j < 0 || i >= row || j >= col{
 			return
 		}
-		if grid[i][j] == 2 && cnt == row*col{
-			fmt.Println(vis)
+		if grid[i][j] == 2 && cnt == total{
 			ans++
 			return
 		}
+		cnt++
 		if j > 0 && !vis[i][j-1]{
 			if grid[i][j-1] != -1{
 				vis[i][j-1] = true
 				dfs(i, j-1)
 				vis[i][j-1] = false
 			}
-			cnt++
 		}
 		if j < col-1 && !vis[i][j+1]{
 			if grid[i][j+1] != -1 {
@@ -175,7 +175,6 @@ func UniquePathsIII(grid [][]int) int {
 				dfs(i, j+1)
 				vis[i][j+1] = false
 			}
-			cnt++
 		}
 		if i > 0 && !vis[i-1][j]{
 			if grid[i-1][j] != -1{
@@ -183,7 +182,6 @@ func UniquePathsIII(grid [][]int) int {
 				dfs(i-1, j)
 				vis[i-1][j] = false
 			}
-			cnt++
 		}
 		if i < row - 1 && !vis[i+1][j]{
 			if grid[i+1][j] != -1{
@@ -191,10 +189,335 @@ func UniquePathsIII(grid [][]int) int {
 				dfs(i+1, j)
 				vis[i+1][j] = false
 			}
-			cnt++
+		}
+		cnt--
+	}
+	start := [2]int{}
+	for i := range grid{
+		for j := range grid[i]{
+			switch grid[i][j] {
+			case 1:
+				vis[i][j] = true
+				start[0], start[1] = i, j
+			case 0:
+				total++
+			}
 		}
 	}
-	vis[0][0] = true
-	dfs(0,0)
+	dfs(start[0],start[1])
 	return ans
+}
+/*
+  注意下面的coding技巧：
+	1 是 提前用数组表示 方向
+    2 bit运算标记是否已访问
+ */
+func UniquePathsIII1(grid [][]int) int {
+	row := len(grid)
+	ans := 0
+	if row == 0{
+		return ans
+	}
+	col := len(grid[0])
+/*  优化-2
+	cnt := 0
+	total := 1 // 额外增加 起始节点
+	vis := make([][]bool, row)
+	for i := range vis{
+		vis[i] = make([]bool, col)
+	}
+ */
+	target := 0
+	// 优化下面的代码行数-1
+	dr := [4]int{0,-1,0,1}
+	dc := [4]int{1,0,-1,0}
+	code := func(r, c int)int{
+		return 1 << (r * col + c)
+	}
+	var dfs func(i, j, todo int)
+	dfs = func(i, j, todo int){
+		if i < 0 || j < 0 || i >= row || j >= col{
+			return
+		}
+		if grid[i][j] == 2 {
+			if todo == 0{
+				ans++
+			}
+			return
+		}
+		for k := 0; k < 4; k++{ // 代码行数较之前变少
+			nr, nc := i + dr[k], j + dc[k]
+			if nr >= 0 && nr < row && nc >= 0 && nc < col{
+				if (code(nr, nc) & todo) != 0 { // 未访问
+					dfs(nr, nc, todo ^ code(nr, nc)) // 直接计算，避免回溯 todo 恢复现场
+				}
+				/*
+				if grid[nr][nc] != -1 && !vis[nr][nc]{
+					vis[nr][nc] = true
+					dfs(nr, nc)
+					vis[nr][nc] = false
+				}
+				*/
+			}
+		}
+	}
+	start := [2]int{}
+	for i := range grid{
+		for j := range grid[i]{
+			v := grid[i][j]
+			if v % 2 == 0{
+				target |= code(i, j)
+			}else if v == 1{
+				start[0], start[1] = i, j
+			}
+		}
+	}
+	dfs(start[0],start[1], target)
+	return ans
+}
+/*
+	定义 dp(r, c, todo) 为从 (r, c) 开始行走，还没有遍历的无障碍方格集合为 todo 的好路径的数量
+	过记忆化状态 (r, c, todo) 的答案来避免重复搜索
+ */
+func UniquePathsIIIDP(grid [][]int) (ans int) {
+	row := len(grid)
+	if row == 0{
+		return ans
+	}
+	col := len(grid[0])
+	target := 0
+	// 定义两个方向矩阵
+	dr := [4]int{0,-1,0,1}
+	dc := [4]int{1,0,-1,0}
+	memo := make([][][]int, row)
+	for i := range memo{
+		memo[i] = make([][]int, col)
+		for j := range memo[i]{
+			memo[i][j] = make([]int, 1<<(row*col))
+		}
+	}
+	code := func(r, c int)int{
+		return 1 << (r * col + c)
+		//return 1 << (r * row + c) 很容易出错
+	}
+	var dp func(i, j, todo int)int
+	dp = func(r, c, todo int) int{
+		//fmt.Printf("%b\n", todo)
+		if memo[r][c][todo] != 0{
+			return memo[r][c][todo]
+		}
+		if grid[r][c] == 2{
+			if todo == 0{
+				return 1
+			}
+			return 0
+		}
+		result := 0
+		for k := 0; k < 4; k++{
+			nr, nc := r + dr[k], c + dc[k]
+			if nr >= 0 && nr < row && nc >= 0 && nc < col{
+				if (code(nr, nc) & todo) != 0{ // 如果标0 则表示应被访问
+					result += dp(nr, nc, todo ^ code(nr, nc))
+				}
+			}
+		}
+		memo[r][c][todo] = result
+		return result
+	}
+	start := [2]int{}
+	for i := range grid{
+		for j := range grid[i]{
+			v := grid[i][j]
+			if v % 2 == 0{// 即grid[i][j]为0 或 2
+				target |= code(i,j)
+			} else if v == 1{
+				start[0], start[1] = i, j
+			}
+		}
+	}
+	//fmt.Printf("==>%b %d %d\n", target, target, x)
+	return dp(start[0],start[1], target)
+}
+
+/* 1575. Count All Possible Routes
+You are given an array of distinct positive integers locations where locations[i] represents the position of city i.
+You are also given integers start, finish and fuel representing the starting city, ending city, and the initial amount of fuel you have, respectively.
+At each step, if you are at city i, you can pick any city j such that j != i and 0 <= j < locations.length and move to city j. 
+Moving from city i to city j reduces the amount of fuel you have by |locations[i] - locations[j]|. Please notice that |x| denotes the absolute value of x.
+Notice that fuel cannot become negative at any point in time, and that you are allowed to visit any city more than once (including start and finish).
+Return the count of all possible routes from start to finish.
+Since the answer may be too large, return it modulo 10^9 + 7.
+Example 1:
+	Input: locations = [2,3,6,8,4], start = 1, finish = 3, fuel = 5
+	Output: 4
+	Explanation: The following are all possible routes, each uses 5 units of fuel:
+	1 -> 3
+	1 -> 2 -> 3
+	1 -> 4 -> 3
+	1 -> 4 -> 2 -> 3
+Example 2:
+	Input: locations = [4,3,1], start = 1, finish = 0, fuel = 6
+	Output: 5
+	Explanation: The following are all possible routes:
+	1 -> 0, used fuel = 1
+	1 -> 2 -> 0, used fuel = 5
+	1 -> 2 -> 1 -> 0, used fuel = 5
+	1 -> 0 -> 1 -> 0, used fuel = 3
+	1 -> 0 -> 1 -> 0 -> 1 -> 0, used fuel = 5
+Example 3:
+	Input: locations = [5,2,1], start = 0, finish = 2, fuel = 3
+	Output: 0
+	Explanation: It's impossible to get from 0 to 2 using only 3 units of fuel since the shortest route needs 4 units of fuel.
+Example 4:
+	Input: locations = [2,1,5], start = 0, finish = 0, fuel = 3
+	Output: 2
+	Explanation: There are two possible routes, 0 and 0 -> 1 -> 0.
+Example 5:
+	Input: locations = [1,2,3], start = 0, finish = 2, fuel = 40
+	Output: 615088286
+	Explanation: The total number of possible routes is 2615088300. Taking this number modulo 10^9 + 7 gives us 615088286.
+Constraints:
+	2 <= locations.length <= 100
+	1 <= locations[i] <= 10^9
+	All integers in locations are distinct.
+	0 <= start, finish < locations.length
+	1 <= fuel <= 200
+ */
+func CountRoutesDFS(locations []int, start int, finish int, fuel int) int {
+	ans := 0
+	memo := make([][]int, len(locations))
+	for i := range memo{
+		memo[i] = make([]int, fuel)
+	}
+	var dfs func(int, int, int)
+	dfs = func(s, e, left int){
+		if left < 0{
+			return
+		}
+		if e == finish {
+			ans++
+		//	return
+		}
+		for i := range locations{
+			if i != e{
+				if locations[i] > locations[e]{
+					dfs(e, i, left - locations[i] + locations[e])
+				}else{
+					dfs(e, i, left - locations[e] + locations[i])
+				}
+			}
+		}
+	}
+	for i := range locations{
+		if i != start{
+			if locations[i] > locations[start]{
+				dfs(start, i, fuel - locations[i] + locations[start])
+			}else{
+				dfs(start, i, fuel - locations[start] + locations[i])
+			}
+		}
+	}
+	// 特殊情况, 但不允许 start -> start -> start -> ... -> finish
+	if start == finish{
+		ans++
+	}
+	return ans
+}
+
+func CountRoutesDFSDP(locations []int, start int, finish int, fuel int) int {
+	ans := 0
+	// 特殊情况, 但不允许 start -> start -> start -> ... -> finish
+	if start == finish{
+		ans++
+	}
+	memo := make([][]int, len(locations))
+	for i := range memo{
+		memo[i] = make([]int, fuel+1)
+		for j := range memo[i]{
+			memo[i][j] = -1
+		}
+	}
+	var dfs func(begin int, left int)int
+	dfs = func(begin int, left int) int{
+		result := 0
+		if left < 0{
+			return result
+		}
+		if memo[begin][left] != -1{
+			return memo[begin][left]
+		}
+		// 剪枝：从某个位置出发直达目的地耗费的油量 如果大于 可用油量，则不会出现其他路径可达目的地
+		need := locations[finish] - locations[begin]
+		if need < 0{
+			need = -need
+		}
+		if need > left{
+			memo[begin][left] = 0
+			return 0
+		}
+		if begin == finish{
+			result = (result+1) % 1000000007
+		}
+		for i := range locations{
+			if i != begin{
+				if locations[i] > locations[begin]{
+					result += dfs(i, left - locations[i] + locations[begin])
+				}else{
+					result += dfs(i, left - locations[begin] + locations[i])
+				}
+			}
+		}
+		memo[begin][left] = result % 1000000007
+		return  memo[begin][left]
+	}
+	dfs(start, fuel)
+	for i := range locations{
+		if i != start{
+			if locations[i] > locations[start]{
+				ans += dfs(i, fuel - locations[i] + locations[start])
+			}else{
+				ans += dfs(i, fuel - locations[start] + locations[i])
+			}
+		}
+	}
+	return ans % 1000000007
+	//return ans%(10e9+7)
+}
+/*
+	dp[i][j]:表示从地点i出发，当前剩余fuel为j的情况下，到达目的地的路径数量
+1. 从 DFS 方法签名出发。分析哪些入参是可变的，将其作为 DP 数组的维度；将返回值作为 DP 数组的存储值。 对应了 状态定义
+2. 从 DFS 的主逻辑可以抽象中单个状态的计算方法。	对应了 状态方程转移
+	DFS主逻辑：枚举所有的位置，看从当前位置i 出发，可以到达的位置有哪些。从而得出状态转移方程：
+	dp[i][j] += dp[k][j-need]
+	k 表示计算位置 i 油量的状态时枚举的下一个位置， need代表从 i 到达 k 需要的油量
+	其中 i 与 k 无大小限制关系，只要求 i != k
+	j 与 j - need 有严格限制，要求 j >= j-need
+结果为 dp[start][fuel]; start 起始location 和 总油量
+ */
+func CountRoutesDP(locations []int, start int, finish int, fuel int) int {
+	mod := 1000000007
+	localLen := len(locations)
+	dp := make([][]int, localLen)
+	for i := range dp{
+		dp[i] = make([]int, fuel+1)
+	}
+	// 对于本身位置就在目的地的状态，路径数为 1
+	for i := 0; i <= fuel; i++{
+		dp[finish][i] = 1
+	}
+	// dp[i][j] += dp[k][j-need], j 与 j-need 存在大小关系，因此需要先从小到大枚举油量
+	for cur := 0; cur <= fuel; cur++{
+		for i := 0; i < localLen; i++{
+			for k := 0; k < localLen; k++{
+				if i != k{
+					need := int(math.Abs(float64(locations[i] - locations[k])))
+					if cur >= need{
+						dp[i][cur] += dp[k][cur - need]
+						dp[i][cur] %= mod
+					}
+				}
+			}
+		}
+	}
+	return dp[start][fuel]
 }
