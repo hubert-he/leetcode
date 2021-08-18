@@ -552,3 +552,74 @@ func MinCostIIIBFS(houses []int, cost [][]int, m int, n int, target int) int {
 		return ans
 	}
 }
+
+func MinCostIIIDFSDP(houses []int, cost [][]int, m int, n int, target int) int {
+	INF := math.MaxInt32
+	vis := make([][][]bool, m+1)
+	cache := make([][][]int, m+1)
+	for i := range vis{
+		vis[i] = make([][]bool, n+1)
+		cache[i] = make([][]int, n+1)
+		for j := range vis[i]{
+			vis[i][j] = make([]bool, target+1)
+			cache[i][j] = make([]int, target+1)
+		}
+	}
+	/*	u : 当前处理到的房间编号
+		last : 上一次处理的房间颜色
+		cnt : 当前形成的分区数量
+		sum : 当前的涂色成本
+	 */
+	var dfs func(int, int, int, int)int
+	dfs = func(u, last, cnt, sum int) int{
+		if cnt > target{
+			return INF
+		}
+		if vis[u][last][cnt] {
+			return cache[u][last][cnt]
+		}
+		if u == m {
+			if cnt == target{
+				return 0
+			}else{
+				return INF
+			}
+		}
+		result := INF
+		color := houses[u]
+		fmt.Println(color)
+		neighCnt := 1 // u == 0情况 默认
+		if color == 0{// 未涂色
+			for i := 1; i <= n; i++{
+				if u != 0{
+					if last == i{
+						neighCnt = cnt
+					}else{
+						neighCnt = cnt+1
+					}
+				}
+				cur := dfs(u+1, i, neighCnt, sum + cost[u][i-1])
+				result = min(result, cur + cost[u][i-1])
+			}
+		}else {
+			if u != 0{
+				if last == color {
+					neighCnt = cnt
+				}else{
+					neighCnt = cnt + 1
+				}
+			}
+			cur := dfs(u+1, color, neighCnt, sum)
+			result = min(result, cur)
+		}
+		vis[u][last][cnt] = true
+		cache[u][last][cnt] = result
+		return result
+	}
+	ans := dfs(0,0,0,0)
+	if ans == INF{
+		return -1
+	}else{
+		return ans
+	}
+}

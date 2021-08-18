@@ -113,12 +113,14 @@ func rightRotation(root *avlTreeNode) *avlTreeNode{
 	return newRoot
 }
 
-func max(i, j int) int{
-	if i > j {
-		return i
-	}else{
-		return j
+func max(nums ...int)int{
+	ans := nums[0]
+	for i := 1; i < len(nums); i++{
+		if nums[i] > ans {
+			ans = nums[i]
+		}
 	}
+	return ans
 }
 
 func(tree *AVLTree) Remove(key Interface) (target *avlTreeNode) {

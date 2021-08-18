@@ -1,6 +1,9 @@
 package DP
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 /* 62. Unique Paths
 A robot is located at the top-left corner of a m x n grid (marked 'Start' in the diagram below).
@@ -506,18 +509,60 @@ func CountRoutesDP(locations []int, start int, finish int, fuel int) int {
 		dp[finish][i] = 1
 	}
 	// dp[i][j] += dp[k][j-need], j 与 j-need 存在大小关系，因此需要先从小到大枚举油量
-	for cur := 0; cur <= fuel; cur++{
+	for j := 0; j <= fuel; j++{
 		for i := 0; i < localLen; i++{
 			for k := 0; k < localLen; k++{
 				if i != k{
 					need := int(math.Abs(float64(locations[i] - locations[k])))
-					if cur >= need{
-						dp[i][cur] += dp[k][cur - need]
-						dp[i][cur] %= mod
+					if j >= need{
+						dp[i][j] += dp[k][j - need]
+						dp[i][j] %= mod
 					}
 				}
 			}
 		}
 	}
 	return dp[start][fuel]
+}
+
+/* 120. Triangle
+Given a triangle array, return the minimum path sum from top to bottom.
+For each step, you may move to an adjacent number of the row below. More formally,
+if you are on index i on the current row, you may move to either index i or index i + 1 on the next row.
+ */
+func minimumTotal(triangle [][]int) int {
+	// dp[i+1][j] = num[j] + min(dp[i][j-1], dp[i][j])
+	row := len(triangle)
+	if row <=0 {
+		return 0
+	}
+	dp := [2][]int{}
+	dp[0] = make([]int, len(triangle[0]))
+	copy(dp[0], triangle[0])
+
+	for i := 1; i < row; i++{
+		for j := range triangle[i]{
+			pre, cur := (i-1)%2, i % 2
+			v := triangle[i][j]
+			if j > 0 && j < len(dp[pre]){
+				v += min(dp[pre][j-1], dp[pre][j])
+			}else if j <= 0{
+				v += dp[pre][j]
+			}else {
+				v += dp[pre][j-1]
+			}
+			dp[cur] = append(dp[cur], v)
+		}
+		fmt.Println(dp)
+	}
+	return min(dp[(row-1)%2]...)
+}
+func min(nums ...int)int{
+	m := math.MaxInt32
+	for i := range nums{
+		if m > nums[i]{
+			m = nums[i]
+		}
+	}
+	return m
 }

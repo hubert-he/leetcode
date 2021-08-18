@@ -344,3 +344,21 @@ func TestDistanceK(t *testing.T) {
 }
 
  */
+
+func TestGoodNodes(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums []interface{}
+		want int
+	}{
+		{[]interface{}{1}, 1},
+		{[]interface{}{3,1,4,3,nil,1,5}, 4},
+		{[]interface{}{3,3,nil,4,2}, 2},
+	}{
+		tree := GenerateBiTree(testCase.nums)
+		result := GoodNodes(tree)
+		if result != testCase.want{
+			t.Errorf("case-%d: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}

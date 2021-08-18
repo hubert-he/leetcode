@@ -1770,4 +1770,147 @@ func Connect2(root *BiTreeNode) *BiTreeNode {
 	return root
 }
 
+/* 1448. Count Good Nodes in Binary Tree
+	Given a binary tree root,
+	a node X in the tree is named good if in the path from root to X there are no nodes with a value greater than X.
+	Return the number of good nodes in the binary tree.
+Example 1:
+	Input: root = [3,1,4,3,null,1,5]
+	Output: 4
+	Explanation: Nodes in blue are good.
+	Root Node (3) is always a good node.
+	Node 4 -> (3,4) is the maximum value in the path starting from the root.
+	Node 5 -> (3,4,5) is the maximum value in the path
+	Node 3 -> (3,1,3) is the maximum value in the path.
+Example 2:
+	Input: root = [3,3,null,4,2]
+	Output: 3
+	Explanation: Node 2 -> (3, 3, 2) is not good, because "3" is higher than it.
+Example 3:
+	Input: root = [1]
+	Output: 1
+	Explanation: Root is considered as good.
+*/
+func GoodNodes(root *BiTreeNode) int {
+	ans := 0
+	fmt.Println("---")
+	var dfs func(*BiTreeNode, int)
+	dfs = func(node *BiTreeNode, curMax int){
+		if node == nil{
+			return
+		}
+		if node.Val.(int) >= curMax{
+			ans++
+			fmt.Println(node.Val)
+			curMax = node.Val.(int)
+		}
+		dfs(node.Left, curMax)
+		dfs(node.Right, curMax)
+	}
+	dfs(root, math.MinInt32)
+	return ans
+}
+/* 1372. Longest ZigZag Path(交错路径) in a Binary Tree
+	You are given the root of a binary tree.
+	A ZigZag path for a binary tree is defined as follow:
+	Choose any node in the binary tree and a direction (right or left).
+	If the current direction is right, move to the right child of the current node; otherwise, move to the left child.
+	Change the direction from right to left or from left to right.
+	Repeat the second and third steps until you can't move in the tree.
+	Zigzag length is defined as the number of nodes visited - 1. (A single node has a length of 0).
+	Return the longest ZigZag path contained in that tree.
+Example 1:
+	Input: root = [1,null,1,1,1,null,null,1,1,null,1,null,null,null,1,null,1]
+	Output: 3
+	Explanation: Longest ZigZag path in blue nodes (right -> left -> right).
+Example 2:
+	Input: root = [1,1,1,null,1,null,null,1,1,null,1]
+	Output: 4
+	Explanation: Longest ZigZag path in blue nodes (left -> right -> left -> right).
+Example 3:
+	Input: root = [1]
+	Output: 0
+ */
+func LongestZigZag(root *BiTreeNode) int {
+	maxZ := 0
+	var dfs func(node *BiTreeNode)[2]int
+	dfs = func(node *BiTreeNode)(ret [2]int){
+		 if node.Left == nil{
+		 	ret[0] = 0
+		 }else{
+		 	left := dfs(node.Left)
+		 	ret[0] = left[1] + 1
+		 }
+		 if node.Right == nil {
+		 	ret[1] = 0
+		 }else{
+		 	right := dfs(node.Right)
+		 	ret[1] = right[0] + 1
+		 }
+		 maxZ = max(maxZ, ret[0], ret[1])
+		 return ret
+	}
+	r := dfs(root)
+	maxZ = max(maxZ, r[0], r[1])
+	return maxZ
+}
+// 代码优化
+func LongestZigZag2(root *BiTreeNode) int {
+	maxZ := 0
+	var dfs func(node *BiTreeNode)[2]int
+	dfs = func(node *BiTreeNode)(ret [2]int){
+		ret[0], ret[1] = 0, 0
+		if node.Left != nil{
+			left := dfs(node.Left)
+			ret[0] = left[1] + 1
+		}
+		if node.Right != nil {
+			right := dfs(node.Right)
+			ret[1] = right[0] + 1
+		}
+		maxZ = max(maxZ, ret[0], ret[1])
+		return ret
+	}
+	r := dfs(root)
+	maxZ = max(maxZ, r[0], r[1])
+	return maxZ
+}
+/* DP
+  f(u): 从根节点u的路径上以u结尾并且u是它父亲的左儿子的最长交错路径
+  g(u): 从根到节点u的路径上以u结尾且u是它父亲的右儿子的最长交错路径
+  father(u): u的父节点
+  方程：
+	f(u) = g[fater[u]) + 1  u是左儿子
+	g(u) = f[fater[u]) + 1  u是右儿子
+  实现：
+	维护两个数组： f 和 g, 利用从树的节点到整数的映射容器来实现，方便从节点的指针映射到f和g的函数值。
+    可以通过DFS 和 BFS 来遍历树。
+    BFS版本：(node,parent) 作为状态，其中node表示当前待计算f和g的节点，parent 表示其父节点。
+    初始化：每个点的f和g 都为0
+ */
+func LongestZigZagDP(root *BiTreeNode) int {
+	f, g := map[*BiTreeNode]int{root: 0}, map[*BiTreeNode]int{root: 0}
+	q := [][2]*BiTreeNode{[2]*BiTreeNode{root, nil}}
+	for len(q) > 0{
+		top := q[0]
+		q = q[1:]
+		u, x := top[0], top[1]
+		f[u], g[u] = 0, 0
+		if x != nil {
+			if x.Left == u  { f[u] = g[x] + 1 }
+			if x.Right == u { g[u] = f[x] + 1 }
+		}
+		if u.Left != nil { q = append(q, [2]*BiTreeNode{u.Left, u}) }
+		if u.Right != nil { q = append(q, [2]*BiTreeNode{u.Right, u})}
+	}
+	maxAns := 0
+	for k := range f{
+		maxAns = max(maxAns, f[k])
+	}
+	for k := range g{
+		maxAns = max(maxAns, g[k])
+	}
+	return maxAns
+}
+
 
