@@ -78,3 +78,43 @@ func TestCountRoutesDFS(t *testing.T){
 		}
 	}
 }
+
+func TestMinimumTotal(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums		[][]int
+		want		int
+	}{
+		{[][]int{[]int{2}, []int{3,4}, []int{6,5,7}, []int{4,1,8,3}}, 11},
+		{[][]int{[]int{-10}}, -10},
+	}{
+		result := MinimumTotalDFS(testCase.nums)
+		if result != testCase.want{
+			t.Errorf("case-%d: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestMinFallingPathSum(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums		[][]int
+		want		int
+	}{
+		{[][]int{[]int{-48}}, -48},
+		{[][]int{[]int{-48, 2}}, -48},
+		{[][]int{[]int{1}, []int{2}}, 3},
+		{[][]int{[]int{2,1,3}, []int{6,5,4}, []int{7,8,9}}, 13},
+		{[][]int{[]int{-19, 57}, []int{-40, -5}}, -59},
+	}{
+		result := MinFallingPathSumDFS(testCase.nums)
+		if result != testCase.want{
+			t.Errorf("case-MinFallingPathSumDFS-%d: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+		result = MinFallingPathSum(testCase.nums)
+		if result != testCase.want{
+			t.Errorf("case-MinFallingPathSum-%d: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}

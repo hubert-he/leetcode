@@ -530,7 +530,7 @@ Given a triangle array, return the minimum path sum from top to bottom.
 For each step, you may move to an adjacent number of the row below. More formally,
 if you are on index i on the current row, you may move to either index i or index i + 1 on the next row.
  */
-func minimumTotal(triangle [][]int) int {
+func MinimumTotal(triangle [][]int) int {
 	// dp[i+1][j] = num[j] + min(dp[i][j-1], dp[i][j])
 	row := len(triangle)
 	if row <=0 {
@@ -539,10 +539,10 @@ func minimumTotal(triangle [][]int) int {
 	dp := [2][]int{}
 	dp[0] = make([]int, len(triangle[0]))
 	copy(dp[0], triangle[0])
-
 	for i := 1; i < row; i++{
+		pre, cur := (i-1)%2, i % 2
+		tmp := []int{}
 		for j := range triangle[i]{
-			pre, cur := (i-1)%2, i % 2
 			v := triangle[i][j]
 			if j > 0 && j < len(dp[pre]){
 				v += min(dp[pre][j-1], dp[pre][j])
@@ -551,18 +551,119 @@ func minimumTotal(triangle [][]int) int {
 			}else {
 				v += dp[pre][j-1]
 			}
-			dp[cur] = append(dp[cur], v)
+			tmp = append(tmp, v)
+			// dp[cur] = append(dp[cur], v)  一直追加，导致历史计算数据在里面
 		}
-		fmt.Println(dp)
+		dp[cur] = tmp
 	}
 	return min(dp[(row-1)%2]...)
 }
-func min(nums ...int)int{
-	m := math.MaxInt32
-	for i := range nums{
-		if m > nums[i]{
-			m = nums[i]
+// 从底往上计算的 dfs dp
+func MinimumTotalDFS(triangle [][]int) int {
+	// dp[i+1][j] = triangle[i][j] + min(dp[i][j-1], dp[i][j])
+	// dp[i][j] = triangle[i][j] + min(dp[i+1][j], dp[i+1][j+1])
+	n := len(triangle)
+	dp := make([][]int, n)
+	for i := range dp{
+		dp[i] = make([]int, n)
+		for j := range dp[i]{
+			dp[i][j] = math.MaxInt32
 		}
 	}
-	return m
+	var dfs func(int, int)int
+	dfs = func(row, col int)int{
+		if row >= n{
+			return 0
+		}
+		if dp[row][col] != math.MaxInt32{
+			return dp[row][col]
+		}
+		dp[row][col] = min(dfs(row+1, col), dfs(row+1, col+1)) + triangle[row][col]
+		return dp[row][col]
+	}
+	return dfs(0,0)
+}
+
+/* 931. Minimum Falling Path Sum
+Given an n x n array of integers matrix, return the minimum sum of any falling path through matrix.
+A falling path starts at any element in the first row and chooses the element in the next row that is either directly below or diagonally left/right.
+Specifically, the next element from position (row, col) will be (row + 1, col - 1), (row + 1, col), or (row + 1, col + 1).
+方程：dp[i][j] = matrix[i][j] + min(dp[i+1][j-1], dp[i+1][j], dp[i+1][j+1])
+结果：min(dp[0]...)
+*/
+func MinFallingPathSumDFS(matrix [][]int) int {
+	n := len(matrix)
+	dp := [2][]int{} // 滚动数组
+	for i := range dp{
+		dp[i] = make([]int, len(matrix[0]))
+		for j := range dp[i]{
+			dp[i][j] = math.MaxInt32
+		}
+	}
+	var dfs func(row int)
+	dfs = func(row int){
+		cur,next := row % 2, (row+1)%2
+		if row >= n {
+			for i := range dp[cur]{
+				dp[cur][i] = 0
+			}
+			return
+		}
+		if dp[cur][0] == math.MaxInt32 {
+			dfs(row+1)
+			v := dp[next%2]
+			for col := range matrix[row] {
+				fmt.Println(col, n, matrix)
+				if col <= 0 {
+					if len(v) == 1 {
+						dp[cur][col] = matrix[row][col] + v[col]
+					}else {
+						dp[cur][col] = matrix[row][col] + min(v[col], v[col+1])
+					}
+				}else if col >= n-1 {
+					dp[cur][col] = matrix[row][col] + min(v[col-1], v[col])
+				}else {
+					dp[cur][col] = matrix[row][col] + min(v[col-1], v[col], v[col+1])
+				}
+			}
+		}
+	}
+	dfs(0)
+	ans := math.MaxInt32
+	for i := range dp[0]{
+		if ans > dp[0][i]{
+			ans = dp[0][i]
+		}
+	}
+	return ans
+}
+func MinFallingPathSum(matrix [][]int) int {
+//	方程：dp[i][j] = matrix[i][j] + min(dp[i+1][j-1], dp[i+1][j], dp[i+1][j+1])
+//	结果：min(dp[0]...)
+	ans := math.MaxInt32
+	c := len(matrix[0])
+	dp := make([]int, len(matrix[0]))
+	for i := range matrix{
+		tmp := make([]int, len(dp))
+		for j := range matrix[i]{
+			if j <= 0{
+				if len(dp) == 1 {
+					tmp[j] = matrix[i][j] + dp[j]
+				}else{
+					tmp[j] = matrix[i][j] + min(dp[j], dp[j+1])
+				}
+			}else if j >= c-1{
+				tmp[j] = matrix[i][j] + min(dp[j-1], dp[j])
+			}else{
+				tmp[j] = matrix[i][j] + min(dp[j-1], dp[j], dp[j+1])
+			}
+		}
+		dp = tmp
+	}
+	for i := range dp{
+		if ans > dp[i]{
+			ans = dp[i]
+		}
+	}
+	return ans
 }
