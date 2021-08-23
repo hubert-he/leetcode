@@ -31,6 +31,16 @@ func min(nums ...int) int {
 	}
 	return m
 }
+// 排除except 下标的 值
+func min2(except int, nums ...int) int{
+	m := math.MaxInt32
+	for i := range nums{
+		if m > nums[i] && i != except{
+			m = nums[i]
+		}
+	}
+	return m
+}
 
 //
 func CanWinNim(n int) bool {

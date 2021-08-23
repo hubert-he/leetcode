@@ -667,3 +667,226 @@ func MinFallingPathSum(matrix [][]int) int {
 	}
 	return ans
 }
+
+/* 1289. Minimum Falling Path Sum II
+Given an n x n integer matrix grid, return the minimum sum of a falling path with non-zero shifts.
+A falling path with non-zero shifts is a choice of exactly one element from each row of grid such that no two elements chosen in adjacent rows are in the same column.
+Example 1:
+	Input: arr = [[1,2,3],[4,5,6],[7,8,9]]
+	Output: 13
+	Explanation:
+	The possible falling paths are:
+	[1,5,9], [1,5,7], [1,6,7], [1,6,8],
+	[2,4,8], [2,4,9], [2,6,7], [2,6,8],
+	[3,4,8], [3,4,9], [3,5,7], [3,5,9]
+	The falling path with the smallest sum is [1,5,7], so the answer is 13.
+*/
+func MinFallingPathSumII(grid [][]int) int {
+	// dp[i][j] = grid[i][j] + min(dp[i-1][col] col != j)
+	n := len(grid)
+	dp := make([]int, n)
+	for i := range grid{
+		tmp := make([]int, n)
+		for j := range grid[i]{
+			tmp[j] = grid[i][j]
+			// t := min(append(dp[:j], dp[j+1:]...)...)  slice 底层数组 浅copy
+			t := min2(j, dp...)
+			if t != math.MaxInt32{
+				tmp[j] += t
+			}
+		}
+		dp = tmp
+	}
+	return min(dp...)
+}
+/* 576. Out of Boundary Paths
+  There is an m x n grid with a ball. The ball is initially at the position [startRow, startColumn].
+  You are allowed to move the ball to one of the four adjacent cells in the grid (possibly out of the grid crossing the grid boundary).
+  You can apply at most maxMove moves to the ball.
+  Given the five integers m, n, maxMove, startRow, startColumn, return the number of paths to move the ball out of the grid boundary.
+  Since the answer can be very large, return it modulo 109 + 7.
+Example 1:
+	Input: m = 2, n = 2, maxMove = 2, startRow = 0, startColumn = 0
+	Output: 6
+Example 2:
+	Input: m = 1, n = 3, maxMove = 3, startRow = 0, startColumn = 1
+	Output: 12
+ */
+func FindPaths(m int, n int, maxMove int, startRow int, startColumn int) int {
+	ans := 0
+	//mod := 100000007
+	// 方向数组： [i][j-1]  [i-1][j]  [i][j+1]  [i+1][j]
+	dir := [2][]int{[]int{0, -1, 0, 1}, []int{-1, 0, 1, 0}}
+	var dfs func(row, col, step int)
+	dfs = func(row, col, step int){
+		if step > maxMove{
+			return
+		}
+		if row >=m || row < 0 || col >= n || col < 0{
+			if step <= maxMove{ // 对应 at most， 如果是equal 则为 step == maxMove
+				//ans = (ans+1)%mod
+				ans++
+			}
+			return
+		}
+		for i := 0; i < 4; i++{
+			dfs(row+dir[0][i], col+dir[1][i], step+1)
+		}
+	}
+	dfs(startRow, startColumn, 0)
+	return ans
+}
+
+func FindPathsDFSDP(m int, n int, maxMove int, startRow int, startColumn int) int {
+	// dp[i][j][k] = dp[i-1][j][k-1] + dp[i][j-1][k-1] + dp[i][j+1][k-1] + dp[i+1][j][k-1]
+	mod := 1000000007
+	dp := make([][][]int, m+1)
+	for i := range dp{
+		dp[i] = make([][]int, n+1)
+		for j := range dp[i]{
+			dp[i][j] = make([]int, maxMove+1)
+			for k := range dp[i][j]{
+				dp[i][j][k] = -1
+			}
+		}
+	}
+	dp[startRow][startColumn][0] = 0
+	// 方向数组： [i][j-1]  [i-1][j]  [i][j+1]  [i+1][j]
+	dir := [2][]int{[]int{0, -1, 0, 1}, []int{-1, 0, 1, 0}}
+	var dfs func(row, col, left int) int
+	dfs = func(row, col, left int) int{
+		if left < 0{
+			return 0
+		}
+		if row >=m || row < 0 || col >= n || col < 0{
+			if left >= 0{ // 对应 at most， 如果是equal 则为 step == maxMove
+				return 1
+			}
+			return 0
+		}
+		//fmt.Println(row, col, left, dp[row][col][left])
+		if dp[row][col][left] != -1{
+			return dp[row][col][left]
+		}
+		cnt := 0
+		for i := 0; i < 4; i++{
+			cnt += dfs(row+dir[0][i], col+dir[1][i], left-1)
+		}
+		//fmt.Println(cnt)
+		dp[row][col][left] = cnt % mod
+		return cnt
+	}
+	ans := dfs(startRow, startColumn, maxMove) % mod
+	//fmt.Println(dp)
+	return ans
+}
+/* 需要修改维度表示
+	dp[k][i][j]表示球移动 k 次之后位于坐标(i, j)的路径数量
+	当 k = 0时，球一定位于(startRow,startColumn),因此边界条件：
+	<1> dp[0][startRow][startColumn] = 1
+	<2> dp[0][i][j] = 0, (i,j) != (startRow,startColumn)
+	如果球移动i+1次之后，球一定位于(i,j)相邻坐标，记为(ii, jj) 此时分2类情况
+	<1> (ii,jj)在正常范围内
+		dp[k+1][ii][jj] += dp[k][i][j]
+	<2> 出界
+		统计路径值
+
+ */
+func FindPathsDP(m int, n int, maxMove int, startRow int, startColumn int) int {
+	const mod int = 1e9+7
+	ans := 0
+	var dirs = []struct{x, y int}{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
+	dp := make([][][]int, maxMove+1)
+	for k := range dp{
+		dp[k] = make([][]int, m)
+		for i := range dp[k]{
+			dp[k][i] = make([]int, n)
+		}
+	}
+	dp[0][startRow][startColumn] = 1
+	for k := 0; k < maxMove; k++{
+		for i := 0; i < m; i++{
+			for j := 0; j < n; j++{
+				if dp[k][i][j] > 0{
+					for _, dir := range dirs{
+						ii, jj := i+dir.x, j+dir.y
+						if ii >= 0 && ii < m && jj >= 0 && jj < n{ // 正常范围内
+							dp[k+1][ii][jj] = (dp[k][i][j] + dp[k+1][ii][jj]) % mod
+						}else{ // 出界 开始统计
+							ans = (ans + dp[k][i][j]) % mod
+						}
+					}
+				}
+			}
+		}
+	}
+	return ans
+}
+// 优化: 注意到 dp[k][][] 只在计算 dp[k+1][][] 时会用到，因此可以将 dp 中的移动次数的维度省略
+func FindPathsDPBest(m int, n int, maxMove int, startRow int, startColumn int) int {
+	const mod int = 1e9+7
+	ans := 0
+	var dirs = []struct{x, y int}{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
+	/*
+	dp := make([][][]int, maxMove+1)
+	for k := range dp{
+		dp[k] = make([][]int, m)
+		for i := range dp[k]{
+			dp[k][i] = make([]int, n)
+		}
+	}
+	dp[0][startRow][startColumn] = 1
+	 */
+	dp := make([][]int, m)
+	for i := range dp{
+		dp[i] = make([]int, n)
+	}
+	dp[startRow][startColumn] = 1
+	for k := 0; k < maxMove; k++{
+		// 存储cur计算结果，后面 dp = tmp
+		tmp := make([][]int, m)
+		for o := range tmp{
+			tmp[o] = make([]int, n)
+		}
+		for i := 0; i < m; i++{
+			for j := 0; j < n; j++{
+				/*
+				if dp[k][i][j] > 0{
+					for _, dir := range dirs{
+						ii, jj := i+dir.x, j+dir.y
+						if ii >= 0 && ii < m && jj >= 0 && jj < n{ // 正常范围内
+							dp[k+1][ii][jj] = (dp[k][i][j] + dp[k+1][ii][jj]) % mod
+						}else{ // 出界 开始统计
+							ans = (ans + dp[k][i][j]) % mod
+						}
+					}
+				} */
+				if dp[i][j] > 0{
+					for _, dir := range dirs{
+						ii, jj := i+dir.x, j+dir.y
+						if ii >= 0 && ii < m && jj >= 0 && jj < n { // 正常范围内
+							tmp[ii][jj] = (tmp[ii][jj]+dp[i][j]) % mod
+						}else{// 出界 开始统计
+							ans = (ans + dp[i][j]) % mod
+						}
+					}
+				}
+			}
+		}
+		dp = tmp
+	}
+	return ans
+}
+
+/* 1301. Number of Paths with Max Score
+	You are given a square board of characters. You can move on the board starting at the bottom right square marked with the character 'S'.
+You need to reach the top left square marked with the character 'E'.
+The rest of the squares are labeled either with a numeric character 1, 2, ..., 9 or with an obstacle 'X'.
+In one move you can go up, left or up-left (diagonally) only if there is no obstacle there.
+Return a list of two integers: the first integer is the maximum sum of numeric characters you can collect,
+and the second is the number of such paths that you can take to get that maximum sum, taken modulo 10^9 + 7.
+In case there is no path, return [0, 0].
+ */
+func PathsWithMaxScore(board []string) []int {
+
+}

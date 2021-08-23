@@ -1,6 +1,8 @@
 package DP
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestUniquePaths(t *testing.T){
 	for caseID, testCase := range []struct{
@@ -114,6 +116,67 @@ func TestMinFallingPathSum(t *testing.T){
 		result = MinFallingPathSum(testCase.nums)
 		if result != testCase.want{
 			t.Errorf("case-MinFallingPathSum-%d: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestMinFallingPathSumII(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums		[][]int
+		want		int
+	}{
+		{[][]int{[]int{7}}, 7},
+		{[][]int{[]int{1,2,3}, []int{4,5,6}, []int{7,8,9}}, 13},
+	} {
+		result := MinFallingPathSumII(testCase.nums)
+		if result != testCase.want{
+			t.Errorf("case-MinFallingPathSumII-%d: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestFindPaths(t *testing.T) {
+	for caseId, testCase := range []struct{
+		tc			[]int
+		want		int
+	}{
+		{[]int{36,5,50,15,3}, 390153306},
+		{[]int{8,7,16,1,5}, 102984580},
+		{[]int{2,2,2,0,0}, 6},
+		{[]int{1,3,3,0,1}, 12},
+	} {
+		result := FindPaths(testCase.tc[0], testCase.tc[1], testCase.tc[2], testCase.tc[3], testCase.tc[4])
+		if result != testCase.want{
+			t.Errorf("case-FindPaths-%d: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+		result = FindPathsDFSDP(testCase.tc[0], testCase.tc[1], testCase.tc[2], testCase.tc[3], testCase.tc[4])
+		if result != testCase.want{
+			t.Errorf("case-FindPathsDFSDP-%d: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+		result = FindPathsDPBest(testCase.tc[0], testCase.tc[1], testCase.tc[2], testCase.tc[3], testCase.tc[4])
+		if result != testCase.want{
+			t.Errorf("case-FindPathsDFSDP-%d: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestPathsWithMaxScore(t *testing.T) {
+	for caseId, testCase := range []struct{
+		board		[]string
+		want		[2]int
+	}{
+		{[]string{"E23","2X2","12S"}, [2]int{7,1}},
+		{[]string{"E12","1X1","21S"}, [2]int{4,2}},
+		{[]string{"E11","XXX","11S"}, [2]int{0,0}},
+	}{
+		result := PathsWithMaxScore(testCase.board)
+		if result[0] != testCase.want[0] || result[1] != testCase.want[1]{
+			t.Errorf("case-PathsWithMaxScore-%d: result=%d want=%d", caseId, result, testCase.want)
 			break
 		}
 	}

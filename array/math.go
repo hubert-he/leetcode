@@ -283,3 +283,89 @@ func CountPrimesEratosthenes(n int) (cnt int){
 	}
 	return
 }
+
+/* 507. Perfect Number
+A perfect number is a positive integer that is equal to the sum of its positive divisors, excluding the number itself.
+A divisor of an integer x is an integer that can divide x evenly.
+Given an integer n, return true if n is a perfect number, otherwise return false.
+*/
+// TimeOut
+func checkPerfectNumber(num int) bool {
+	t := num/2
+	sum := 0
+	for i := 1; i <= t; i++{
+		if num % i == 0{
+			sum += i
+		}
+	}
+	return sum == num
+	/* 辣鸡
+	if sum == num{
+		return true
+	}
+	return false
+	 */
+}
+/* 优化-1：
+   从1至根号n 进行枚举。如果n有一个大于根号n的因数x， 那么它一定有一个小于根号n的因数 n/x。
+   因此从1-根号n枚举n因子，当出现一个n的因数时，还需要加上 n/x.
+   另外特殊情况，即 x == n/x情况
+ */
+func CheckPerfectNumber(num int) bool {
+	if num == 1{
+		return false
+	}
+	sum := 1
+	for i := 2; i*i <= num; i++{ // 学习根号n的策略
+		if num % i == 0{
+			sum += i
+			if i*i != num{
+				sum += num / i
+			}
+		}
+	}
+	return sum == num
+}
+/* 欧几里得-欧拉定理
+   每个偶数是完全数都可以写成 2^(p-1) * (2^p - 1)的形式，其中p为素数， 2^p -1 也是素数，称为梅森素数
+	例如 6 = 2^1 * (2^2 - 1)
+		28 = 2^2 * (2^3 - 1)
+	由于目前奇完全数还未被发现，因此所有的完全数都可以写成上述形式。当n不超过 10的8次方时， p 也不会很大
+    因此我们只要带入最小的若干个梅森素数 2, 3, 5, 7, 13, 17, 19, 312,3,5,7,13,17,19,31（形如 2^p - 1的素数，p是素数），
+	将不超过10的8次方 的所有完全数计算出来即可
+ */
+func CheckPerfectNumberBest(num int) bool {
+	primes := []int{2, 3, 5, 7, 13, 17, 19, 31} // 梅森素数
+	pn := func(p int)int{
+		return (1 << (p-1)) * ((1 << p) - 1)
+	}
+	for _, p := range primes{
+		if pn(p) == num{
+			return true
+		}
+	}
+	return false
+}
+
+/* 172. Factorial Trailing Zeroes
+	Given an integer n, return the number of trailing zeroes in n!.
+	Follow up: Could you write a solution that works in logarithmic time complexity?
+Example 2:
+	Input: n = 5
+	Output: 1
+	Explanation: 5! = 120, one trailing zero.
+Example 3:
+	Input: n = 0
+	Output: 0
+	计算因子中5的个数
+ */
+func TrailingZeroes(n int) int {
+	if n >= 5{
+		return n/5 + TrailingZeroes(n/5)
+	}else{
+		return 0
+	}
+}
+
+
+

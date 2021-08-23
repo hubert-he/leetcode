@@ -1,6 +1,8 @@
 package string
 
-import "strconv"
+import (
+	"strconv"
+)
 
 /* 415. Add Strings
 Given two non-negative integers, num1 and num2 represented as string, return the sum of num1 and num2 as a string.
@@ -176,4 +178,76 @@ func singleNumber(nums []int) int {
 		ans ^= nums[i]
 	}
 	return ans
+}
+/* 459. Repeated Substring Pattern
+  Given a string s, check if it can be constructed by taking a substring of it and appending multiple copies of the substring together.
+
+ */
+func RepeatedSubstringPattern(s string) bool {
+	n := len(s)
+	if n <= 1{
+		return false
+	}
+	/* 参考测试用例， 与奇偶性无关
+	if n%2 != 0{ // 奇数个
+		t := s[0]
+		for i := range s{
+			if s[i] != t{
+				return false
+			}
+		}
+		return true
+	}else{*/
+		for i := 0; i < n/2; i++{
+			for j := i; j < n/2; j++{
+				subStr := s[i:j+1]
+				tmp := ""
+				//fmt.Println(i, j, n, subStr)
+				for k := 0; k < n/(j-i+1); k++{
+					tmp += subStr
+				}
+				if mathNative(tmp, s){
+					return true
+				}
+			}
+		}
+		return false
+}
+func mathNative(s1, s2 string)bool{
+	n1, n2 := len(s1), len(s2)
+	if n1 != n2{
+		return false
+	}
+	for i := range s1{
+		if s1[i] != s2[i]{
+			return false
+		}
+	}
+	return true
+}
+/*
+	如果长度为 n 的字符串 s 可以由它的一个长度为n1的子串s1 重复多次构成：
+    <1> n 一定是 n1 的倍数
+	<2> s1 一定是 s 的前缀
+	<3> 对于任意 i i属于[n1,n)， 有 s[i] = s[i-n1]
+	s中长度为n1的前缀就是s1 并且在这之后的每一个位置上的字符 s[i] 都需要与它之前的第 n1个字符s[i-n1]相同
+	子串至少需要重复一次，所以 n1 的大小不会大于n的一半，只需要枚举 [1, n/2]内即可
+ */
+func RepeatedSubstringPattern2(s string) bool {
+	n := len(s)
+	for i := 1; i*2 <= n; i++{
+		if n % i == 0{ // n 一定是 n1 的倍数
+			match := true
+			for j := i; j < n; j++{
+				if s[j] != s[j-i]{
+					match = false
+					break
+				}
+			}
+			if match{
+				return true
+			}
+		}
+	}
+	return false
 }
