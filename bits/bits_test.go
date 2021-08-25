@@ -16,3 +16,19 @@ func Test_reverseBits(t *testing.T) {
 		}
 	}
 }
+
+func TestToHex(t *testing.T) {
+	for caseID, testCase := range []struct{
+		num int
+		want string
+	}{
+		{26, "1a"},
+		{-1, "ffffffff"},
+	}{
+		result := ToHex(testCase.num)
+		if result != testCase.want{
+			t.Errorf("case-%d result=%s but want=%s", caseID, result, testCase.want)
+			break
+		}
+	}
+}

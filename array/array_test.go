@@ -282,3 +282,31 @@ func TestCalcEquation(t *testing.T) {
 		}
 	}
 }
+
+func TestThirdMax(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums []int
+		want int
+	}{
+		{[]int{3,2,1}, 1},
+		{[]int{1,2}, 2},
+		{[]int{2,2,3,1}, 1},
+		{[]int{5,2,2}, 5},
+		{[]int{2,2,3,1}, 1},
+		{[]int{1,2,-2147483648}, -2147483648},
+		{[]int{1,2}, 2},
+		{[]int{1,1,2}, 2},
+		{[]int{1,2,2,5,3,5}, 2},
+
+	}{
+		result := ThirdMax2(testCase.nums)
+		if result != testCase.want{
+			t.Errorf("case-%d result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+
+
+

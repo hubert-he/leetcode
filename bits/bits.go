@@ -1,6 +1,8 @@
 package bits
 
-import "math/bits"
+import (
+	"math/bits"
+)
 func max(nums ...int)int{
 	ans := nums[0]
 	for i := 1; i < len(nums); i++{
@@ -188,9 +190,61 @@ func reverseBits05032(num int) int {
 	}
 	return ans
 }
+/* 476. Number Complement 求补码
+The complement of an integer is the integer you get when you flip all the 0's to 1's and all the 1's to 0's in its binary representation.
+For example, The integer 5 is "101" in binary and its complement is "010" which is the integer 2.
+Given an integer num, return its complement.
+注意是非负整数  和 正整数 两种情况
+ */
+/*
+变量				二进制
+num				00001101
+mask			11110000
+~mask ^ num		00000010
+ */
+func FindComplement(num int) int {
+	if num == 0{
+		return 1
+	}
+	// 取反: 利用异或 5的二进制是101 取反就是010 实际上就是101和111的异或运算
+	// 111的求解过程就是获取5最高为1总位数3的全为1的的过程
+	n := 1
+	t := num
+	for t > 0{
+		t >>= 1
+		n <<= 1
+	}
+	n = n - 1// 全反转为1
+	return n ^ num
+}
 
-
-
-
+/* 405. Convert a Number to Hexadecimal
+  Given an integer num, return a string representing its hexadecimal representation.
+  For negative integers, two’s complement method is used.
+  All the letters in the answer string should be lowercase characters,
+  and there should not be any leading zeros in the answer except for the zero itself.
+  Note: You are not allowed to use any built-in library method to directly solve this problem.
+ */
+/*
+	知识点1： 计算机内部就是补码
+	知识点2：goLang 中没有逻辑左/右移， 只有算术左/右移。
+			即 sign = a >> 31 如果a是正数 sign结果为0， 如果a是负数 sign结果为-1
+			用算术移位实现逻辑移位： 当a 为负数时， 把右移时高位补充的1变0就可以了：
+				sign = a >> 31 & 1 这样a为负数时得到的sign结果为1， 正数时为 0
+ */
+func ToHex(num int) string {
+	if num == 0{ // 首先要排除特殊情况
+		return "0"
+	}
+	m := []byte{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'}
+	ans := []byte{}
+	for num != 0{
+		t := num & 0xF
+		ans = append([]byte{m[t]}, ans...)
+		num >>= 4 // golang 只有算术右移，故需要额外一步去掉符号位
+		num &= 0xFFFFFFF
+	}
+	return string(ans)
+}
 
 

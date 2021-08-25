@@ -2,6 +2,7 @@ package array
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"sort"
 	"strconv"
@@ -1771,9 +1772,190 @@ func Merge2(nums1 []int, m int, nums2 []int, n int)  {
 	}
 }
 
+/* 453. Minimum Moves to Equal Array Elements
+  Given an integer array nums of size n, return the minimum number of moves required to make all array elements equal.
+  In one move, you can increment n - 1 elements of the array by 1.
+Example 1:
+	Input: nums = [1,2,3]
+	Output: 3
+	Explanation: Only three moves are needed (remember each move increments two elements):
+	[1,2,3]  =>  [2,3,3]  =>  [3,4,3]  =>  [4,4,4]
+Example 2:
+	Input: nums = [1,1,1]
+	Output: 0
+ */
+/* 暴力： 关键点： 数组中的 最大值 与 最小值 相等
+	O(k * n^2) k 为最大值与最小值的差
+ */
+func MinMoves(nums []int) int {
+	n := len(nums)
+	min, max, count := 0, n-1, 0
+	for {
+		for i := 0; i < n; i++ {
+			if nums[max] < nums[i] {
+				max = i
+			}
+			if nums[min] > nums[i] {
+				min = i
+			}
+		}
+		// 条件：最大值与最小值相等 即为条件
+		if nums[max] == nums[min] {
+			break
+		}
+		for i := 0; i < n; i++{
+			if i != max{
+				nums[i]++
+			}
+		}
+		count++
+	}
+	return count
+}
+/* 改进：为了让最小元素等于最大元素，至少需要加 k 次，之后最大元素可能发生变化。因此可以一次性增加增量 k=max-min
+	并将移动次数增加k，然后对整个数组遍历，找到最大值 最小值，重复这一过程 直至 最大值与最小值相等
+	O(n^2)
+ */
+func MinMoves2(nums []int) int {
+	n := len(nums)
+	min, max, count := 0, n-1, 0
+	for {
+		for i := 0; i < n; i++{
+			if nums[max] < nums[i]{
+				max = i
+			}
+			if nums[min] > nums[i]{
+				min = i
+			}
+		}
+		diff := nums[max] - nums[min]
+		if diff == 0{
+			break
+		}
+		count += diff
+		for i := 0; i < n; i++{
+			if i != max{
+				nums[i] += diff
+			}
+		}
+	}
+	return count
+}
+/*改进：排序 加速获得最大最小值
+	用diff = max - min 更新数列
+	1. 在每一步计算diff 之后正在更新有序数组的元素。如何在不遍历数组的情况下查询最大 最小值。在第一步中，最后的元素即为最大值。
+	  因此 diff = a[n-1] - a[0] 我们对除最后一个元素以外增加diff
+	2. 更新后的数组起始元素a'[0] 变成了 a[0]+diff = a[n-1] 因此 a'[0]变为上一步最大元素a[n-1]。由于数组有序，直到 i-2 的元素都满足
+	  a[j] >= a[j-1]。故更新后 a'[n-2] 即为最大  a[0] 依然是最小元素
+	3. 于是 在第二次更新时， diff = a[n-2] - a[0]  更新后， a''[0] 会成为 a'[n-2] 于是 最大元素为 a[n-3]
+	4. 继续如此，每一步用最大最小值的差 更新数组
+	5. 优化：不需要每次更新数组值，这是因为 即使是在更新元素之后，我们要登记的diff 差值也不变，因为max 和 min 增加的数字相同
+	6. 于是，在排序数组后， moves = SUM(a[i] - a[0]) i从1到n-1
+ */
+func MinMoves3(nums []int) int {
+	sort.Ints(nums)
+	n, count := len(nums), 0
+	for i := n-1; i > 0; i--{
+		count += (nums[i] - nums[0])
+	}
+	return count
+}
+/* DP
+考虑有序数组a 不考虑整个问题，而是分解问题
+假设 直到 i-1 位置的元素已经相等， 我们只需考虑 i 位的元素，将差值diff=a[i]-a[i-1]加到总移动次数上，使得第 i 位也相等。
+但当我们想要继续这一步时， a[i] 之后的元素也会被增加diff 亦即 a[j] += diff, 其中 j > i
+但是在实现本方法时，不需要对这样的a[j]进行增加，相反 我们把moves 的数量增加到当前元素(a[i])中， a'[i] = a[i] + moves
+对数组排序，一直更新moves以使得直到当前的元素相等，而不改变除了当前元素之外的元素。在整个数组扫描完毕后，moves即为答案。
+ */
+func MinMovesDP(nums []int) int {
+	sort.Ints(nums)
+	ans := 0
+	for i := 1; i < len(nums); i++{
+		diff := (ans + nums[i]) - nums[i-1]
+		nums[i] += ans
+		ans += diff
+	}
+	return ans
+}
+/* 数学计算
+将除了一个元素之外的全部元素+1，等价于将该元素-1，因为我们只对元素的相对大小感兴趣。因此，该问题简化为需要进行的减法次数
+我们只需要将所有的数都减到最小的数即可
+moves = SUM(a[i]) - min(a) * n ; n 为数组长度， i属于[0, n)
+由于 SUM(a[i]) 可能非常大，造成整数越界，可以即时计算moves
+moves = SUM(a[i] - min(a)) i属于[0, n)
+ */
+func MinMovesBest(nums []int) int {
+	ans := 0
+	min := math.MaxInt32
+	for i := range nums{
+		if min > nums[i]{
+			min = nums[i]
+		}
+	}
+	for i := range nums{
+		ans += (nums[i] - min)
+	}
+	return ans
+}
 
+/* 414. Third Maximum Number
+  Given integer array nums, return the third maximum number in this array.
+  If the third maximum does not exist, return the maximum number.
+ */
+// nums中包含MinInt32的可能, 无法使用3指针处理，需要借助int64 避开MinInt32 判断
+func ThirdMax(nums []int) int {
+	f := math.MinInt32
+	s,t := f,f
+	ff,fs,ft := false, false, false // nums中包含MinInt32的可能
+	for _,v := range nums{
+		if f <= v{
+			if f != v && ff{
+				if fs{
+					t = s
+					ft = true
+				}
+				s = f
+				fs = true
+			}
+			f = v
+			ff = true
+		}else if s <= v{
+			if s != v && fs{
+				t = s
+				ft = true
+			}
+			s = v
+			fs=true
+		}else if t <= v{
+			ft = true
+			t = v
+		}
+	}
+	if !ft {
+		return f
+	}
+	return t
+}
 
-
+func ThirdMax2(nums []int) int {
+	var f, s, t int64 = math.MinInt64, math.MinInt64, math.MinInt64
+	for _, v := range nums{
+		num := int64(v)
+		if num > f{// 如果比第一个大
+			num, f = f, num
+		}
+		if num < f && num > s{ // 比第一个小 但比第二个大
+			num, s = s, num
+		}
+		if num < s && num > t{
+			num, t = t, num
+		}
+	}
+	if t != math.MinInt64{
+		return int(t)
+	}
+	return int(f)
+}
 
 
 
