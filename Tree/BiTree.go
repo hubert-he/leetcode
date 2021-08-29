@@ -1021,44 +1021,32 @@ func isEqual(s *BiTreeNode, t *BiTreeNode) bool {
 	return false
 }
 /* 实现比较渣
-func IsSubtree_2dfs(s *BiTreeNode, t *BiTreeNode)( bool) {
-	if s == nil{
-		return false
+func checkSubTree(t1 *BiTreeNode, t2 *BiTreeNode) bool {
+	var dfs func(root *BiTreeNode)bool
+	dfs = func(root *BiTreeNode)bool{
+		if root == nil && t2 != nil{ // 易漏1
+			return false
+		}
+		if isEqual(root, t2){
+			return true
+		}
+		return dfs(root.Left) || dfs(root.Right)
+		// 错误-2
+		//return isEqual(root.Left, t2) || isEqual(root.Right, t2)
 	}
-	is_subtree := isEqual(s, t)
-	if is_subtree{
-		return true
-	}
-	is_subtree = IsSubtree(s.Left,  t)
-	if is_subtree{
-		return true
-	}
-	is_subtree = IsSubtree(s.Right, t)
-	if is_subtree{
-		return true
-	}
-	return false
+	return dfs(t1)
 }
-
-func isEqual(s *BiTreeNode, t *BiTreeNode) (equal bool){
-	if s == nil && t == nil {
+func isEqual(t1, t2 *BiTreeNode)bool{
+	if t1 == nil && t2 == nil {
 		return true
 	}
-	if (s == nil && t != nil) || (s != nil && t == nil){
+	if t1 == nil || t2 == nil{
 		return false
 	}
-	if s.Val != t.Val{
+	if t1.Val != t2.Val{
 		return false
 	}
-	left := isEqual(s.Left, t.Left)
-	if left == false{
-		return false
-	}
-	right := isEqual(s.Right, t.Right)
-	if right == false{
-		return false
-	}
-	return true
+	return isEqual(t1.Left, t2.Left) && isEqual(t1.Right, t2.Right)
 }
  */
 // 剑指 Offer 27. 二叉树的镜像
@@ -1912,5 +1900,55 @@ func LongestZigZagDP(root *BiTreeNode) int {
 	}
 	return maxAns
 }
+
+/* 662. Maximum Width of Binary Tree
+Given the root of a binary tree, return the maximum width of the given tree.
+The maximum width of a tree is the maximum width among all levels.
+The width of one level is defined as the length between the end-nodes (the leftmost and rightmost non-null nodes),
+where the null nodes between the end-nodes are also counted into the length calculation.
+It is guaranteed that the answer will in the range of 32-bit signed integer.
+ */
+/*
+这个问题中的主要想法是给每个节点一个 position 值，
+如果我们走向左子树，那么 position -> position * 2，
+如果我们走向右子树，那么 position -> positon * 2 + 1。
+当我们在看同一层深度的位置值 L 和 R 的时候，宽度就是 R - L + 1
+ */
+func WidthOfBinaryTree(root *BiTreeNode) int {
+	type tuple struct {
+		node	*BiTreeNode
+		depth	int
+		pos 	int
+	}
+	curDepth, left, ans := 0, 0, 0
+	q := []tuple{{root, 0, 0}}
+	for _, v := range q{
+		if v.node != nil{
+			q = append(q, tuple{v.node.Left, v.depth+1, v.pos*2})
+			q = append(q, tuple{v.node.Right, v.depth+1, v.pos*2+1})
+			if curDepth != v.depth{
+				curDepth = v.depth
+				left = v.pos
+			}
+			if ans < (v.pos - left + 1){
+				ans = v.pos - left + 1
+			}
+		}
+	}
+	return ans
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
