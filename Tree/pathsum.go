@@ -250,6 +250,72 @@ func PathSumIVBFS(nums []int)(ans int){
 	return
 }
 
+/* 1376. Time Needed to Inform All Employees  本质上是计算最大路径和
+	A company has n employees with a unique ID for each employee from 0 to n - 1. The head of the company is the one with headID.
+Each employee has one direct manager given in the manager array where manager[i] is the direct manager of the i-th employee, manager[headID] = -1.
+Also, it is guaranteed that the subordination relationships have a tree structure.
+The head of the company wants to inform all the company employees of an urgent piece of news.
+He will inform his direct subordinates, and they will inform their subordinates, and so on until all employees know about the urgent news.
+The i-th employee needs informTime[i] minutes to inform all of his direct subordinates (i.e., After informTime[i] minutes,
+all his direct subordinates can start spreading the news).
+Return the number of minutes needed to inform all the employees about the urgent news.
+Example 1:
+	Input: n = 1, headID = 0, manager = [-1], informTime = [0]
+	Output: 0
+	Explanation: The head of the company is the only employee in the company.
+Example 2:
+	Input: n = 6, headID = 2, manager = [2,2,-1,2,2,2], informTime = [0,0,1,0,0,0]
+	Output: 1
+	Explanation: The head of the company with id = 2 is the direct manager of all the employees in the company and needs 1 minute to inform them all.
+	The tree structure of the employees in the company is shown.
+ */
+/* 自底向上计算，不借助任何辅助数据结果
+ */
+func NumOfMinutes(n int, headID int, manager []int, informTime []int) int {
+	ans := 0
+	for i := range manager{
+		pathSum := 0
+		if informTime[i] == 0{ // 确定叶子节点，开始向上计算路径和
+			j := i
+			for j != -1{
+				pathSum += informTime[j]
+				j = manager[j]
+			}
+			//pathSum += informTime[headID]
+		}
+		if ans < pathSum{ // 路径和比较
+			ans = pathSum
+		}
+	}
+	return ans
+}
+/* 转换成树或图来处理。原数组不适合处理，因此需要引入图或树 数据结构
+  即 邻接矩阵 或 邻接表
+ */
+func NumOfMinutesGraph(n int, headID int, manager []int, informTime []int) int {
+	matrix := make([][]int, n)
+	for i, par := range manager{ // 构建邻接表
+		if par != -1{ // 遗漏点-1
+			matrix[par] = append(matrix[par], i)
+		}
+	}
+	ans := 0
+	var dfs func(root int, sum int)
+	dfs = func(root int, sum int){
+		if informTime[root] == 0{
+			if ans < sum {
+				ans = sum
+				return
+			}
+		}
+		for _, u := range matrix[root]{
+			dfs(u, sum+informTime[root])
+		}
+	}
+	dfs(headID, 0)
+	return ans
+}
+
 /* 124. Binary Tree Maximum Path Sum
 A path in a binary tree is a sequence of nodes where each pair of adjacent nodes in the sequence has an edge connecting them.
 A node can only appear in the sequence at most once. Note that the path does not need to pass through the root.

@@ -84,7 +84,7 @@ func Print(x interface{}) {
 
 func PrintFromType(x interface{}){
 	t := reflect.TypeOf(x)
-	fmt.Printf("type %s/%s meths: %d/%d\n", t, t.NumMethod())
+	fmt.Printf("type %s/%s meths: %d\n", x, t, t.NumMethod())
 	for i := 0; i < t.NumMethod(); i++ {
 		methType := t.Method(i).Type
 		fmt.Printf("func (%s) %s %s\n", t, t.Method(i).Name, strings.TrimPrefix(methType.String(), "func"))

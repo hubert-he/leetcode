@@ -1,6 +1,7 @@
 package design
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 )
@@ -66,14 +67,14 @@ type Skiplist struct {
 
 
 func ConstructorSkipList() Skiplist {
-	head := SkipNode{key: math.MaxInt32}
+	head := SkipNode{key: math.MinInt32}
 	return Skiplist{head: &head, level: 0, random: 0}
 }
 
 
 func (this *Skiplist) Search(target int) bool {
 	cur := this.head
-	for cur != nil {
+	for cur != nil {// 比较不同的一点是 需要考虑right
 		if target < cur.key{
 			return false
 		}
@@ -103,17 +104,31 @@ func (this *Skiplist) Search(target int) bool {
   5. 如果该层是目前的最高层索引，需要继续向上建立索引应该怎么办
      跳表的head需要改变了，新建一个ListNode节点作为新的head，将它的down指向老head，
 	 将这个head节点加入栈中(也就是这个节点作为下次后面要插入的节点)，
+关于如何找到上层的待插入节点？
+各个实现方法可能不同，
+	方法一： 如果有左、上指向的指针那么可以向左向上找到上层需要插入的节点
+	方法二： 如果只有右指向和下指向的 我们也可以巧妙的借助查询过程中记录下降的节点
+		因为曾经下降的节点倒序就是需要插入的节点，最底层也不例外(因为没有匹配值会下降为null结束循环)。
+		在这里我使用栈这个数据结构进行存储，当然使用List也可以
  */
+/* 关于重复值，这个要确定策略
+插入：多副本插入， 只插入一次
+*/
 func (this *Skiplist) Add(num int)  {
 	node := SkipNode{key: num}
 	st := []*SkipNode{}
 	cur := this.head
 	for cur != nil { // 借助查询过程中记录下降的节点，曾经下降的节点倒序就是需要插入的节点,利用栈实现
 		if cur.right == nil {
+			st = append([]*SkipNode{cur}, st...)
 			cur = cur.down
+/*
 		}else if cur.right.key == num{
 			cur.right.value = node.value
+			return
 		}else if cur.right.key > num {
+ */
+		}else if cur.right.key >= num {
 			st = append([]*SkipNode{cur}, st...)
 			cur = cur.down
 		}else{
@@ -160,6 +175,9 @@ func (this *Skiplist) Add(num int)  {
    (2)删除当前层节点之后，下一层该key的节点也要删除，一直删除到最底层为nil 结束
     删除操作： 每层索引如果有 删除就可以了
  */
+/* 关于重复值，这个要确定策略
+ 删除：全部删除， 只删除一次
+ */
 func (this *Skiplist) Erase(num int) bool {
 	ret := false
 	cur := this.head
@@ -177,6 +195,32 @@ func (this *Skiplist) Erase(num int) bool {
 		}
 	}
 	return ret
+}
+func (this *Skiplist) Print(){
+	cur := this.head
+	index := 1
+	last := cur
+	for last.down != nil{
+		last = last.down
+	}
+	for cur != nil {
+		enumNode := cur.right
+		enumLast := last.right
+		fmt.Printf("%-8s", "head->")
+		for enumLast != nil && enumNode != nil {
+			if enumNode.key == enumLast.key{
+				fmt.Printf(" %d->", enumLast.key)
+				enumLast = enumLast.right
+				enumNode = enumNode.right
+			}else{
+				enumLast = enumLast.right
+				fmt.Printf("%-5s", "")
+			}
+		}
+		cur = cur.down
+		index++
+		fmt.Println()
+	}
 }
 
 

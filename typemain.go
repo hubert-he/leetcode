@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./Reflect"
+	"./syntax/Reflect"
 	"encoding/json"
 	"fmt"
 	"github.com/fatih/structs"

@@ -54,3 +54,22 @@ func TestPathSumIVBFS(t *testing.T) {
 		}
 	}
 }
+
+func TestNumOfMinutesGraph(t *testing.T){
+	for caseId, testCase := range []struct{
+		n			int
+		headID		int
+		manager		[]int
+		informTime	[]int
+		want 		int
+	}{
+		{11, 4, []int{5,9,6,10,-1,8,9,1,9,3,4}, []int{0,213,0,253,686,170,975,0,261,309,337}, 2560},
+		{4, 2, []int{3,3,-1,2}, []int{0,0,162,914}, 1076},
+	}{
+		result := NumOfMinutesGraph(testCase.n, testCase.headID, testCase.manager, testCase.informTime)
+		if result != testCase.want{
+			t.Errorf("case-%d Failed: result=%d, but want %d", caseId, result, testCase.want)
+			break
+		}
+	}
+}

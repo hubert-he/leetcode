@@ -307,6 +307,25 @@ func TestThirdMax(t *testing.T){
 	}
 }
 
+func TestFindErrorNums(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []int
+		want []int
+	}{
+		{[]int{6,1,4,3,2,2}, []int{2,5}},
+		{[]int{1,2,2,4}, []int{2,3}},
+		{[]int{1,1}, []int{1,2}},
+		{[]int{3,3,1}, []int{3,2}},
+		{[]int{2,2}, []int{2,1}},
+	}{
+		result := FindErrorNumsSwap(testCase.nums)
+		if result[0] != testCase.want[0] || result[1] != testCase.want[1]{
+			t.Errorf("case-%d result=%v want=%v", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
 
 
 

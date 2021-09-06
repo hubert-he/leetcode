@@ -1,7 +1,9 @@
 package string
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 )
 
 /* 415. Add Strings
@@ -234,7 +236,7 @@ func mathNative(s1, s2 string)bool{
  */
 func RepeatedSubstringPattern2(s string) bool {
 	n := len(s)
-	for i := 1; i*2 <= n; i++{
+	for i := 1; i*2 <= n; i++{ // 这里 i表示可能的子串长度
 		if n % i == 0{ // n 一定是 n1 的倍数
 			match := true
 			for j := i; j < n; j++{
@@ -249,4 +251,89 @@ func RepeatedSubstringPattern2(s string) bool {
 		}
 	}
 	return false
+}
+func RepeatedSubstringPatternTest(s string)bool{
+	n := len(s)
+	for i := 1; i < n; i++{
+		if n % i != 0{
+			continue
+		}
+		sub := s[:i]
+		repeat := n / i
+		if strings.Index(s, strings.Repeat(sub, repeat)) == 0{
+			return true
+		}
+	}
+	return false
+}
+/*1668. Maximum Repeating Substring
+For a string sequence, a string word is k-repeating if word concatenated k times is a substring of sequence.
+The word's maximum k-repeating value is the highest value k where word is k-repeating in sequence.
+If word is not a substring of sequence, word's maximum k-repeating value is 0.
+Given strings sequence and word, return the maximum k-repeating value of word in sequence.
+Example 1:
+	Input: sequence = "ababc", word = "ab"
+	Output: 2
+	Explanation: "abab" is a substring in "ababc".
+Example 2:
+	Input: sequence = "ababc", word = "ba"
+	Output: 1
+	Explanation: "ba" is a substring in "ababc". "baba" is not a substring in "ababc".
+Example 3:
+	Input: sequence = "ababc", word = "ac"
+	Output: 0
+	Explanation: "ac" is not a substring in "ababc".
+ */
+// 注意关注二分查找中： mid 的计算
+// mid := i + (j - i) / 2  以及  mid := (i+j) / 2
+func MaxRepeating(sequence string, word string) int {
+	i, j := 0, len(sequence)/len(word)
+	ans := 0
+	for i <= j{
+		mid := i + (j - i) / 2
+		//mid := (i+j) / 2
+		fmt.Println(mid)
+		if strings.Index(sequence, strings.Repeat(word, mid)) == -1{
+			j = mid - 1
+		}else{
+			ans = mid
+			i = mid + 1
+		}
+	}
+	ans = i-1
+	return ans
+}
+
+/* 17.17. Multi Search LCCI
+Given a string band an array of smaller strings T, design a method to search b for each small string in T.
+Output positions of all strings in smalls that appear in big, where positions[i] is all positions of smalls[i].
+Example:
+	Input:
+	big = "mississippi"
+	smalls = ["is","ppi","hi","sis","i","ssippi"]
+	Output:  [[1,4],[8],[],[3],[1,4,7,10],[5]]
+ */
+func MultiSearch(big string, smalls []string) [][]int {
+	sn := len(smalls)
+	//bn := len(big)
+	ans := make([][]int, sn)
+	for i := range smalls{
+		/* strings.Index 特殊点
+		   subString = "" 空字符串，Index 返回 0
+		   与subString = 首字符， Index 也返回 0
+		*/
+		if len(smalls[i]) == 0{
+			continue
+		}
+		s := big
+		pre := 0
+		p := strings.Index(s, smalls[i])
+		for p != -1{
+			s = s[p+1:]
+			ans[i] = append(ans[i], p+pre)
+			pre += p+1
+			p = strings.Index(s, smalls[i])
+		}
+	}
+	return ans
 }

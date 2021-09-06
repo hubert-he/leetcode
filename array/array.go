@@ -1957,5 +1957,135 @@ func ThirdMax2(nums []int) int {
 	return int(f)
 }
 
+/* 645. Set Mismatch
+You have a set of integers s, which originally contains all the numbers from 1 to n.
+Unfortunately, due to some error, one of the numbers in s got duplicated to another number in the set, which results in repetition of one number and loss of another number.
+You are given an integer array nums representing the data status of this set after the error.
+Find the number that occurs twice and the number that is missing and return them in the form of an array.
+ */
+func FindErrorNums(nums []int) []int {
+	n := len(nums)
+	m := make([]int, n+1)
+	ans := []int{}
+	for i := range nums{
+		if m[nums[i]] == 0{
+			m[nums[i]] = 1
+		}else{
+			ans = append(ans, nums[i])
+		}
+	}
+	for i := 1; i < n+1; i++{
+		if m[i] == 0{
+			ans = append(ans, i)
+			break
+		}
+	}
+	return ans
+}
+/* 寻找丢失的数字相对复杂，可能有以下两种情况：
+  1. 如果丢失的数字大于 1 且小于 n，则一定存在相邻的两个元素的差等于 2，这两个元素之间的值即为丢失的数字
+  2. 如果丢失的数字是 1 或者 n， 则需要额外判断
+ */
+func FindErrorNums2(nums []int) []int {
+	ans := make([]int, 2)
+	sort.Ints(nums)
+	pre := 0
+	for _, v := range nums{
+		if v == pre{
+			ans[0] = v
+		}else if v-pre > 1{
+			ans[1] = pre+1
+		}
+		pre = v
+	}
+	n := len(nums)
+	if nums[n-1] != n{
+		ans[1] = n
+	}
+	return ans
+}
+/* 位运算
+知识点-1： 异或性质
+知识点-2： 负数的异或运算
+以 10 ^ -10 为例：
+  0000 0000 0000 0000 0000 0000 0000 1010
+^ 1111 1111 1111 1111 1111 1111 1111 0110
+= 1111 1111 1111 1111 1111 1111 1111 1100
+
+  0000 0000 0000 0000 0000 0000 0000 1010
+& 1111 1111 1111 1111 1111 1111 1111 0110
+= 0000 0000 0000 0000 0000 0000 0000 0010   lowbit 最低不同位
+重复的数字在数组中出现 2 次，丢失的数字在数组中出现 0 次，其余的每个数字在数组中出现 1 次
+重复的数字和丢失的数字的出现次数的奇偶性相同，且和其余的每个数字的出现次数的奇偶性不同。
+如果在数组的 n 个数字后面再添加从 1 到 n 的每个数字，得到 2n 个数字，则在 2n 个数字中，重复的数字出现 3 次，丢失的数字出现 1 次，其余的每个数字出现 2 次。
+根据出现次数的奇偶性，可以使用异或运算求解。
+用 x 和 y 分别表示重复的数字和丢失的数字。异或运算满足交换律和结合律, a^a = 0   0 ^ a = a
+xor = x^x^x^y = x^y
+x与y 不同，故xor != 0
+令lowbit=xor & (-xor)， 则lowbit为x和y的二进制表示中的最低不同位，可用lowbit区分x和y
+得到lowbit 后， 可以将上述2n个数分成2组，
+第一组的每个数字a 都满足 a % lowbit = 0
+第二组的每个数组b 都满足 b & lowbit != 0
+创建两个变量 num1 num2 初始值为0  再次遍历上述2n个数字，对于每个数字a 如果 a&lowbit==0,则另num1 = num1 ^ a， 否则 num2=num2^a
+遍历结束后，num1为第一组的全部数字的异或结果， num2为第二组全部数字异或结果。
+因为同一个数字只能出现在其中的一组，且除了x和y外，每个数字一定在其中的一组出现2次，因此 num1 和 num2 分别对应 x 和 y中的一个数字。
+为了知道num1 和 num2 与 x和y 对应关系。需要再次遍历数组nums即可。
+如果数组中存在元素等于num1，则x==num1 y == num2 反之 x = num2  y== num1
+ */
+func FindErrorNumsBit(nums []int) []int {
+	xor := 0
+	for _, v := range nums{
+		xor ^= v
+	}
+	n := len(nums)
+	for i := 1; i <= n; i++{
+		xor ^= i
+	}
+	lowbit := xor & (-xor)
+	num1, num2 := 0, 0
+	for _, v := range nums{
+		if v & lowbit == 0{
+			num1 ^= v
+		}else {
+			num2 ^= v
+		}
+	}
+	for i := 1; i <= n; i++{
+		if i & lowbit == 0{
+			num1 ^= i
+		}else {
+			num2 ^= i
+		}
+	}
+	for _, v := range nums{
+		if v == num1{
+			return []int{num1, num2}
+		}
+	}
+	return []int{num2, num1}
+}
+/* 因为值的范围在[1,n]，我们可以运用「桶排序」的思路，根据 nums[i] = i + 1的对应关系使用 O(n) 的复杂度将每个数放在其应该落在的位置里。
+   然后线性扫描一遍排好序的数组，找到不符合 nums[i] = i + 1对应关系的位置，从而确定重复元素和缺失元素是哪个值。
+ */
+func FindErrorNumsSwap(nums []int) []int {
+	n := len(nums)
+	for i := 0; i < n; i++{
+		for nums[i] != i+1 && nums[nums[i] - 1] != nums[i]{ // 保证每次迭代，都有一个元素放入正确位置
+			nums[i], nums[nums[i]-1] = nums[nums[i]-1], nums[i]
+		}
+	}
+	a, b := -1, -1
+	for i := 0; i < n; i++{
+		if nums[i] != i+1{
+			a = nums[i]
+			if i == 0{ // 避免i-1情况
+				b = 1
+			}else{
+				b = nums[i-1]+1
+			}
+		}
+	}
+	return []int{a,b}
+}
 
 
