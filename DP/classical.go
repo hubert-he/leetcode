@@ -1,80 +1,8 @@
 package DP
 
 import (
-	"math"
 	"sort"
 )
-
-/* 322. Coin Change
-BST: 源于 可构成一个树 或者图，找寻最短路径
-*/
-func CoinChangeBFS(coins []int, amount int) int {
-	if amount == 0 {
-		return 0
-	}
-	// 优化1： 避开重复计算的情况
-	visited := map[int]bool{amount: true}
-	// 优化2： 对coins 升序
-	sort.Ints(coins)
-	q := []int{amount}
-	ans := 0
-	for len(q) > 0 {
-		tmp := []int{}
-		ans++
-		for _, item := range q{
-			for _, c := range coins{
-				if item - c == 0{
-					return ans
-				}
-				if item - c > 0{
-					if !visited[item-c]{
-						tmp = append(tmp, item - c)
-						visited[item-c] = true
-					}
-				}else{ // 由于 coins 升序排序，后面的面值会越来越大，剪枝
-					break
-				}
-			}
-		}
-		q = tmp
-	}
-	return -1 // 不可直接返回ans，无法换零 情况
-}
-
-func CoinChange(coins []int, amount int) int {
-	cache := make([]int, amount+1)
-	for i := range cache{
-		cache[i] = math.MaxInt32
-	}
-	cache[0] = 0
-	var dfs func(num int)int
-	dfs = func(num int)int{
-		if num < 0{
-			return -1
-		}
-		if num == 0{
-			return 0
-		}
-		if cache[num] != math.MaxInt32{
-			return cache[num]
-		}
-		ret := math.MaxInt32
-		for i := range coins{
-			t := dfs(num - coins[i])
-			//fmt.Println(num, coins[i], "-->", t)
-			if t >= 0 {
-				ret = min(ret, t+1)
-			}
-		}
-		if ret == math.MaxInt32{
-			cache[num] = -1
-			return -1
-		}
-		cache[num] = ret
-		return ret
-	}
-	return dfs(amount)
-}
 
 /* 518. Coin Change 2
 	You are given an integer array coins representing coins of different denominations and an integer amount representing a total amount of money.
