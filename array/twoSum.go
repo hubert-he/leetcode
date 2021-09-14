@@ -162,3 +162,58 @@ func kSum(nums []int, target int, k int) [][]int{
 	return tmpList
 }
 //287. 寻找重复数
+
+
+/* LCP 18. 早餐组合
+小扣在秋日市集选择了一家早餐摊位，一维整型数组 staple 中记录了每种主食的价格，一维整型数组 drinks 中记录了每种饮料的价格。小扣的计划选择一份主食和一款饮料，且花费不超过 x 元。请返回小扣共有多少种购买方案。
+注意：答案需要以 1e9 + 7
+ */
+func BreakfastNumber(staple []int, drinks []int, x int) int {
+	const mod int = 1e9+7
+	ans := 0
+	bucket := make([]int, x+1)
+	for i := range staple{ // 统计频次
+		if staple[i] < x{
+			bucket[staple[i]]++
+		}
+	}
+	for i := 2; i <= x; i++{ // 计算前缀和
+		bucket[i] += bucket[i-1]
+	}
+	for i := range drinks{
+		diff := x - drinks[i]
+		if diff < 0{
+			continue
+		}
+		ans = (ans + bucket[diff])%mod
+	}
+	return ans
+}
+
+func BreakfastNumber2(staple []int, drinks []int, x int) int {
+	const mod int = 1e9+7
+	sort.Ints(staple)
+	sort.Ints(drinks)
+	ans := 0
+	n := len(drinks)
+	for i := range staple{
+		target := x - staple[i]
+		i, j := 0, n-1
+		mid := 0
+		for i < j{
+			mid = (i+j) >> 1
+			if drinks[mid] <= target{
+				i = mid + 1
+			}else{
+				j = mid - 1
+			}
+		}
+		//fmt.Println(mid,i)
+		if drinks[i] <= target{
+			ans = (ans + i + 1)%mod
+		}else{
+			ans = (ans + i)%mod
+		}
+	}
+	return ans
+}
