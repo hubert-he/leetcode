@@ -1,7 +1,6 @@
 package DP
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -613,7 +612,7 @@ func MinFallingPathSumDFS(matrix [][]int) int {
 			dfs(row+1)
 			v := dp[next%2]
 			for col := range matrix[row] {
-				fmt.Println(col, n, matrix)
+				//fmt.Println(col, n, matrix)
 				if col <= 0 {
 					if len(v) == 1 {
 						dp[cur][col] = matrix[row][col] + v[col]
@@ -888,5 +887,43 @@ and the second is the number of such paths that you can take to get that maximum
 In case there is no path, return [0, 0].
  */
 func PathsWithMaxScore(board []string) []int {
-
+	maxScore := 0
+	for i := range board{
+		for j := range board[i]{
+			if board[i][j] != 'E' && board[i][j] != 'S' && board[i][j] != 'X'{
+				maxScore += int(board[i][j] - '0')
+			}
+		}
+	}
+	r, c := len(board), len(board[0])
+	dp := make([][][]int, r)
+	for i := range dp{
+		dp[i] = make([][]int, c)
+		for j := range dp[i]{
+			dp[i][j] = make([]int, maxScore)
+		}
+	}
+	for i := 0; i <= maxScore; i++{
+		dp[0][0][i] = 1
+	}
+	dir := [][]int{[]int{1,0}, []int{1,1}, []int{0,1}}
+	for i := r-1; i >= 0; i--{
+		for j := c-1; j >= 0; j--{
+			t := 0
+			if board[i][j] == 'S'{
+				t = 0
+			}
+			if board[i][j] == 'X'{
+				t = -1
+			}
+			for k := 0; k <= maxScore; k++{
+				for _, o := range dir{
+					dp[i][j][k] += dp[i+o[0]][j+o[1]][k-t]
+				}
+			}
+		}
+	}
+	ms,mc := 0,0
+	
+	return []int{}
 }
