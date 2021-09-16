@@ -886,6 +886,7 @@ Return a list of two integers: the first integer is the maximum sum of numeric c
 and the second is the number of such paths that you can take to get that maximum sum, taken modulo 10^9 + 7.
 In case there is no path, return [0, 0].
  */
+/*
 func PathsWithMaxScore(board []string) []int {
 	maxScore := 0
 	for i := range board{
@@ -924,6 +925,109 @@ func PathsWithMaxScore(board []string) []int {
 		}
 	}
 	ms,mc := 0,0
-	
+
 	return []int{}
+}
+ */
+func PathsWithMaxScore(board []string) []int {
+	const mod int = 1e9+7
+	dir := [][]int{[]int{1,0}, []int{1,1}, []int{0,1}}
+	n := len(board)
+	dp := make([][][]int, n+1)
+	for i := range dp{
+		dp[i] = make([][]int, n+1)
+		for j := range dp[i]{
+			dp[i][j] = make([]int, 2)
+		}
+	}
+	dp[n-1][n-1] = []int{0, 1}
+	update := func(x,y int){
+		u := board[x][y]
+		if u == 'S'{
+			return
+		}
+		if u == 'X'{
+			dp[x][y][0] = -1
+			dp[x][y][1] = 0
+			return
+		}
+		w := 0
+		if u != 'E'{
+			w = int(board[x][y] - '0')
+		}
+		maxW, maxCnt := 0, 0
+		for i := range dir{
+			r, c := dir[i][0],dir[i][1]
+			if x+r < n && y+c < n{
+				if maxW == dp[x+r][y+c][0] {
+					maxCnt = (maxCnt + dp[x+r][y+c][1]) % mod
+				}else if maxW < dp[x+r][y+c][0]{
+					maxCnt = dp[x+r][y+c][1]
+					maxW = dp[x+r][y+c][0]
+				}
+			}
+		}
+		// 遗漏点-1 如果maxcnt== 0 即没有可达路径，那么最大权值也没有意义
+		if maxCnt == 0{
+			dp[x][y][0], dp[x][y][1] = maxW, maxCnt
+		}else{
+			dp[x][y][0], dp[x][y][1] = maxW+w, maxCnt
+		}
+	}
+	for i := n-1; i >= 0; i--{
+		for j := n-1; j >= 0; j--{
+			update(i,j)
+		}
+	}
+	return dp[0][0]
+}
+// 改自 leetcode 花费时间最小的解答
+func PathsWithMaxScore2(board []string) []int {
+	const mod int = 1e9+7
+	dir := [][]int{[]int{1,0}, []int{1,1}, []int{0,1}}
+	n := len(board)
+	dp := make([][][2]int, n+1)
+	for i := range dp{
+		dp[i] = make([][2]int, n+1)
+	}
+	dp[n-1][n-1] = [2]int{0, 1}
+	update := func(x,y int){
+		u := board[x][y]
+		if u == 'S'{
+			return
+		}
+		if u == 'X'{
+			dp[x][y][0] = -1
+			dp[x][y][1] = 0
+			return
+		}
+		w := 0
+		if u != 'E'{
+			w = int(board[x][y] - '0')
+		}
+		maxW, maxCnt := 0, 0
+		for i := range dir{
+			r, c := dir[i][0],dir[i][1]
+			if x+r < n && y+c < n{
+				if maxW == dp[x+r][y+c][0] {
+					maxCnt = (maxCnt + dp[x+r][y+c][1]) % mod
+				}else if maxW < dp[x+r][y+c][0]{
+					maxCnt = dp[x+r][y+c][1]
+					maxW = dp[x+r][y+c][0]
+				}
+			}
+		}
+		// 遗漏点-1 如果maxcnt== 0 即没有可达路径，那么最大权值也没有意义
+		if maxCnt == 0{
+			dp[x][y][0], dp[x][y][1] = maxW, maxCnt
+		}else{
+			dp[x][y][0], dp[x][y][1] = maxW+w, maxCnt
+		}
+	}
+	for i := n-1; i >= 0; i--{
+		for j := n-1; j >= 0; j--{
+			update(i,j)
+		}
+	}
+	return dp[0][0][:]
 }

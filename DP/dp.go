@@ -1,7 +1,6 @@
 package DP
 
 import (
-	"fmt"
 	"math"
 )
 /*
@@ -236,7 +235,7 @@ func MaxProfitBrust(prices []int) int{
 	if days < 2 {
 		return 0
 	}
-	var ans *[]string
+	//var ans *[]string
 	res := 0
 	var dfs func(int, int, int,  []string)
 	// status 0 表示不持有股票，1表示持有股票
@@ -244,7 +243,7 @@ func MaxProfitBrust(prices []int) int{
 		if day == days {
 			if res < profit {
 				res = profit
-				ans = &action
+				//ans = &action
 			}
 			return
 		}
@@ -256,7 +255,7 @@ func MaxProfitBrust(prices []int) int{
 		}
 	}
 	dfs(0, 0, 0, []string{})
-	fmt.Println(ans)
+	//fmt.Println(ans)
 	return res
 }
 

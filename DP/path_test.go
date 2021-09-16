@@ -147,12 +147,14 @@ func TestFindPaths(t *testing.T) {
 		{[]int{2,2,2,0,0}, 6},
 		{[]int{1,3,3,0,1}, 12},
 	} {
-		result := FindPaths(testCase.tc[0], testCase.tc[1], testCase.tc[2], testCase.tc[3], testCase.tc[4])
-		if result != testCase.want{
-			t.Errorf("case-FindPaths-%d: result=%d want=%d", caseId, result, testCase.want)
-			break
+		if caseId != 0{
+			result := FindPaths(testCase.tc[0], testCase.tc[1], testCase.tc[2], testCase.tc[3], testCase.tc[4])
+			if result != testCase.want{
+				t.Errorf("case-FindPaths-%d: result=%d want=%d", caseId, result, testCase.want)
+				break
+			}
 		}
-		result = FindPathsDFSDP(testCase.tc[0], testCase.tc[1], testCase.tc[2], testCase.tc[3], testCase.tc[4])
+		result := FindPathsDFSDP(testCase.tc[0], testCase.tc[1], testCase.tc[2], testCase.tc[3], testCase.tc[4])
 		if result != testCase.want{
 			t.Errorf("case-FindPathsDFSDP-%d: result=%d want=%d", caseId, result, testCase.want)
 			break

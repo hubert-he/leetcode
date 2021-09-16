@@ -587,7 +587,7 @@ func MinCostIIIDFSDP(houses []int, cost [][]int, m int, n int, target int) int {
 		}
 		result := INF
 		color := houses[u]
-		fmt.Println(color)
+		//fmt.Println(color)
 		neighCnt := 1 // u == 0情况 默认
 		if color == 0{// 未涂色
 			for i := 1; i <= n; i++{

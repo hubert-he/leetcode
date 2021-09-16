@@ -459,7 +459,6 @@ func ProfitableSchemesDP(n int, minProfit int, group []int, profit []int) int {
 	2. 完全背包问题的状态转移方程是： dp[i][j] = max( dp[i-1][j], dp[i][j-Ci]+Wi )
 		计算dp[i][j]依赖dp[i][j-Ci]，故在降维时，需要确保 dp[j-Ci]存储的是当前行的值，
 		即确保dp[j-Ci]已经被更新，所以遍历方向是从小到大。
-
  */
 
 func UnboundedKnapsackProblem(N int, V int, c []int, w []int) int {
@@ -744,9 +743,74 @@ func ChangeDP(amount int, coins []int) int {
 	return dp[amount]
 }
 
-/* 多重背包问题
-
+/* 多重背包问题-bounded knapsack problem
+描述： 有 N 种物品和一个容量为 C 的背包，每种物品「数量有限」
+      第i件物品的成本是 v[i]， 价值是 w[i]， 数量为 s[i]
+	求解将哪些物品装入背包可使这些物品的耗费的成本总和不超过背包容量C，且价值总和最大
+区别： 0-1背包基础上，增加了每件物品可以选择「有限次数」的特点（成本总和不超过背包容量C）
+状态方程：因为对第 i 种物品 有 s[i]+1 种策略：即取0件，取1件... 取 s[i]件。
+	设定定义： dp[i][j] 表示 前 i 种物品恰好放入一个容量为 j 的背包的最大价值，则由状态方程：
+	dp[i][j] = max( dp[i-1][j], dp[i-1][j - 1*v[i]] + 1*w[i], .... ) =>
+	dp[i][j] = max( dp[i-1][j - k * v[i]] + k * w[i] ) 0 <= k <= s[i]
+	复杂度为 O(N*C*S) => N*S = SUM{s[i]} 0<=i<=N-1
  */
+/*朴素解法*/
+func MultiPackage(N int, C int, s []int, v []int, w []int)int{
+	dp := [2][]int{}
+	dp[0], dp[1] = make([]int, C+1), make([]int, C+1)
+	// 初始化
+	for i := 0; i <= C; i++{
+		k := min(i / v[0], s[0])
+		dp[0][i] = k * w[0]
+	}
+	for i := 1; i < N; i++{
+		for j := 0; j <= C; j++{
+			no := dp[(i-1)&1][j] // 不选 第 i 物品
+			yes := 0 // 选择 第 i 个物品
+			for k := 1; k <= s[i]; k++{
+				if j < k*v[i]{
+					break
+				}
+				y := dp[(i-1)&1][j-k*v[i]] + k*w[i]
+				if yes < y{
+					yes = y
+				}
+			}
+			dp[i&1][j] = max(no, yes)
+		}
+	}
+	return dp[(N-1)&1][C]
+}
+/* 一维优化
+** dp[i][j] = max( dp[i-1][j - k * v[i]] + k * w[i] ) 0 <= k <= s[i]
+** ==>
+** dp[j] = max( dp[j - k * v[i]] + k * w[i] ) 0 <= k <= s[i]
+*/
+func MultiPackage1(N int, C int, s []int, v []int, w []int)int{
+	dp := make([]int, C+1)
+	dp[0] = 0
+	for i := 1; i < N; i++{
+		for j := C; j >= v[i]; j--{
+			for k := 0; k <= s[i] && j >= k*v[i]; k++{
+				t := dp[j - k*v[i]] + k*w[i]
+				if dp[j] < t{
+					dp[j] = t
+				}
+			}
+		}
+	}
+	return dp[C]
+}
+
+/* bound knapsack 转换为0-1问题的二进制优化
+** 扁平化方式是直接展开，一个数量为10的物品等效于 [1,1,1,1,1,1,1,1,1,1]
+** 并没有减少运算量，但是如果我们能将 10 变成小于 10 个数，那么这样的「扁平化」就是有意义的
+** 借鉴思路： 将原本数量为 n 的物品用 ceil(logn) 个数来代替，从而降低复杂度
+** 类似例子：r：4 w:2 x: 1 linux 文件权限表示 通过3个数字 可表示8种情况  压缩了长度
+*/
+func BoundKnapsackBinary(N int, C int, s []int, v []int, w []int)int{
+
+}
 
 /* 混合背包问题
 
