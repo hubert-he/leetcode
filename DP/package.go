@@ -807,8 +807,54 @@ func MultiPackage1(N int, C int, s []int, v []int, w []int)int{
 ** 并没有减少运算量，但是如果我们能将 10 变成小于 10 个数，那么这样的「扁平化」就是有意义的
 ** 借鉴思路： 将原本数量为 n 的物品用 ceil(logn) 个数来代替，从而降低复杂度
 ** 类似例子：r：4 w:2 x: 1 linux 文件权限表示 通过3个数字 可表示8种情况  压缩了长度
+** 伪码：
+	// 源自背包九讲：F 为dp数组， C 为成本， W 为 价值， M 为物品数量, V 为背包容量
+	def BoundKnapsackBinary(F, C, W, M)
+		if C * M >= V
+			CompletePack(F, C, W)  // 转换成完全背包
+		k = 1
+		while k < M
+			ZeroOnePack(kC, kW)
+			M = M - k
+			k = 2*k
+		ZeroOnePack(C*M, W*M)  // 转换成0-1背包
+二进制优化的本质，是对「物品」做分类，使得总数量为 M 的物品能够用更小的 logM 个数所组合表示出来
 */
 func BoundKnapsackBinary(N int, C int, s []int, v []int, w []int)int{
+	// 重拆成多个物品
+	worth, cost := []int{}, []int{}
+	// 进行扁平化：如果一件物品规定的使用次数为 7 次，我们将其扁平化为三件物品：1*重量&1*价值、2*重量&2*价值、4*重量&4*价值
+	// 三件物品都不选对应了我们使用该物品 0 次的情况、只选择第一件扁平物品对应使用该物品 1 次的情况、只选择第二件扁平物品对应使用该物品 2 次的情况，只选择第一件和第二件扁平物品对应了使用该物品 3 次的情况 ...
+	for i := 0; i < N; i++{
+		times := s[i]
+		for k := 1; k <= times; k *= 2{
+			times -= k
+			worth = append(worth, k * w[i])
+			cost = append(cost, k * v[i])
+		}
+		if times > 0{
+			worth = append(worth, times * w[i])
+			cost = append(cost, times * v[i])
+		}
+	}
+	// 直接套用0-1背包
+	dp := make([]int, C+1)
+	for i := 0; i < len(worth); i++{
+		for j := C; j >= cost[i]; j--{
+			dp[j] = max(dp[j], dp[j - cost[i]] + worth[i])
+		}
+	}
+	return dp[C]
+}
+/* 单调队列优化
+单调队列优化，某种程度上也是利用「分类」实现优化。只不过不再是针对「物品」做分类，而是针对「状态」做分类。
+在朴素的bound-Knapsack的解决方案中， 当我们在处理第 i 个物品 从 dp[0] 到 dp[C]的状态时，每次都是通过遍历当前容量 x 能够装多少件该物品，
+然后从所有遍历结果中取最优。
+但事实上，转移只会发生在「对当前物品体积取余相同」的状态之间
+假设当前我们处理到的物品体积和价值均为 2， 数量s[i] = 3, 背包容量V为 10
+
+ */
+func BoundKnapsackQueue(N int, C int, s []int, v []int, w []int)int{
 
 }
 
