@@ -28,7 +28,7 @@ DP求解:
 		选第 i 件有一个前提：「当前剩余的背包容量」>=「物品的体积」
  */
 // dp[N][C+1] 解法
-func example_1(N int, C int, v []int, w []int)int{
+func KnapsackZeroONe1(N int, C int, v []int, w []int)int{
 	//构建 dp[N][C+1] 数组
 	dp := make([][]int, N)
 	for i := range dp{
@@ -57,7 +57,7 @@ func example_1(N int, C int, v []int, w []int)int{
 /* 只依赖上一层，故可用滚动数组优化空间复杂度
 ** 小技巧： i % 2 可以写为  i & 1
  */
-func example_2(N int, C int, v []int, w []int)int{
+func KnapsackZeroONe2(N int, C int, v []int, w []int)int{
 	dp := [2][]int{}
 	for i := range dp{
 		dp[i] = make([]int, C+1)
@@ -84,7 +84,7 @@ func example_2(N int, C int, v []int, w []int)int{
   只依赖于「上一个格子的位置」以及「上一个格子的左边位置」
   因此，只要我们将求解第 i 行格子的顺序「从 0 到 c 」改为「从 c 到 0 」，就可以将原本两行的二维数组压缩到一行（转换为一维数组）
  */
-func example_3(N int, C int, v []int, w []int)int{
+func KnapsackZeroONe3(N int, C int, v []int, w []int)int{
 	dp := make([]int, C+1)
 	for i := 0; i < N; i++{
 		for j := C; j >= v[i]; j--{
@@ -422,6 +422,40 @@ func ProfitableSchemesDP(n int, minProfit int, group []int, profit []int) int {
 	return dp[n][minProfit]
 }
 
+/* 1049. Last Stone Weight II
+You are given an array of integers stones where stones[i] is the weight of the ith stone.
+We are playing a game with the stones. On each turn, we choose any two stones（注意是任意2个） and smash them together.
+Suppose the stones have weights x and y with x <= y. The result of this smash is:
+If x == y, both stones are destroyed, and
+If x != y, the stone of weight x is destroyed, and the stone of weight y has new weight y - x.
+At the end of the game, there is at most one stone left.
+Return the smallest possible weight of the left stone. If there are no stones left, return 0.
+ */
+/*题解参考链接：
+	https://leetcode-cn.com/problems/last-stone-weight-ii/solution/gong-shui-san-xie-xiang-jie-wei-he-neng-jgxik/
+	与leetcode-494 类似，需要考虑正负号两边时，其实只需要考虑一边就可以了，使用总和 sum 减去决策出来的结果，就能得到另外一边的结果。
+	同时，由于想要「计算表达式」结果绝对值，因此我们需要将石子划分为差值最小的两个堆。
+	其实就是对「计算表达式」中带 − 的数值提取公因数 −1，进一步转换为两堆石子相减总和，绝对值最小。
+	这就将问题彻底切换为 01 背包问题：从 stones 数组中选择，凑成总和不超过 sum/2 的最大价值。
+本质是 将stones 划分为2堆，然后相减所获得的差绝对值最小，即为合理分配
+令石头的总重量为sum, ki=-1 的石头的重量之和为neg, 则其余 ki=1 的石头的重量之和为 sum - neg。则有：
+	SUM{k[i] * stones[i]} = (sum - neg) - neg = sum - 2*neg
+所以要使最后一块石头的重量尽可能小， neg 需要在不超过 sum/2的前提下尽可能的大。从而题目转换为01背包问题。
+ */
+func LastStoneWeightII(stones []int) int {
+	sum := 0
+	for i := range stones{
+		sum += stones[i]
+	}
+	target := sum >> 1
+	dp := make([]int, target+1)
+	for i := range stones{
+		for j := target; j >= stones[i]; j--{
+			dp[j] = max(dp[j], dp[j-stones[i]]+stones[i])
+		}
+	}
+	return sum - 2 * dp[target]
+}
 
 /**************  完全背包问题   **********************************************************************
 题目:
@@ -855,7 +889,34 @@ func BoundKnapsackBinary(N int, C int, s []int, v []int, w []int)int{
 
  */
 func BoundKnapsackQueue(N int, C int, s []int, v []int, w []int)int{
-
+	dp := make([]int, C+1)
+	g, q := make([]int, C+1), make([]int, 0, C+1)
+	//
+	for i := 0; i < N; i++{
+		copy(g, dp) // 上次dp
+		// 枚举余数
+		for j := 0; j < v[i]; j++{
+			// 枚举同一余数下，有多少种方案
+			// 例如余数为1的情况下有： 1、v[i]+1、2*v[i]+1、3*v[i]+1
+			for k := j; k <= C; k += v[i]{
+				dp[k] = g[k]
+				if len(q) != 0 && q[0] < k - s[i]*v[i]{
+					// 将不在窗口范围内的 popup
+					q = q[1:]
+				}
+				if len(q) != 0 && dp[k] < g[q[0]] + (k - q[0]){
+					// 如果队列不为空 直接使用队头来更新
+					dp[k] = g[q[0]] + (k - q[0])
+				}
+				// 当前值比队尾值更优，队尾元素直接出队
+				for len(q) != 0 && g[q[len(q)-1]] - (q[len(q)-1] - j)/v[i]*w[i] <= g[k] - (k-j)/v[i]*w[i]{
+					q = q[:len(q)-1]
+				}
+				q = append(q, k)
+			}
+		}
+	}
+	return dp[C]
 }
 
 /* 混合背包问题
