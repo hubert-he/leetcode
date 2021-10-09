@@ -1422,19 +1422,19 @@ func CountRangeSumBinarySearch(nums []int, lower int, upper int) int {
 		}
 		return i
 	}
-	lower_bound := func(target int)bool{// 返回第一个大于等于给定值所在的位置
-
-	}
-	upper_bound := func(target int)bool{// 返回第一个大于给定元素值所在的位置
-
-	}
-	insert_loction := func(target int)bool {// 返回给定元素值待插入的位置
-
-	}
 	ans, sum := 0, 0
 	for i := range nums{
 		sum += nums[i]
 		n := len(prefixSumArr)
+		lower_bound := func(mid int)bool{// 返回第一个大于等于给定值所在的位置
+			return prefixSumArr[mid].sum >= sum - upper
+		}
+		upper_bound := func(mid int)bool{// 返回第一个大于给定元素值所在的位置
+			return prefixSumArr[mid].sum > sum - lower
+		}
+		insert_loction := func(mid int)bool {// 返回给定元素值待插入的位置
+			return prefixSumArr[mid].sum == sum
+		}
 		l := search(n, lower_bound)
 		r := search(n, upper_bound)
 		ans += r - l
