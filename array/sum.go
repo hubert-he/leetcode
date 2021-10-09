@@ -1,6 +1,10 @@
 package array
 
-import "sort"
+import (
+	"fmt"
+	"math"
+	"sort"
+)
 
 func twoSum(nums []int, target int) []int {
 	cache := map[int]int{}
@@ -214,6 +218,186 @@ func BreakfastNumber2(staple []int, drinks []int, x int) int {
 		}else{
 			ans = (ans + i)%mod
 		}
+	}
+	return ans
+}
+
+/*LCP 40. 心算挑战
+「力扣挑战赛」心算项目的挑战比赛中，要求选手从 N 张卡牌中选出 cnt 张卡牌，
+ 若这 cnt 张卡牌数字总和为偶数，则选手成绩「有效」且得分为 cnt 张卡牌数字总和。
+ 给定数组 cards 和 cnt，其中 cards[i] 表示第 i 张卡牌上的数字。
+ 请帮参赛选手计算最大的有效得分。若不存在获取有效得分的卡牌方案，则返回 0。
+ 另外： 这道题，不能应用背包DP， 原因是 dp[i] dp[i-1] 无法直接推导出，因为奇偶性的原因
+ */
+func MaxmiumScore(cards []int, cnt int) int {
+	n := len(cards)
+	if cnt > n {
+		return 0
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(cards)))
+	sum := 0
+	for i := 0; i < cnt; i++{
+		sum += cards[i]
+	}
+	// 1. 若 sum 是偶数则直接返回
+	if sum & 1 == 0{
+		return sum
+	}
+	//2. sum 是奇数
+	/* 需要从前 cnt 个元素中选一个元素 x，并从后面找一个最大的且奇偶性和 x 不同的元素替换 x，这样就可以使 sum 为偶数
+	注意，这里存在2种情况：
+	情况-1：直接用cards[cnt:]最大并且相反奇偶性的数替换
+	情况-2：替换前 cnt 个元素中，最小的且奇偶性和 card[cnt−1] 不同的元素 <== 这个比较难想到
+	 */
+	ans := 0
+	replace := func(x int){
+		for _, v := range cards[cnt:]{
+			if x & 1 != v & 1{
+				t := sum - x + v
+				if ans < t{
+					ans = t
+				}
+				break // 易漏点-1： 找最近的
+			}
+		}
+	}
+	replace(cards[cnt-1])// 情况-1： 替换当前最小的数，保证总和满足偶数情况下最大
+	//情况-2： 找一个最小的且奇偶性不同于 cards[cnt-1] 的元素，将其替换掉
+	for i := cnt - 2; i >= 0; i--{
+		if cards[i] & 1 != cards[cnt-1] & 1{
+			replace(cards[i])
+		}
+	}
+	return ans
+}
+/* 考虑构造cnt个数和为偶数，很明显有 k个奇数 和 cnt-k个偶数，其中 k 为偶数[重要]
+** 让结果最大：偶数之和和奇数之和尽可能大
+*/
+func MaxmiumScorePrefixSum(cards []int, cnt int) int {
+	n := len(cards)
+	sort.Sort(sort.Reverse(sort.IntSlice(cards)))
+	//1. 构造奇偶两个的前缀和数组
+	odd, even := []int{0}, []int{0}
+	for i := 0; i < n; i++{
+		if cards[i] & 1 == 0{
+			//even = append(even, even[i] + cards[i]) // 易错-1 前缀和计算
+			even = append(even, even[len(even)-1] + cards[i])
+		}else{
+			//odd = append(odd, odd[i] + cards[i])
+			odd = append(odd, odd[len(odd)-1] + cards[i])
+		}
+	}
+	//fmt.Println(odd, even)
+	ans := 0
+	//2. 枚举所有组合中奇数的个数 k(k必须是偶)和 cnt-k（需判断是否足够）个偶数，它们都取最大则该轮组合结果最大。因此更新所有组合最大值就是答案
+	for i := 0; i < len(odd); i += 2{
+		// 遗漏点-1 判断数量是否满足
+		if cnt >= i && cnt < len(even)+i && ans < odd[i] + even[cnt-i]{
+			ans = odd[i] + even[cnt-i]
+		}
+	}
+	return ans
+}
+
+func MaxmiumScoreDP(cards []int, cnt int) int {
+	return 0
+}
+
+/* 2006. Count Number of Pairs With Absolute Difference K
+** Given an integer array nums and an integer k, return the number of pairs (i, j) where i < j such that |nums[i] - nums[j]| == k.
+** The value of |x| is defined as: x if x >= 0.  -x if x < 0.
+ */
+/* 思考不够深入，❌
+func CountKDifference(nums []int, k int) int {
+	m := map[int]int{}
+	for _, u := range nums{
+		m[u]++
+	}
+	ans := 0
+	fmt.Println(m)
+	for u := range m{
+		ans += m[u]*m[u-k] + m[k-u]*m[u]
+		if u-k == u || k-u == u{
+			ans -= 1 // 排除自身
+		}
+	}
+	return ans
+}
+ */
+func CountKDifferenceDetail(nums []int, k int) int {
+	m := map[int][]int{}
+	for i, u := range nums{
+		m[u] = append(m[u], i)
+	}
+	ans := map[[2]int]struct{}{}
+	for i := range m{
+		// nums[j] = nums[i]+k 或 nums[i] - k
+		for _, ov := range m[i]{
+			for _, pv := range m[i+k]{
+				if ov > pv{
+					ans[[2]int{pv, ov}] = struct{}{}
+				}else{
+					ans[[2]int{ov, pv}] = struct{}{}
+				}
+			}
+			for _, pv := range m[i-k]{
+				if ov > pv{
+					ans[[2]int{pv, ov}] = struct{}{}
+				}else{
+					ans[[2]int{ov, pv}] = struct{}{}
+				}
+			}
+		}
+	}
+	fmt.Println(ans)
+	return len(ans)
+}
+func CountKDifference(nums []int, k int) int {
+	m := map[int][]int{}
+	for i, u := range nums{
+		m[u] = append(m[u], i)
+	}
+	ans := 0
+	for i := range m{
+		// nums[j] = nums[i]+k 或 nums[i] - k
+		x, y, z := len(m[i]), len(m[i+k]), len(m[i-k])
+		//fmt.Println(x*y, x*z)
+		ans += (x*y) + (x * z)
+	}
+	return ans/2 // 结果肯定是成对的
+}
+func countKDifference2(nums []int, k int) (ans int) {
+	cnt := map[int]int{}
+	for _, v := range nums {
+		cnt[v]++
+	}
+	for _, v := range nums {
+		ans += cnt[v-k] // 直接统计target
+	}
+	return
+}
+
+/*1413. Minimum Value to Get Positive Step by Step Sum
+** Given an array of integers nums, you start with an initial positive value startValue.
+** In each iteration, you calculate the step by step sum of startValue plus elements in nums (from left to right).
+** Return the minimum positive value of startValue such that the step by step sum is never less than 1.
+ */
+/* 已经想到用Prefix Sum 处理
+** 但是没有想到一个情况： 只需要找前缀和数组中最小的数即可 <== 这个点没有考虑到
+** 找最小的正数，即只需要找前缀和数组中最小的数即可，当最小的数加上startValue，都能满足>=1的条件时，其余前缀和都能满足；
+** 方法一： 故使用快排将前缀和（去除第一个0）按照从小到大排序，取第一个数进行分析即可。
+ */
+func MinStartValue(nums []int) int {
+	sum,minSum := 0, math.MaxInt32
+	for i := range nums{
+		sum += nums[i]
+		if minSum > sum{
+			minSum = sum
+		}
+	}
+	ans := 1
+	if minSum < 0{
+		ans = 1 - minSum
 	}
 	return ans
 }

@@ -1,7 +1,11 @@
 package sorts
 
 import (
+	"fmt"
 	"math"
+	"sort"
+	"strings"
+	"unicode"
 )
 
 func choosePivotMedianOfThree(a []int, left, right int) int{
@@ -175,4 +179,173 @@ func RelativeSortArray(arr1 []int, arr2 []int) []int {
 		}
 	}
 	return arr1
+}
+
+/*10.01. Sorted Merge LCCI   <--- 强化练习
+You are given two sorted arrays, A and B, where A has a large enough buffer at the end to hold B.
+Write a method to merge B into A in sorted order.
+Initially the number of elements in A and B are m and n respectively.
+这是归并排序中Merge实现的部分，原地Merge
+在原地归并排序中最主要用到了内存反转, 即交换相邻两块内存，在《编程珠玑》中又被称为手摇算法。
+内存反转：给定序列a1,a2,a3,...,am,b1,b2,b3,...,bm , 将其变为 b1,b2,b3,...,bm,a1,a2,a3,...,am
+手摇算法：先对a1,a2,a3,...,am 反转， 再对 b1,b2,b3,...,bm 反转，最后对am,...,a3,a2,a1,bm,...b3,b2,b1整体反转继而得到
+	b1,b2,b3,...,bm,a1,a2,a3,...,am
+ */
+func MergeInPlace(A []int, m int, B []int, n int)  {
+	copy(A[m:], B)
+	fmt.Println(A)
+	reverse := func(s, e int){
+		for i, j := s, e; i <= j; i, j = i+1, j-1{
+			A[i], A[j] = A[j], A[i]
+		}
+	}
+	swap := func(s, m, e int){
+		reverse(s, m)
+		reverse(m+1, e)
+		reverse(s,e)
+	}
+	i, j, s := 0, m, m+n
+	//for i < m && j < s{
+	for i < j && j < s{
+		for i < j && A[i] <= A[j]{
+			i++
+		}
+		index := j
+		for j < s && A[i] > A[j]{
+			j++
+		}
+		// 交换[i, index) 和 [index,j)的内存块
+		swap(i, index-1, j-1)
+		i += j - index
+	}
+}
+// 此解法仅练习双指针，没有其他用处
+func Merge2Pointer(A []int, m int, B []int, n int)  {
+	if m == 0 || n == 0{
+		copy(A[m:],B)
+		return
+	}
+	i,j := m-1, n-1
+	for p := m+n-1; i >= 0 && j >= 0 && i < p ; p--{
+		if A[i] <= B[j]{
+			A[p] = B[j]
+			j--
+		}else{
+			A[p] = A[i]
+			i--
+		}
+	}
+	if i < 0 && j >= 0{
+		copy(A, B[:j+1])
+	}
+}
+
+/* 937. Reorder Data in Log Files
+You are given an array of logs. Each log is a space-delimited string of words, where the first word is the identifier.
+There are two types of logs:
+	Letter-logs: All words (except the identifier) consist of lowercase English letters.
+	Digit-logs: All words (except the identifier) consist of digits.
+Reorder these logs so that:
+	The letter-logs come before all digit-logs.
+	The letter-logs are sorted lexicographically by their contents.
+	If their contents are the same, then sort them lexicographically by their identifiers.
+	The digit-logs maintain their relative ordering.
+	Return the final order of the logs.
+ */
+func ReorderLogFiles(logs []string) []string {
+	n := len(logs)
+	lessEqual := func(i, j int)bool{ // 传递索引，比直接传string要优秀
+		part_i := strings.SplitN(logs[i], " ", 2)
+		part_j := strings.SplitN(logs[j], " ", 2)
+		isDigit_i := unicode.IsDigit(rune(part_i[1][0]))
+		isDigit_j := unicode.IsDigit(rune(part_j[1][0]))
+		if !isDigit_i && !isDigit_j{
+			return part_i[1] < part_j[1] || (part_i[1] == part_j[1] && part_i[0] < part_j[0])
+		}
+		if isDigit_i && isDigit_j{
+			return true
+		}
+		return !isDigit_i && isDigit_j
+	}
+	merge := func(s, m, e int){
+		tmp := []string{}
+		i, j := s, m+1
+		for i <= m && j <= e{
+			if lessEqual(i, j){
+				fmt.Println(logs[i], "<", logs[j])
+				tmp = append(tmp, logs[i])
+				i++
+			}else{
+				fmt.Println(logs[i], ">=", logs[j])
+				tmp = append(tmp, logs[j])
+				j++
+			}
+		}
+		for i <= m{
+			tmp = append(tmp, logs[i])
+			i++
+		}
+		for j <= s{
+			tmp = append(tmp, logs[j])
+			j++
+		}
+		copy(logs[s:], tmp)
+	}
+	var dfs func(start, end int)
+	dfs = func(start, end int){
+		if start >= end{
+			return
+		}
+		mid := (start & end) + (start ^ end)>>1
+		dfs(start, mid)
+		dfs(mid+1, end)
+		merge(start, mid, end)
+	}
+	dfs(0, n-1)
+	return logs
+}
+func less(a, b string)bool{
+	ai, bi := strings.Index(a, " "), strings.Index(b, " ")
+	a_isDigit, b_isDigit := false, false
+	if a[ai+1] >= '0' && a[ai+1] <= '9'{
+		a_isDigit = true
+	}
+	if b[bi+1] >= '0' && b[bi+1] <= '9'{
+		b_isDigit = true
+	}
+	if  a_isDigit && b_isDigit {
+		return true
+	}else if !a_isDigit && b_isDigit {
+		return true
+	}else if a_isDigit && !b_isDigit {
+		return false
+	}else{
+		content := strings.Compare(string(a[ai+1:]), string(b[bi+1:]))
+		if content == 0{
+			return strings.Compare(string(a[:ai-1]), string(b[bi-1])) < 0
+		}else {
+			return content < 0
+		}
+	}
+}
+/*练习使用 golang 标准库
+  sort.SliceStable 与 sort.Slice 一个稳定排序，一个不稳定排序
+  func SliceStable(x interface{}, less func(i, j int) bool)
+  SliceStable sorts the slice x using the provided less function, keeping equal elements in their original order.
+  It panics if x is not a slice.
+  The less function must satisfy the same requirements as the Interface type's Less method.
+ */
+func ReorderLogFilesLib(logs []string) []string {
+	less := func(i, j int)bool{ // 传递索引，比直接传string要优秀
+		part_i := strings.SplitN(logs[i], " ", 2)
+		part_j := strings.SplitN(logs[j], " ", 2)
+		isDigit_i := unicode.IsDigit(rune(part_i[1][0]))
+		isDigit_j := unicode.IsDigit(rune(part_j[1][0]))
+		if !isDigit_i && !isDigit_j{
+			return part_i[1] < part_j[1] || (part_i[1] == part_j[1] && part_i[0] < part_j[0])
+		}
+		return !isDigit_i && isDigit_j
+	}
+	sort.SliceStable(logs, less)
+	return logs
 }

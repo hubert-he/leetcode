@@ -1,6 +1,9 @@
 package DP
 
-import "testing"
+import (
+	"testing"
+	"../tree"
+)
 
 func TestCanPartition(t *testing.T) {
 
@@ -114,6 +117,110 @@ func TestChange(t *testing.T) {
 		result := ChangeDP(testCase.amount, testCase.coins)
 		if result != testCase.want{
 			t.Errorf("case-%d failed: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestGroupingKnapsack(t *testing.T) {
+	for caseId, testCase := range []struct{
+		N		int
+		C		int
+		S		[]int
+		v		[][]int
+		w		[][]int
+		want	int
+	}{
+		{2, 9, []int{2, 3}, [][]int{[]int{1, 2, -1}, []int{1, 2, 3}}, [][]int{[]int{2, 4, -1}, []int{1, 3, 6}}, 10},
+	}{
+		result := GroupingKnapsack(testCase.N, testCase.C, testCase.S, testCase.v, testCase.w)
+		if result != testCase.want{
+			t.Errorf("GroupingKnapsack-case-%d failed: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+		result = GroupingKnapsack1(testCase.N, testCase.C, testCase.S, testCase.v, testCase.w)
+		if result != testCase.want{
+			t.Errorf("GroupingKnapsack1-case-%d failed: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestNumRollsToTarget(t *testing.T) {
+	for caseId, testCase := range []struct{
+		d		int
+		f		int
+		target	int
+		want	int
+	}{
+		{30, 30, 500, 222616187},
+		{1, 6, 3, 1},
+		{2, 6, 7, 6},
+		{2, 5, 10, 1},
+		{1, 2, 3, 0},
+	}{
+		result := NumRollsToTarget(testCase.d, testCase.f, testCase.target)
+		if result != testCase.want{
+			t.Errorf("NumRollsToTarget-case-%d failed: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+		result = NumRollsToTarget2(testCase.d, testCase.f, testCase.target)
+		if result != testCase.want{
+			t.Errorf("NumRollsToTarget2-case-%d failed: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+		result = NumRollsToTarget1(testCase.d, testCase.f, testCase.target)
+		if result != testCase.want{
+			t.Errorf("NumRollsToTarget1-case-%d failed: result=%d want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestWordBreak(t *testing.T) {
+	for caseId, testCase := range []struct{
+		s			string
+		wordDict	[]string
+		want		bool
+	}{
+		{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab",
+			[]string{"a","aa","aaa","aaaa","aaaaa","aaaaaa","aaaaaaa","aaaaaaaa","aaaaaaaaa","aaaaaaaaaa"}, false},
+		{"leetcode", []string{"leet","code"}, true},
+		{"applepenapple", []string{"apple", "pen"}, true},
+		{"catsandog", []string{"cats","dog","sand","and","cat"}, false},
+	}{
+		result := WordBreakDFS(testCase.s, testCase.wordDict)
+		if result != testCase.want{
+			t.Errorf("TestWordBreakDFS-case-%d: result=%t but want=%t", caseId, result, testCase.want)
+			break
+		}
+		result = WordBreakDP(testCase.s, testCase.wordDict)
+		if result != testCase.want{
+			t.Errorf("TestWordBreakDP-case-%d: result=%t but want=%t", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestPaintBinaryTree(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums		[]interface{}
+		k			int
+		want		int
+	}{
+		{[]interface{}{5,2,3,4}, 2, 12},
+		{[]interface{}{4,1,3,9,nil,nil,2}, 2, 16},
+		{[]interface{}{8,1,3,9,9,9,nil,9,5,6,8}, 2, 52},
+	}{
+		tree := Tree.GenerateBiTree(testCase.nums)
+		result := PaintBinaryTree(tree, testCase.k)
+		if result != testCase.want{
+			t.Errorf("PaintBinaryTree-case-%d: result=%d, but want=%d", caseId, result, testCase.want)
+			break
+		}
+		result = PaintBinaryTree2(tree, testCase.k)
+		if result != testCase.want{
+			t.Errorf("PaintBinaryTree2-case-%d: result=%d, but want=%d", caseId, result, testCase.want)
 			break
 		}
 	}

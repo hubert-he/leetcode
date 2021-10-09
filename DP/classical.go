@@ -1,6 +1,6 @@
 package DP
 
-import "fmt"
+import "math"
 
 /* 486. Predict the Winner
 You are given an integer array nums. Two players are playing a game with this array: player 1 and player 2.
@@ -103,11 +103,35 @@ func StoneGameDP(piles []int) (ans bool) {
 	for i := range dp{
 		dp[i] = make([]int, n+1)
 	}
-	for i := 0; i < n; i++{// 区间dp： 枚举区间长度
-		for j := 0; i + j < n; j++{// 枚举左端点
-			fmt.Println(i, j)
-			k := i + j + 1 // 计算右端点
-			dp[i][j] = max(piles[i] - dp[i+1][k], piles[j] - dp[i][k-1])
+	// 额外初始化 区间长度为1的情况
+	for i := 1; i <= n; i++{ // 枚举区间的长度，区间从1 至 n
+		for l := 0; l + i - 1 < n; l++{ // 枚举左端点，注意，l + i - 1 为右端点的索引值
+			r := l + i - 1 // 右端点的索引值
+			chooseLeft := piles[l] - dp[l+1][r] // 选择左端点
+			chooseRight := math.MinInt32
+			if r > 0{
+				chooseRight = piles[r] - dp[l][r-1] // 选择右端点, 需要注意 区间长度为 1 的情况，此时右端点为 -1 只能选一次
+			}
+			dp[l][r] = max(chooseLeft, chooseRight)
+		}
+	}
+	return dp[0][n-1] > 0
+}
+func StoneGameDP0(piles []int) (ans bool) {
+	n := len(piles)
+	dp := make([][]int, n+1)
+	for i := range dp{
+		dp[i] = make([]int, n+1)
+	}
+	// 额外初始化 区间长度为1的情况
+	dp[0][0] = piles[0]
+	// 显然从 区间长度为2 开始才有意义
+	for i := 2; i <= n; i++{ // 枚举区间的长度，区间从1 至 n
+		for l := 0; l + i - 1 < n; l++{ // 枚举左端点，注意，l + i - 1 为右端点的索引值
+			r := l + i - 1 // 右端点的索引值
+			chooseLeft := piles[l] - dp[l+1][r] // 选择左端点
+			chooseRight := piles[r] - dp[l][r-1] // 选择右端点, 需要注意 区间长度为 1 的情况，此时右端点为 -1 只能选一次
+			dp[l][r] = max(chooseLeft, chooseRight)
 		}
 	}
 	return dp[0][n-1] > 0
@@ -165,8 +189,6 @@ func StoneGameDP1(piles []int) (ans bool) {
 func StoneGameMath(piles []int) (ans bool) {
 	return true
 }
-
-
 
 
 

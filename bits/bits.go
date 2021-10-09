@@ -247,4 +247,47 @@ func ToHex(num int) string {
 	return string(ans)
 }
 
+/* 371. Sum of Two Integers
+** Given two integers a and b, return the sum of the two integers without using the operators + and -.
+ */
+/* 对于整数 a 和 b：
+在不考虑进位的情况下，其无进位加法结果为 a 异或 b。
+而所有需要进位的位为 a & b，进位后的进位结果为 ( a&b ) << 1。
+因此 可以将整数a和b的和，拆分为 a 和 b的无进位加法结果与进位结果的和
+因为每一次拆分都可以让需要进位的最低位至少左移一位，又因为 a 和 b
+可以取到负数
+计算过程：
+从b开始
+1. a b 求无进位加法
+2. 求 a b 的进位
+3. 第一次 a b 无进位加法的值 与 第一次产生的进位值 进行 无进位加法
+ */
+func GetSum(a int, b int) int {
+	for b != 0{
+		carry := (a&b) << 1
+		a ^= b
+		b = carry
+	}
+	return a
+}
+// 更容易理解的版本
+func GetSum2(a int, b int) int {
+	carry := (a&b)<<1
+	a ^= b
+	for carry != 0{
+		b = carry
+		carry = (a&b)<<1
+		a ^= b
+	}
+	return a
+}
+// 此题的引申 求中位值
+// 使用的上题原理：a + b = c;  ==>  (a与b的无进位加法) + (a 与 b 的进位值) = c
+// 二分查找为了避免溢出都会写left + (right - left)/2，这里增加另外一种编码方法
+// 在golang sort 库函数中 求 mid 为了防止溢出：mid := int(uint(a+b) >> 1)
+func GetMid(a, b int)int{
+	// (进位 + 无进位和)/2 => ((a & b)<<1 + (a ^ b))>>1,化简可得
+	return (a & b) + (a^b)>>1
+}
+
 

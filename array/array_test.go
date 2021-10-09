@@ -223,7 +223,7 @@ func TestNumIslandsDFS(t *testing.T) {
 	}
 }
 
-func TestCountRangeSumByMap(t *testing.T) {
+func TestCountRangeSum(t *testing.T) {
 	for caseId, testCase := range []struct{
 		nums []int
 		lower, upper int
@@ -231,10 +231,19 @@ func TestCountRangeSumByMap(t *testing.T) {
 	}{
 		{[]int{-2, 5, -1}, -2, 2, 3},
 	}{
-		result := CountRangeSumByMap(testCase.nums, testCase.lower, testCase.upper)
-		t.Log(result)
-		if result != testCase.want{
-			t.Errorf("case-%d: result = %d But want = %d", caseId, result, testCase.want)
+		result := CountRangeSum(testCase.nums, testCase.lower, testCase.upper)
+		if result != testCase.want {
+			t.Errorf("CountRangeSum-case-%d: result = %d But want = %d", caseId, result, testCase.want)
+			return
+		}
+		result = CountRangeSumBinarySearch(testCase.nums, testCase.lower, testCase.upper)
+		if result != testCase.want {
+			t.Errorf("CountRangeSumBinarySearch-case-%d: result = %d But want = %d", caseId, result, testCase.want)
+			return
+		}
+		result = CountRangeSumByMap(testCase.nums, testCase.lower, testCase.upper)
+		if result != testCase.want {
+			t.Errorf("CountRangeSumByMap-case-%d: result = %d But want = %d", caseId, result, testCase.want)
 			return
 		}
 	}
@@ -274,9 +283,15 @@ func TestCalcEquation(t *testing.T) {
 			[]float64{0.50000,2.00000,-1.00000,-1.00000},
 		},
 	}{
-		result := CalcEquationBST(testCase.equations, testCase.values, testCase.queries)
+		result := CalcEquation(testCase.equations, testCase.values, testCase.queries)
 		ok := assert.ElementsMatch(t, result, testCase.want,
-			fmt.Sprintf("case-%d Failed result=%v but want=%v", caseId, result, testCase.want))
+			fmt.Sprintf("CalcEquation-case-%d Failed result=%v but want=%v", caseId, result, testCase.want))
+		if !ok {
+			break
+		}
+		result = CalcEquationBST(testCase.equations, testCase.values, testCase.queries)
+		ok = assert.ElementsMatch(t, result, testCase.want,
+			fmt.Sprintf("CalcEquationBST-case-%d Failed result=%v but want=%v", caseId, result, testCase.want))
 		if !ok {
 			break
 		}
@@ -321,6 +336,63 @@ func TestFindErrorNums(t *testing.T) {
 		result := FindErrorNumsSwap(testCase.nums)
 		if result[0] != testCase.want[0] || result[1] != testCase.want[1]{
 			t.Errorf("case-%d result=%v want=%v", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestFindMin(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums []int
+		want int
+	}{
+		{[]int{4,5,6,7,0,1,2}, 0},
+		{[]int{11,13,15,17}, 11},
+		{[]int{3,4,5,1,2}, 1},
+		{[]int{2,1}, 1},
+		{[]int{3,1,2}, 1},
+	}{
+		result := FindMin(testCase.nums)
+		if result != testCase.want{
+			t.Errorf("case-%d: result=%d, but want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestFindMinII(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums []int
+		want int
+	}{
+		{[]int{4,5,6,7,0,1,4}, 0},
+		{[]int{0,1,4,4,5,6,7}, 0},
+		{[]int{1,3,5}, 1},
+		{[]int{2,1}, 1},
+		{[]int{2,2,2,0,1}, 0},
+		{[]int{3,3,1,3}, 1},
+		{[]int{3,1,1}, 1},
+		{[]int{1,3,3}, 1},
+	}{
+		result := FindMinII(testCase.nums)
+		if result != testCase.want{
+			t.Errorf("case-%d: result=%d, but want=%d", caseId, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestCountSmaller(t *testing.T) {
+	for caseId, testCase := range []struct{
+		nums []int
+		want []int
+	}{
+		{[]int{5,2,6,1}, []int{2,1,1,0}},
+		{[]int{-1}, []int{0}},
+		{[]int{-1, -1}, []int{0, 0}},
+	}{
+		result := CountSmaller(testCase.nums)
+		if !assert.ElementsMatch(t, testCase.want, result, "case-%d: result=%v but want=%v", caseId, result, testCase.want){
 			break
 		}
 	}

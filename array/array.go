@@ -1359,12 +1359,16 @@ func NumIslandsUFSImprove(grid [][]byte) int {
 	return pUfs.count
 }
 
-// 327. Count of Range Sum
+/* 327. Count of Range Sum（区间和的个数）
+** Given an integer array nums and two integers lower and upper,
+** return the number of range sums that lie in [lower, upper] inclusive.
+** Range sum S(i, j) is defined as the sum of the elements in nums between indices i and j inclusive, where i <= j.
+ */
 /*
 	前缀和：设前缀和数组为preSum 则问题转换为 求所有的下标对(i,j)，满足 preSum[j] - preSum[i] 属于 [lower, upper]
     O(n^2) 会超时
  */
-func countRangeSum(nums []int, lower int, upper int) int {
+func CountRangeSum(nums []int, lower int, upper int) int {
 	length := len(nums)
 	if length <= 0{
 		return 0
@@ -1386,43 +1390,67 @@ func countRangeSum(nums []int, lower int, upper int) int {
 	}
 	return ans
 }
-        /*
-  1. 前缀和数组 preSum，为了找出prefixSum[1] -- prefixSum[j]之间有多少满足以下条件的 x :
-      整数x满足 lower <= prefixSum[j] - x <= upper x属于prefixSum[0...i-1]
-      ==>  prefixSum[j] - lower >= x >= prefixSum[j] - upper
-  1.1 为了找到x的数量，利用不等式等价转换，引申出2种优化方式,
-  1.1.1 preSum排好序，然后通过两次2分查找计算出有多少个x满足条件（d2 - d1）
-       	第一次查找 找出第一个大于等于 preSum - upper 的位置 d1
-		第二次查找 找出第一个大于等于 preSum - lower 的位置 d2
- */
-type prefixSum []struct {
+type prefixSum struct {
 	sum int // 当前前缀和
 	idx int // 前缀和所在数组的位置下标
 }
-func (this prefixSum) Len() int{
-	return len(this)
-}
-func (this prefixSum) Swap(i, j int){
-	this[i], this[j] = this[j], this[i]
-}
-func (this prefixSum) Less(i, j int) bool{
-	return this[i].sum < this[j].sum
-}
-
-func CountRangeSumByMap(nums []int, lower int, upper int) int {
-	length := len(nums)
-	if length <= 0{
-		return 0
+/* 二分查找/插入
+** 前缀和条件转换为： prefixSum[j] - lower >= x >= prefixSum[j] - upper x由prefixSum[0...j-1]选出
+** 通过维护一个有序数组sumArr，表示当前的已知区间和，然后每次向右推进右端点，得到一个新的前缀和，
+** 在升序存放prefixSum[0...j-1]的数组中，二分查找：
+** 1. 找第一个 l 使得 x 大于等于 prefixSum[j] - upper
+** 2. 找第一个 r 使得 x 大于 prefixSum[j] - lower
+** r - l 就是当前右端点prefixSum[j]可以组成的区间和个数
+** 然后再把prefixSum[j] 加入到 有序数组sumArr（插入位置也是二分搜索得到），准备为下一个prefixSum[j]做准备
+** const(
+		lower_bound	= iota	// 返回第一个大于等于给定值所在的位置
+		upper_bound			// 返回第一个大于给定元素值所在的位置
+		insert_loction		// 返回给定元素值待插入的位置
+	)
+ */
+func CountRangeSumBinarySearch(nums []int, lower int, upper int) int {
+	prefixSumArr := []prefixSum{}
+	search := func(n int, f func(int)bool)int{
+		i, j := 0, n
+		for i < j{
+			mid := int(uint(i+j)>>1) // 防止溢出的一种方法
+			if !f(mid){
+				i = mid + 1 // f(i-1)== false
+			}else{
+				j = mid
+			}
+		}
+		return i
 	}
-	prefixSumidx := prefixSum{{0, 0}}
-	for i := 0; i < length; i++{
-		prefixSumidx = append(prefixSumidx, struct{sum int; idx int}{prefixSumidx[i].sum + nums[i], i+1})
-	}
-	sort.Sort(prefixSumidx)
-	fmt.Println(prefixSumidx)
-	ans := 0
+	lower_bound := func(target int)bool{// 返回第一个大于等于给定值所在的位置
 
+	}
+	upper_bound := func(target int)bool{// 返回第一个大于给定元素值所在的位置
+
+	}
+	insert_loction := func(target int)bool {// 返回给定元素值待插入的位置
+
+	}
+	ans, sum := 0, 0
+	for i := range nums{
+		sum += nums[i]
+		n := len(prefixSumArr)
+		l := search(n, lower_bound)
+		r := search(n, upper_bound)
+		ans += r - l
+		loc := search(n, insert_loction)
+		prefixSumArr = append(prefixSumArr, prefixSum{})
+		copy(prefixSumArr[loc+1:], prefixSumArr[loc:])
+		prefixSumArr[loc] = prefixSum{sum, i}
+	}
 	return ans
+}
+
+/*
+
+ */
+func CountRangeSumByMap(nums []int, lower int, upper int) int {
+
 }
 /*
 归并排序
@@ -1552,12 +1580,13 @@ func CalcEquation(equations [][]string, values []float64, queries [][]string) []
 		union(id[eq[0]], id[eq[1]], values[i])
 	}
 	fmt.Println(parent, w)
+	precision := math.Pow10(5)
 	ans := make([]float64, len(queries))
 	for i, q := range queries{
 		start, hasS := id[q[0]]
 		end, hasE := id[q[1]]
 		if hasS && hasE && find(start) == find(end) {
-			ans[i] = w[start] / w[end]
+			ans[i] = math.Floor((w[start] / w[end])*precision + 0.5) / precision
 		} else {
 			ans[i] = -1
 		}
@@ -1613,12 +1642,13 @@ func CalcEquationBST(equations [][]string, values []float64, queries [][]string)
 		return -1
 	}
 	// 查询
+	precision := math.Pow10(5)
 	ans := make([]float64, len(queries))
 	for i, q := range queries{
 		start, hasS := id[q[0]]
 		end, hasE := id[q[1]]
 		if hasS && hasE {
-			ans[i] = bfs(start, end)
+			ans[i] = math.Floor(bfs(start, end)*precision + 0.5) / precision
 		}else{
 			ans[i] = -1
 		}
@@ -2088,4 +2118,148 @@ func FindErrorNumsSwap(nums []int) []int {
 	return []int{a,b}
 }
 
+/* 153. Find Minimum in Rotated Sorted Array[寻找旋转排序数组中的最小值]
+** Suppose an array of length n sorted in ascending order is rotated between 1 and n times.
+** For example, the array nums = [0,1,2,4,5,6,7] might become:
+	[4,5,6,7,0,1,2] if it was rotated 4 times.
+	[0,1,2,4,5,6,7] if it was rotated 7 times.
+** Notice that rotating an array [a[0], a[1], a[2], ..., a[n-1]] 1 time results in the array [a[n-1], a[0], a[1], a[2], ..., a[n-2]].
+** Given the sorted rotated array nums of unique elements, return the minimum element of this array.
+** You must write an algorithm that runs in O(log n) time.
+ */
+func FindMin(nums []int) int {
+	low, high := 0, len(nums)-1
+	for low < high{
+		mid := (low^high)>>1 + (low&high)
+		if nums[mid] < nums[high]{
+			high = mid
+		}else{
+			low = mid+1
+		}
+	}
+	return nums[low]
+}
+/* 154. Find Minimum in Rotated Sorted Array II[寻找旋转排序数组中的最小值 II]
+** Suppose an array of length n sorted in ascending order is rotated between 1 and n times.
+** For example, the array nums = [0,1,4,4,5,6,7] might become:
+	[4,5,6,7,0,1,4] if it was rotated 4 times.
+	[0,1,4,4,5,6,7] if it was rotated 7 times.
+Notice that rotating an array [a[0], a[1], a[2], ..., a[n-1]] 1 time results in the array [a[n-1], a[0], a[1], a[2], ..., a[n-2]].
+Given the sorted rotated array nums that may contain duplicates, return the minimum element of this array.
+You must decrease the overall operation steps as much as possible.
+ */
+/* 区别在于 有重复元素
+** 考虑数组中的最后一个元素 x ：在最小值右侧的元素，它们的值一定都小于等于 x ， 而在最小值左侧的元素，他们的值一定都大于等于x。
+** 依据上述性质，可以通过二分查找找出最小值。
+** 一共分3种情况：
+** 1. nums[mid] > nums[high]
+** 2. nums[mid] < nums[high]
+** 3. nums[mid] == nums[high]
+** 由于重复元素的存在，我们并不能确定nums[mid]究竟在最小值的左侧还是右侧，因此我们不能莽撞地忽略某一部分的元素
+** 唯一可以知道的是，由于它们的值相同，所以无论nums[high]是不是最小值，都有一个它的「替代品」nums[mid],因此依然可以继续缩
+** 即忽略二分的右端点。
+ */
+func FindMinII(nums []int) int {
+	n := len(nums)
+	low, high := 0, n-1
+	//是有序单调数组
+	if nums[low] < nums[high]{
+		return nums[low]
+	}
+	for low < high{
+		mid := (low^high)>>1 + low&high
+		if nums[mid] > nums[high]{
+			low = mid+1
+		}else if nums[mid] < nums[high]{
+			high = mid
+		}else{
+			high--
+		}
+	}
+	return nums[low]
+}
+func FindMinIILeft(nums []int) int {
+	n := len(nums)
+	low, high := 0, n-1
+	//是有序单调数组
+	if nums[low] < nums[high]{
+		return nums[low]
+	}
+	for low < high{
+		//如果二分后的数组是有序数组，则返回最左元素，即为最小
+		if nums[low] < nums[high]{
+			return nums[low]
+		}
+		mid := (low^high)>>1 + low&high
+		//若最左小于mid元素，则最左到mid是严格递增的，那么最小元素必定在mid之后
+		if nums[mid] > nums[low]{
+			low = mid+1
+		}else if nums[mid] < nums[high]{
+			high = mid
+		}else{
+			high--
+		}
+	}
+	return nums[low]
+}
 
+/*Offer 51. 数组中的逆序对  LCOF
+在数组中的两个数字，如果前面一个数字大于后面的数字，则这两个数字组成一个逆序对。输入一个数组，求出这个数组中的逆序对的总数。
+示例 1:
+输入: [7,5,6,4]
+输出: 5
+ */
+/* 归并排序 */
+func ReversePairs(nums []int) int {
+	return mergeSort(nums, 0, len(nums)-1)
+}
+func mergeSort(nums []int, start, end int)int{
+	if start >= end{
+		return 0
+	}
+	mid := (start ^ end)>> 1 + start & end
+	cnt := mergeSort(nums, start, mid) + mergeSort(nums, mid+1, end)
+	tmp := []int{}
+	i, j := start, mid+1
+	for i <= mid && j <= end{
+
+	}
+}
+/* 315. Count of Smaller Numbers After Self
+** You are given an integer array nums and you have to return a new counts array.
+** The counts array has the property where counts[i] is the number of smaller elements to the right of nums[i].
+*/
+/*方法一：二分查找 复杂度：O(n(n+logn))*/
+func CountSmaller(nums []int) []int {
+	n := len(nums)
+	if n == 0 {
+		return nums
+	}
+	ans := make([]int, n)
+	sorted := []int{}
+	search := func(target int)int{// 返回插入位置
+		loc := len(sorted)
+		i, j := 0, len(sorted) - 1
+		for i <= j{
+			mid := (i^j)>>1 + i&j
+			if sorted[mid] < target{
+				i = mid + 1
+			}else{
+				loc = mid
+				j = mid - 1
+			}
+		}
+		return loc
+	}
+	for i := n-1; i >= 0; i--{
+		index := search(nums[i])
+		// 切片中间插入元素，append方法效率低，提交超时
+		//sorted = append(sorted[:index], append([]int{nums[i]}, sorted[index:]...)...)
+		// 下面这个方式，效率比上面要高
+		sorted = append(sorted, 0) // 扩充空间
+		copy(sorted[index+1:], sorted[index:])
+		sorted[index] = nums[i]
+		ans[i] = index
+	}
+	return ans
+}

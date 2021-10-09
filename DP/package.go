@@ -4,6 +4,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"../tree"
 )
 
 /*类属组合优化-NP完全问题-无法直接求解-通过穷举+验证求解
@@ -165,99 +166,6 @@ func CanPartitionDP(nums []int) bool {
 	}
 	return dp[target]
 }
-/* 474. Ones and Zeroes
-You are given an array of binary strings strs and two integers m and n.
-Return the size of the largest subset of strs such that there are at most m 0's and n 1's in the subset.
-A set x is a subset of a set y if all elements of x are also elements of y.
- */
-/* 与0 1 背包问题不同的是 这里的容量有2种，即选取的字符串子集中的 0 和 1 的数量上限。
-** 经典的背包问题可以使用二维动态规划求解，两个维度分别是物品和容量。
-** 这道题有两种容量，因此需要使用三维动态规划求解，三个维度分别是字符串、0 的容量和 1 的容量。
-** i 为当前字符串，
-** 记 zeros 为 strs[i]中 0 的个数；ones 为 strs[i]中 1 的个数
-** 当0和1的容量分别为j和k时，考虑2种情况：
-** 如果 j < zeros || k < ones， 则不能选择第 i 个字符串，此时有 dp[i][j][k] = dp[i-1][j][k]
-** 如果 j >= zeros && k >= ones, 则取下面2项的最大值。
-**		<1> 如果不选择第 i 个字符串，有 dp[i][j][k] = dp[i-1][j][k]
-**		<2> 如果选择第 i 个字符串， 有 dp[i][j][k] = dp[i-1][j-zeros][k-ones] + 1
- */
-func FindMaxForm(strs []string, m int, n int) int {
-	total := len(strs)
-	cnt := map[string][2]int{}
-	for i := range strs{
-		zero, one := 0, 0
-		for j := range strs[i]{
-			if strs[i][j] == '0'{
-				zero++
-			}else{
-				one++
-			}
-		}
-		cnt[strs[i]] = [2]int{zero, one}
-	}
-	dp := make([][][]int, 2)
-	for i := range dp{
-		dp[i] = make([][]int, m+1)
-		for j := range dp[i]{
-			dp[i][j] = make([]int, n+1)
-		}
-	}
-	t0, t1 := cnt[strs[0]][0], cnt[strs[0]][1]
-	// 对应上面的2种情况，如果只有1个字符串，如果 i < zeros 或者 j < ones 则无法选择此字符串，
-	// 因为无法满足题目要求的至多i个 0 和 至多 j 个 1的要求
-	for i := 0; i <= m; i++{// 初始化，
-		for j := 0; j <= n; j++{
-			if i >= t0 && j >= t1{
-				dp[0][i][j] = 1
-			}
-		}
-	}
-	for i := 1; i < total; i++{
-		t0, t1 := cnt[strs[i]][0], cnt[strs[i]][1]
-		for j := 0; j <= m; j++{
-			for k := 0; k <= n; k++{
-				no := dp[(i-1)&1][j][k]
-				yes := 0
-				if j >= t0 && k >= t1{
-					yes = dp[(i-1)&1][j-t0][k-t1] + 1
-				}
-				dp[i&1][j][k] = max(no, yes)
-			}
-		}
-	}
-	return dp[(total-1)&1][m][n]
-}
-// 优化：空间降维度，另使用strings.Count 来统计0 和 1 的个数
-func FindMaxForm2(strs []string, m int, n int) int {
-	total := len(strs)
-	dp := make([][]int, m+1)
-	for i := range dp{
-		dp[i] = make([]int, n+1)
-	}
-	for i := 0; i < total; i++{
-		// zeros, ones := strings.Count(strs[i],"0"), strings.Count(strs[i], "1")
-		zeros := strings.Count(strs[i], "0")
-		ones := len(strs[i]) - zeros // 优化1
-		/* 优化-2： 将if j >= zeros && k >= ones 放到 for 循环中  缩减代码行数
-		for j := m; j >= 0; j--{
-			for k := n; k >= 0; k--{
-				no := dp[j][k]
-				yes := 0
-				if j >= zeros && k >= ones{
-					yes = dp[j-zeros][k-ones] + 1
-				}
-				dp[j][k] = max(yes, no)
-			}
-		}
-		 */
-		for j := m; j >= zeros; j-- {
-			for k := n; k >= ones; k-- {
-				dp[j][k] = max(dp[j][k], dp[j-zeros][k-ones]+1)
-			}
-		}
-	}
-	return dp[m][n]
-}
 
 /* 494. Target Sum
 You are given an integer array nums and an integer target.
@@ -313,115 +221,6 @@ func FindTargetSumWays(nums []int, target int) int {
 	return dp[neg]
 }
 
-/* 879. Profitable Schemes
-There is a group of n members, and a list of various crimes they could commit.
-The ith crime generates a profit[i] and requires group[i] members to participate in it.
-If a member participates in one crime, that member can't participate in another crime.
-Let's call a profitable scheme any subset of these crimes that generates at least minProfit profit,
-and the total number of members participating in that subset of crimes is at most n.
-Return the number of schemes that can be chosen. Since the answer may be very large, return it modulo 1000000007.
- */
-/*
-func ProfitableSchemes(n int, minProfit int, group []int, profit []int) int {
-	sum := 0
-	for i := range profit{
-		sum += profit[i]
-	}
-	dp := make([][2]int, sum+1)
-	dp[0][0], dp[0][1] = 1, 0
-	for i := range profit{
-		for j := sum; j >= profit[i]; j--{
-			no := dp[j]
-			cur := dp[j-profit[i]]
-			yes := [2]int{}
-			if (cur[1]+group[i]) <= n {
-				yes[0] = cur[0]
-				yes[1] = cur[1]+group[i]
-			}
-			dp[j][0], dp[j][1] = no[0]+yes[0], max(no[1], cur[1]+group[i])
-		}
-		fmt.Println(dp)
-	}
-	ans := 0
-	for i := minProfit; i < sum+1; i++{
-		ans += dp[i][0]
-	}
-	return ans
-}
-*/
-/*
-  将每个任务看作一个「物品」，完成任务所需要的人数看作「成本」，完成任务得到的利润看作「价值」。
-  其特殊在于存在一维容量维度需要满足「不低于」，而不是常规的「不超过」。这需要我们对于某些状态作等价变换。
-  定义 dp[i][j][k] 为考虑前 i 件物品，使用人数不超过 j，所得利润至少为 k 的方案数。
-  对于每件物品（令下标从 1 开始），我们有「选」和「不选」两种决策：
-  1. 不选，dp[i][j][k] = dp[i-1][j][k]
-  2. 选，首先需要满足人数达到要求，即 j >= groups[i-1]，但是需要考虑「至少利润」负值问题：
-	如果直接令「利润维度」为 k - profit[i - 1]可能会出现负值，那么负值是否为合法状态呢？
-	这需要结合「状态定义」来看，由于是「利润至少为k」，因此属于「合法状态」，需要参与转移.
-	由于我们没有设计动规数组存储「利润至少为负权」状态，我们需要根据「状态定义」做一个等价替换,
-	将这个「状态」映射到 dp[i][j][0]。这主要是利用所有的任务利润都为「非负数」，所以不可能出现利润为负的情况，
-	这时候「利润至少为某个负数 k」的方案数其实是完全等价于「利润至少为 0」的方案数。
-  初始化：
-	当不存在任何物品（任务）时，所得利用利润必然为 0（满足至少为 0），同时对人数限制没有要求
-	dp[0][x][0] = 1
- */
-func ProfitableSchemes(n int, minProfit int, group []int, profit []int) int {
-	const mod int = 1e9+7 // 必须这样声明 否则默认float64
-	dp := make([][][]int, 2)
-	for i := range dp{
-		dp[i] = make([][]int, n+1)
-		for j := range dp[i]{
-			dp[i][j] = make([]int, minProfit+1)
-		}
-	}
-	dp[0][0][0] = 1
-//	length := len(profit)
-//	for i := 1; i < length; i++{
-	for i := range profit{
-		for j := 0; j <= n; j++{
-			for k := 0; k <= minProfit; k++{
-				no := dp[i&1][j][k]
-				yes := 0
-				if j >= group[i]{
-					yes = dp[i&1][j-group[i]][max(0, k-profit[i])]
-				}
-				dp[(i+1)&1][j][k] = (yes + no) % mod
-			}
-		}
-	}
-	ans := 0
-	for _, u := range dp[len(profit)&1]{
-		ans = (ans + u[minProfit])%mod
-	}
-	return ans
-}
-/*
-dp[i][j][k]仅与i-1有关，因此可降维优化
-注意初始化情况：
-对于最小工作利润为0的情况，无论当前在工作的员工有多少人，总能给出一种方案，即初始化为dp[i][0] = 1
-此外，降维后 dp 数组的遍历顺序应为逆序，这样才能保证求dp[j][k]时，用到的dp[j-groups[i]][max(0, k-profit[i])] 是上一次的值。
-正序遍历会改写。
- */
-func ProfitableSchemesDP(n int, minProfit int, group []int, profit []int) int {
-	const mod int = 1e9+7
-	dp := make([][]int, n+1)
-	// 注意降维度后的 初始化
-	for i := range dp{
-		dp[i] = make([]int, minProfit+1)
-		dp[i][0] = 1
-	}
-	for i := range group{
-		members, earn := group[i], profit[i]
-		for j := n; j >= members; j-- {
-			for k := minProfit; k >= 0; k-- {
-				dp[j][k] = (dp[j][k] + dp[j-members][max(0, k-earn)]) % mod
-			}
-		}
-	}
-	// 注意结果求解与 3维的区别
-	return dp[n][minProfit]
-}
-
 /* 1049. Last Stone Weight II
 You are given an array of integers stones where stones[i] is the weight of the ith stone.
 We are playing a game with the stones. On each turn, we choose any two stones（注意是任意2个） and smash them together.
@@ -456,7 +255,7 @@ func LastStoneWeightII(stones []int) int {
 	}
 	return sum - 2 * dp[target]
 }
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**************  完全背包问题   **********************************************************************
 题目:
 	有 N 种物品和一个容量为 V 的背包，每种物品都有无限件可用。放入第 i 种物品 的费用（可以是体积也可以是重量）是 Ci，价值是 Wi。
@@ -493,6 +292,9 @@ func LastStoneWeightII(stones []int) int {
 	2. 完全背包问题的状态转移方程是： dp[i][j] = max( dp[i-1][j], dp[i][j-Ci]+Wi )
 		计算dp[i][j]依赖dp[i][j-Ci]，故在降维时，需要确保 dp[j-Ci]存储的是当前行的值，
 		即确保dp[j-Ci]已经被更新，所以遍历方向是从小到大。
+还有一个特例：即背包中元素置放是要求有顺序的问题，后面的leetcode-139单词分割 DP 解法
+	1. 如果是完全背包且不考虑元素之间顺序，物品个数放置在外循环（保证了物品按顺序遍历），容量要求target放在内循环，且内循环是正序
+	2. 如果组合问题需要考虑元素物品放置的顺序，需要将要求target放在外循环，将物品放在内循环，且内循环正序。
  */
 
 func UnboundedKnapsackProblem(N int, V int, c []int, w []int) int {
@@ -776,7 +578,70 @@ func ChangeDP(amount int, coins []int) int {
 	}
 	return dp[amount]
 }
-
+/* 139. Word Break
+Given a string s and a dictionary of strings wordDict,
+return true if s can be segmented into a space-separated sequence of one or more dictionary words.
+Note that the same word in the dictionary may be reused multiple times in the segmentation.
+*/
+// 朴素 DFS 超时，参见testcase-1，故加DP cache
+// 需要画出dfs 树图，找到重复计算的地方：一次DFS之后可能会计算出很多的结果
+func WordBreakDFS(s string, wordDict []string) bool {
+	n := len(s)
+	m := map[string]bool{}
+	for i := range wordDict{
+		m[wordDict[i]] = true
+	}
+	cache := make([]int, n+1)
+	for i := range cache{
+		cache[i] = -1
+	}
+	var dfs func(i int)bool
+	dfs = func(i int)bool{
+		if i >= n{
+			return true
+		}
+		if cache[i] == 0{
+			return false
+		}
+		if cache[i] == 1{
+			return true
+		}
+		for j := i; j < n; j++{
+			if m[s[i:j+1]]{
+				if dfs(j+1) {
+					cache[i] = 1
+					return true
+				}
+			}
+		}
+		cache[i] = 0
+		return false
+	}
+	return dfs(0)
+}
+/* 转化为是否可以用 wordDict 中的词组合成 s，完全背包问题，并且为“考虑排列顺序的完全背包问题”，外层循环为 target，内层循环为选择池 wordDict
+** dp[i] 表示以 i 结尾的字符串是否可以被 wordDict 中组合而成
+ */
+func WordBreakDP(s string, wordDict []string) bool {
+	n := len(s)
+	m := map[string]bool{}
+	for i := range wordDict {
+		m[wordDict[i]] = true
+	}
+	dp := make([]bool, n+1)
+	dp[0] = true // 对于边界条件，我们定义 dp[0] = true 表示空串且合法
+	// dp[i] = dp[i] || dp[i - word]  <== 还是对应选与不选这个单词物品
+	for i := 1; i <= n; i++{
+		for j := range wordDict{
+			ws := len(wordDict[j])
+			if i >= ws && m[s[i-ws:i]] {
+				dp[i] = dp[i] || dp[i-ws]
+			}
+		}
+	}
+	return dp[n]
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* 多重背包问题-bounded knapsack problem
 描述： 有 N 种物品和一个容量为 C 的背包，每种物品「数量有限」
       第i件物品的成本是 v[i]， 价值是 w[i]， 数量为 s[i]
@@ -919,31 +784,518 @@ func BoundKnapsackQueue(N int, C int, s []int, v []int, w []int)int{
 	return dp[C]
 }
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* 混合背包问题
 
  */
 
-/* 二维费用背包问题
-
- */
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* 分组背包问题
+** 给定N个物品组，和容量为C的背包
+** 第i个物品组有 S[i]件物品，其中第 i 组的第 j 件物品的成本为 v[i][j]， 价值为 w[i][j]
+** 每组有若干个物品，同一组内的物品最多只能选一个。
+** 求 将哪些物品装入背包可使得这些物品的费用总和不超过背包的容量，且价值总和最大。
+例题：
+输入：N = 2, C = 9, S = [2, 3], v = [[1,2,-1],[1,2,3]], w = [[2,4,-1],[1,3,6]]
+输出：10
+ */
+/* 解法：
+** 定义dp[i][j] 为考虑前i个物品组，背包容量不超过j的最大价值
+** 考虑条件设置：
+**	由于每组有若干个物品，且每组「最多」选择一件物品
+** 推导：即对于第 i 组而言，可决策的方案如下
+** 不选择该组的任何物品： dp[i][j] = dp[i-1][j]
+** 选该组第一个物品: dp[i][j] = dp[i-1][j-v[i][0]] + w[i][0]
+** 选该组第 k 个物品：dp[i][j] = dp[i-1][j-v[i][k]] + w[i][k]
+** 最终状态转移方程：
+	dp[i][j] = max( dp[i-1][j], dp[i-1][j-v[i][k]] + w[i][k] ) 0 <= k < S[i]
+ */
+func GroupingKnapsack(N int, C int, S []int, v [][]int, w [][]int) int{
+	dp := make([][]int, N+1)
+	for i := range dp{
+		dp[i] = make([]int, C+1)
+	}
+	// 初始化全为0，1. 不选任何物品情况下， 所有价值为 0
+	// 2. 容量为0情况下， 所有价值为 0
+	for i := 1; i <= N; i++{
+		vi, wi := v[i-1], w[i-1] // 数组是从0开始计
+		for j := 0; j <= C; j++{
+			no := dp[i-1][j]
+			yes := 0
+			//for k := 0; j >= vi[k] && k < S[i-1]; k++{ // 注意 逻辑判断，k 溢出的问题
+			for k := 0; k < S[i-1] && j >= vi[k]; k++{
+				if yes < dp[i-1][j-vi[k]]+wi[k]{
+					yes = dp[i-1][j-vi[k]]+wi[k]
+				}
+			}
+			dp[i][j] = max(no, yes)
+		}
+	}
+	//fmt.Println(dp)
+	return dp[N][C]
+}
+// 1维 优化
+func GroupingKnapsack1(N int, C int, S []int, v [][]int, w [][]int) int{
+	dp := make([]int, C+1)
+	dp[0] = 0
+	for i := 1; i <= N; i++{
+		vi, wi := v[i-1], w[i-1] // 数组是从0开始计
+		for j := C; j >= 0; j--{
+			// no := dp[i-1][j] 被优化在之前的dp[j]保存的数值中
+			for k := 0; k < S[i-1] && j >= vi[k]; k++{
+				dp[j] = max(dp[j], dp[j-vi[k]] + wi[k])
+			}
+		}
+	}
+	return dp[C]
+}
 
+
+/* 1155. Number of Dice Rolls With Target Sum
+** You have d dice and each die has f faces numbered 1, 2, ..., f. You are given three integers d, f, and target.
+** Return the number of possible ways (out of fd total ways) modulo 109 + 7 to roll the dice so the sum of the face-up numbers equals target.
+ */
+func NumRollsToTarget(d int, f int, target int) int {
+	if d * f < target{
+		return 0
+	}
+	const mod int = 1e9+7
+	// 此处状态数组定义从 0 开始计算，即第0个表示题意中的第一个骰子
+	dp := make([][]int, d)
+	for i := range dp{
+		dp[i] = make([]int, target+1)
+		// 因为从 0 计算，所以初始化，必须从这行开始
+		if i == 0{
+			//for j := 1; j <= target; j++{ // 防止target > f 污染初始化值，超过的应该初始化为0 不存在这样的骰子方案
+			for j := 1; j <= f && j <= target; j++{
+				dp[i][j] = 1
+			}
+		}
+	}
+	for i := 1; i < d; i++ {
+		for j := 0; j <= target ;j++{
+			// 因为所有骰子都必须要选一个，因此不可能有不选这个状态，与01背包不同
+			for k := 1; j >= k && k <= f; k++{
+				dp[i][j] = (dp[i][j] + dp[i-1][j-k]) % mod
+			}
+		}
+	}
+	//fmt.Println(dp)
+	return dp[d-1][target]%mod
+}
+
+func NumRollsToTarget2(d int, f int, target int) int {
+	if d * f < target{
+		return 0
+	}
+	const mod int = 1e9+7
+	// 注意和上面解法的 状态的定义，从0开始计数，还是从 1 开始计算，导致初始化方向不同
+	dp := make([][]int, d+1)
+	for i := range dp{
+		dp[i] = make([]int, target+1)
+	}
+	/* 根据定义，此方法是dp 大小 d+1 额外多了一行， 即
+	** dp[0] 表示 任何骰子都不选，target = 0 的方案数为 1
+	 */
+	dp[0][0] = 1
+	for i := 1; i <= d; i++ { // 枚举物品组（每个骰子）
+		for j := 0; j <= target ;j++{ // 枚举背包容量（所掷得的总点数）
+			for k := 1; j >= k && k <= f; k++{
+				dp[i][j] = (dp[i][j] + dp[i-1][j-k]) % mod
+			}
+		}
+	}
+	//fmt.Println(dp)
+	return dp[d][target]
+}
+
+func NumRollsToTarget1(d int, f int, target int) int {
+	if d * f < target{
+		return 0
+	}
+	const mod int = 1e9+7
+	dp := make([]int, target+1)
+	dp[0] = 1
+	for i := 1; i <= d; i++ {
+		for j := target; j >= 0 ;j--{
+			dp[j] = 0 // 易错点：忽略初始化数据，导致历史数据叠加
+			for k := 1; j >= k && k <= f; k++{
+				dp[j] = (dp[j] + dp[j-k])%mod
+			}
+		}
+	}
+	//fmt.Println(dp)
+	return dp[target]
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/* 多维背包问题
+** 在背包九讲里，也指二维费用的背包问题，即
+** 对于每件物品，具有2种不同的费用，选择这件物品必须同时付出这两笔费用。对于每种费用都有一个可付出的最大值（对应2种背包容量），
+** 求如何选择物品可以得到最大的价值
+** 设第i件物品所需的两种费用分别为 v[i] 和 u[i]。两种费用可付出的最大值（也即两种背包容量）分别为 V 和 U。物品价值 w[i]
+** dp[i][v][u]: 表示前 i 件物品 付出的两种费用分别为 u 和 u 时可获得的最大价值
+** dp[i][v][u] = max( dp[i-1][u][u], dp[i-1][v-v[i]][u-u[i]]+w[i] )
+** 空间可以优化：降为2维的处理方法：
+	1. 当每件物品只可取一次时，变量 u 和 u 采用逆序的循环，
+	2. 当物品有如完全背包问题时采用顺序的循环，
+	3. 当物品有如多重背包问题时拆分物品。
+ */
+//TODO: 增加一个代码
+/* 还有一个变种： 物品总个数的限制
+	二维费用的条件是以一种隐含的方式给出： 最多只能取 U 件物品。这相当于每件物品多了一种"件数"的费用，每个物品的件数费用均为 1，可以付出的
+	的最大件数费用为 U。也就是说，设 F[v, u] 表示付出费用 v 最多选 u件时可得到的最大价值，则根据物品的类型（01 完全 多重）用不同的方法循环更新，
+	最后在 F[0->V, 0->U]的范围内寻找答案。
  */
 
+/* 474. Ones and Zeroes
+You are given an array of binary strings strs and two integers m and n.
+Return the size of the largest subset of strs such that there are at most m 0's and n 1's in the subset.
+A set x is a subset of a set y if all elements of x are also elements of y.
+*/
+/* 与0 1 背包问题不同的是 这里的容量有2种，即选取的字符串子集中的 0 和 1 的数量上限。
+** 经典的背包问题可以使用二维动态规划求解，两个维度分别是物品和容量。
+** 这道题有两种容量，因此需要使用三维动态规划求解，三个维度分别是字符串、0 的容量和 1 的容量。
+** dp[i][j][k]表示前i件物品，在数字 1 容量不超过 j， 数字 0 的容量不超过 k 的条件下的 「最大价值」（每个字符串的价值均为 1）
+** dp[i][j][k] = max( dp[i-1][j][k], dp[i-1][i - cnt[k][0]][j - cnt[k][1]] + 1 )
+** cnt数组记录的是字符串中出现的 0 1 数量。
+** i 为当前字符串，
+** 记 zeros 为 strs[i]中 0 的个数；ones 为 strs[i]中 1 的个数
+** 当0和1的容量分别为j和k时，考虑2种情况：
+** 如果 j < zeros || k < ones， 则不能选择第 i 个字符串，此时有 dp[i][j][k] = dp[i-1][j][k]
+** 如果 j >= zeros && k >= ones, 则取下面2项的最大值。
+**		<1> 如果不选择第 i 个字符串，有 dp[i][j][k] = dp[i-1][j][k]
+**		<2> 如果选择第 i 个字符串， 有 dp[i][j][k] = dp[i-1][j-zeros][k-ones] + 1
+ */
+func FindMaxForm(strs []string, m int, n int) int {
+	total := len(strs)
+	cnt := map[string][2]int{}
+	for i := range strs{
+		zero, one := 0, 0
+		for j := range strs[i]{
+			if strs[i][j] == '0'{
+				zero++
+			}else{
+				one++
+			}
+		}
+		cnt[strs[i]] = [2]int{zero, one}
+	}
+	dp := make([][][]int, 2)
+	for i := range dp{
+		dp[i] = make([][]int, m+1)
+		for j := range dp[i]{
+			dp[i][j] = make([]int, n+1)
+		}
+	}
+	t0, t1 := cnt[strs[0]][0], cnt[strs[0]][1]
+	// 对应上面的2种情况，如果只有1个字符串，如果 i < zeros 或者 j < ones 则无法选择此字符串，
+	// 因为无法满足题目要求的至多i个 0 和 至多 j 个 1的要求
+	for i := 0; i <= m; i++{// 初始化，
+		for j := 0; j <= n; j++{
+			if i >= t0 && j >= t1{
+				dp[0][i][j] = 1
+			}
+		}
+	}
+	for i := 1; i < total; i++{
+		t0, t1 := cnt[strs[i]][0], cnt[strs[i]][1]
+		for j := 0; j <= m; j++{
+			for k := 0; k <= n; k++{
+				no := dp[(i-1)&1][j][k]
+				yes := 0
+				if j >= t0 && k >= t1{
+					yes = dp[(i-1)&1][j-t0][k-t1] + 1
+				}
+				dp[i&1][j][k] = max(no, yes)
+			}
+		}
+	}
+	return dp[(total-1)&1][m][n]
+}
+// 优化：空间降维度，另使用strings.Count 来统计0 和 1 的个数
+func FindMaxForm2(strs []string, m int, n int) int {
+	total := len(strs)
+	dp := make([][]int, m+1)
+	for i := range dp{
+		dp[i] = make([]int, n+1)
+	}
+	for i := 0; i < total; i++{
+		// zeros, ones := strings.Count(strs[i],"0"), strings.Count(strs[i], "1")
+		zeros := strings.Count(strs[i], "0")
+		ones := len(strs[i]) - zeros // 优化1
+		/* 优化-2： 将if j >= zeros && k >= ones 放到 for 循环中  缩减代码行数
+		for j := m; j >= 0; j--{
+			for k := n; k >= 0; k--{
+				no := dp[j][k]
+				yes := 0
+				if j >= zeros && k >= ones{
+					yes = dp[j-zeros][k-ones] + 1
+				}
+				dp[j][k] = max(yes, no)
+			}
+		}
+		*/
+		for j := m; j >= zeros; j-- {
+			for k := n; k >= ones; k-- {
+				dp[j][k] = max(dp[j][k], dp[j-zeros][k-ones]+1)
+			}
+		}
+	}
+	return dp[m][n]
+}
+
+/* 879. Profitable Schemes
+There is a group of n members, and a list of various crimes they could commit.
+The ith crime generates a profit[i] and requires group[i] members to participate in it.
+If a member participates in one crime, that member can't participate in another crime.
+Let's call a profitable scheme any subset of these crimes that generates at least minProfit profit,
+and the total number of members participating in that subset of crimes is at most n.
+Return the number of schemes that can be chosen. Since the answer may be very large, return it modulo 1000000007.
+*/
+/*
+func ProfitableSchemes(n int, minProfit int, group []int, profit []int) int {
+	sum := 0
+	for i := range profit{
+		sum += profit[i]
+	}
+	dp := make([][2]int, sum+1)
+	dp[0][0], dp[0][1] = 1, 0
+	for i := range profit{
+		for j := sum; j >= profit[i]; j--{
+			no := dp[j]
+			cur := dp[j-profit[i]]
+			yes := [2]int{}
+			if (cur[1]+group[i]) <= n {
+				yes[0] = cur[0]
+				yes[1] = cur[1]+group[i]
+			}
+			dp[j][0], dp[j][1] = no[0]+yes[0], max(no[1], cur[1]+group[i])
+		}
+		fmt.Println(dp)
+	}
+	ans := 0
+	for i := minProfit; i < sum+1; i++{
+		ans += dp[i][0]
+	}
+	return ans
+}
+*/
+/*
+  将每个任务看作一个「物品」，完成任务所需要的人数看作「成本」，完成任务得到的利润看作「价值」。
+  其特殊在于存在一维容量维度需要满足「不低于」，而不是常规的「不超过」。这需要我们对于某些状态作等价变换。
+  定义 dp[i][j][k] 为考虑前 i 件物品，使用人数不超过 j，所得利润至少为 k 的方案数。
+  对于每件物品（令下标从 1 开始），我们有「选」和「不选」两种决策：
+  1. 不选，dp[i][j][k] = dp[i-1][j][k]
+  2. 选，首先需要满足人数达到要求，即 j >= groups[i-1]，
+	但是需要考虑「至少利润」负值问题：
+	如果直接令「利润维度」为 k - profit[i - 1]可能会出现负值，那么负值是否为合法状态呢？
+	这需要结合「状态定义」来看，由于是「利润至少为k」，因此属于「合法状态」，需要参与转移.
+	解决： 由于我们没有设计动规数组存储「利润至少为负权」状态，我们需要根据「状态定义」做一个等价替换,
+	将这个「状态」映射到 dp[i][j][0]。这主要是利用所有的任务利润都为「非负数」，所以不可能出现利润为负的情况，
+	这时候「利润至少为某个负数 k」的方案数其实是完全等价于「利润至少为 0」的方案数。
+  初始化：
+	当不存在任何物品（任务）时，所得利用利润必然为 0（满足至少为 0），同时对人数限制没有要求
+	dp[0][x][0] = 1
+*/
+func ProfitableSchemes(n int, minProfit int, group []int, profit []int) int {
+	const mod int = 1e9+7 // 必须这样声明 否则默认float64
+	dp := make([][][]int, 2)
+	for i := range dp{
+		dp[i] = make([][]int, n+1)
+		for j := range dp[i]{
+			dp[i][j] = make([]int, minProfit+1)
+		}
+	}
+	dp[0][0][0] = 1
+	//	length := len(profit)
+	//	for i := 1; i < length; i++{
+	for i := range profit{
+		for j := 0; j <= n; j++{
+			for k := 0; k <= minProfit; k++{
+				no := dp[i&1][j][k]
+				yes := 0
+				if j >= group[i]{
+					yes = dp[i&1][j-group[i]][max(0, k-profit[i])]
+				}
+				dp[(i+1)&1][j][k] = (yes + no) % mod
+			}
+		}
+	}
+	ans := 0
+	for _, u := range dp[len(profit)&1]{
+		ans = (ans + u[minProfit])%mod
+	}
+	return ans
+}
+/*
+dp[i][j][k]仅与i-1有关，因此可降维优化
+注意初始化情况：
+对于最小工作利润为0的情况，无论当前在工作的员工有多少人，总能给出一种方案，即初始化为dp[i][0] = 1
+此外，降维后 dp 数组的遍历顺序应为逆序，这样才能保证求dp[j][k]时，用到的dp[j-groups[i]][max(0, k-profit[i])] 是上一次的值。
+正序遍历会改写。
+*/
+func ProfitableSchemesDP(n int, minProfit int, group []int, profit []int) int {
+	const mod int = 1e9+7
+	dp := make([][]int, n+1)
+	// 注意降维度后的 初始化
+	for i := range dp{
+		dp[i] = make([]int, minProfit+1)
+		dp[i][0] = 1
+	}
+	for i := range group{
+		members, earn := group[i], profit[i]
+		for j := n; j >= members; j-- {
+			for k := minProfit; k >= 0; k-- {
+				dp[j][k] = (dp[j][k] + dp[j-members][max(0, k-earn)]) % mod
+			}
+		}
+	}
+	// 注意结果求解与 3维的区别
+	return dp[n][minProfit]
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/* 有依赖的背包问题 又称 树形背包
+问题描述：有 N 个物品和一个容量为 C 的背包，物品编号为 0 ... N-1
+		物品之间具有依赖关系，且依赖关系组成一棵树的形状, 如果选择一个物品，则必须选择它的父节点.
+		第 i 件物品的体积为 v[i]，价值为 w[i]，其父节点物品编号为 p[i]，其中根节点 p[i]=-1。
+		求解将哪些物品装入背包，可使这些物品的总体积不超过背包容量，且总价值最大。
+分组背包：dp[i][j]为考虑前 i 个物品组，背包容量不超过 j 的最大价值
+	从状态定义我们发现，常规的分组背包问题对物品组的考虑是“线性“的（从前往后考虑每个物品组）。
+	然后在状态转移时，由于物品组之间没有依赖关系，限制只发生在”组内“（每组「最多」选择一件物品）
+	所以常规分组背包问题只需要采取「枚举物品组 - 枚举背包容量 - 枚举组内物品（决策）」 的方式进行求解即可
+树形背包：在树形背包问题中，每个物品的决策与其父节点存在依赖关系，因此我们将”线性“的状态定义调整为”树形“的
+	dp[u][j]为考虑以 u 为根的子树，背包容量不超过 j 的最大价值。
+	限制条件： 首先，根据树形背包的题目限制，对于以 u 为根的子树，无论选择哪个节点，都需要先把父节点选上
+			如果从选择节点 u 的哪些子树入手的话，我们发现节点 u 最坏情况下会有 100 个子节点，
+			而每个子节点都有选和不选两种决策，因此总的方案数为 2的100次方，这显然是不可枚举的
+转移方程：这时候可以从”已有维度“的层面上对方案进行划分，而不是单纯的处理每一个具体方案。
+		最终这2的100次方的方案的最大价值会用于更新dp[u][j]，根据「容量」这个维度对这2的100次方个方案进行划分
+		* 消耗容量为 0 的方案数的最大价值
+		* 消耗容量为 1 的方案数的最大价值
+		* 消耗容量为 j-v[u] 的方案数的最大价值
+		消耗的容量的范围为[0, j-v[u]] ，是因为需要预留 v[u] 的容量选择当前的根节点u
+	dp[u][j] = max( dp[u][j], dp[u][j-k]+dp[x][k] ) 0<= k <= j-v[u]
+	x节点为 u 的子节点
+	从状态转移方式发现，在计算 dp[u][j] 时需要用到 dp[x][k]，因此我们需要先递归处理节点 u 的子节点 x 的状态值
+*/
+func TreeKnapsack(N int, C int, p []int, v []int, w []int)int{
+	//root := -1
+	//dp := make([][]int, N)
+	return 0
+
+}
+
+/*LCP 34. 二叉树染色
+小扣有一个根结点为 root 的二叉树模型，初始所有结点均为白色，可以用蓝色染料给模型结点染色，模型的每个结点有一个 val 价值。
+小扣出于美观考虑，希望最后二叉树上每个蓝色相连部分的结点个数不能超过 k 个，求所有染成蓝色的结点价值总和最大是多少？
+*/
+/* 思路不对
+func PaintBinaryTree(root *Tree.BiTreeNode, k int) int {
+	if root == nil {
+		return 0
+	}
+	dp := map[*Tree.BiTreeNode][]int{}
+	dp[nil] = make([]int, k+1)
+	var dfs func(node *Tree.BiTreeNode)
+	dfs = func(node *Tree.BiTreeNode) {
+		if node == nil{
+			return
+		}
+		dp[node] = make([]int, k+1)
+		dfs(node.Left)
+		dfs(node.Right)
+		for i := k; i >= 2; i--{
+			yes, no := 0, 0
+			yes = max(dp[node.Left][i-1] + dp[node.Right][0], dp[node.Left][0] + dp[node.Right][i-1]) + node.Val.(int)
+			for j := 0; j <= k; j++{
+				no = max(no, dp[node.Left][j]+dp[node.Right][k-j])
+			}
+			dp[node][i] = max(yes, no)
+		}
+	}
+	dfs(root)
+	fmt.Println(dp)
+	return dp[root][k]
+}
+ */
+/* 自底向上dp，保存子节点的状态并计算当前是否染色的状态  一维树形DP
+状态定义： dp[i]表示以该节点为根，相邻的子节点为蓝色的个数为 i 的情况下(包括自身), 节点价值总和的最大值。
+状态转移： 当前节点为root，dp逻辑为
+	1. root不染色，那么只要返回 dp[0]，其值为左、右子树染色或不染色的最大值之和
+		dp[node][i] = max(dp[node.Left][j]) + max(dp[node.Right][j])  0<=j<=k
+	2. root染色，那么就分左子树染色 j 个，右子树染色 i - 1 - j 个时，加上 root.val 的和。
+		dp[node][i] = max(node.Val + dp[node.Left][j] + dp[node.Right][i-1 - j]), 0 <i<=k && 0 < j < i
+ */
+func PaintBinaryTree(root *Tree.BiTreeNode, k int) int {
+	if root == nil {
+		return 0
+	}
+	dp := map[*Tree.BiTreeNode][]int{}
+	dp[nil] = make([]int, k+1)
+	var dfs func(node *Tree.BiTreeNode)
+	dfs = func(node *Tree.BiTreeNode) {
+		if node == nil{
+			return
+		}
+		dp[node] = make([]int, k+1)
+		dfs(node.Left)
+		dfs(node.Right)
+
+		// root 不染色
+	/* 换种写法
+		maxLeft, maxRight := math.MinInt32, math.MinInt32
+		for i := 0; i <= k; i++{
+			maxLeft = max(maxLeft, dp[node.Left][i]) 	// 求出左子树可能的最大值
+			maxRight = max(maxRight, dp[node.Right][i])	// 求出右子树可能的最大值
+		}
+		dp[node][0] = maxLeft + maxRight // root 不染色
+	 */
+		dp[node][0] = max(dp[node.Left]...) + max(dp[node.Right]...)
+		// root 染色：左子树染色 j 个，右子树染色 i - 1 - j 个时，加上 root.val 的和
+		// 需要求出 dp[root][i]的值
+		for i := 1; i <=k; i++{
+			for j := 0; j < i; j++{
+				dp[node][i] = max(dp[node][i], dp[node.Left][j]+dp[node.Right][i-j-1]+node.Val.(int))
+			}
+		}
+
+	}
+	dfs(root)
+	return max(dp[root]...) // 不超过
+}
+// 递归返回数组的方式
+func PaintBinaryTree2(root *Tree.BiTreeNode, k int) int {
+	nildp := make([]int, k+1)
+	var dfs func(node *Tree.BiTreeNode) []int
+	dfs = func(node *Tree.BiTreeNode)[]int{
+		if node == nil{
+			return nildp
+		}
+		left,right := dfs(node.Left), dfs(node.Right)
+		dp := make([]int, k+1)
+		// 不选root
+		dp[0] = max(left...) + max(right...)
+		// 选root
+		for i := 1; i <= k; i++{
+			for j := 0; j < i; j++{
+				dp[i] = max(dp[i], left[j] + right[i-1 - j] + node.Val.(int))
+			}
+		}
+		return dp
+	}
+	return max(dfs(root)...)
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* 背包问题求方案数
 
  */
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* 求背包问题的方案
-
- */
-
-/* 有依赖的背包问题
-
- */
-
-/* 0 1 背包问题
 
  */
 
