@@ -45,6 +45,23 @@ func RobI(nums []int)int{
 	}
 	return max(res[(s-1)%2][0], res[(s-1)%2][1])
 }
+// 2021-10-15 优化一下
+func RobI1015(nums []int) int {
+	// 二维思路：
+	// dp[n][0] = max(dp[n-1][0], dp[n-1][1])
+	// dp[n][1] = dp[n-1][0] + nums[n]
+	// dp[n] = max(dp[n][0], dp[n][1])
+	// 一维思路参考官方题解
+	// dp[x] = max(dp[x-2]+nums[x], dp[x-1])
+	dp := make([]int, 2)
+	n := len(nums)
+	for i := 1; i <= n; i++{
+		t := dp[0]
+		dp[0] = max(dp[0], dp[1])
+		dp[1] = t+nums[i-1]
+	}
+	return max(dp...)
+}
 
 /*
   转换为一维DP
@@ -114,6 +131,25 @@ func RobII(nums []int) int {
 		dp0[i%2] = max(nums[i]+dp0[(i-2)%2], dp0[(i-1)%2])
 	}
 	return max(dp0[(s-1)%2], dp1[(s-1)%2])
+}
+
+/*2021-10-15更新： 可以预先计算出 选第一 和 不选第一个导致的序列情况， 最后比较可能情况*/
+func RobII1015(nums []int)int{
+	n := len(nums)
+	if n < 2{
+		return nums[0]
+	}
+	dp0 := []int{0, 0} // 不选第一个导致的序列
+	dp1 := []int{0, nums[0]} // 选第一个导致的序列
+	for i := 2; i <= n; i++{
+		t := dp0[0]
+		dp0[0] = max(dp0[0], dp0[1])
+		dp0[1] = t + nums[i-1]
+		t = dp1[0]
+		dp1[0] = max(dp1[0], dp1[1])
+		dp1[1] = t + nums[i-1]
+	}
+	return max(dp0[0], dp0[1], dp1[0])
 }
 
 /* 官方题解
