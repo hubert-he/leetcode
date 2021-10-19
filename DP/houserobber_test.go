@@ -3,6 +3,49 @@ package DP
 import "testing"
 import "../Tree"
 
+func TestRobDP(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums []int
+		want int
+	}{
+		{[]int{0}, 0},
+		{[]int{1}, 1},
+		{[]int{1,2,3,1}, 4},
+		{[]int{2,7,9,3,1}, 12},
+	}{
+		result := RobI(testCase.nums)
+		if result != testCase.want{
+			t.Errorf("RobI-case-%d Failed: result=%d, but want=%d", caseId, result, testCase.want)
+		}
+		result = RobI1015(testCase.nums)
+		if result != testCase.want{
+			t.Errorf("RobI1015-case-%d Failed: result=%d, but want=%d", caseId, result, testCase.want)
+		}
+	}
+}
+
+func TestRobIIDP(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums []int
+		want int
+	}{
+		{[]int{0}, 0},
+		{[]int{1}, 1},
+		{[]int{2,3,2}, 3},
+		{[]int{1,2,3,1}, 4},
+		{[]int{1,2,3}, 3},
+	}{
+		result := RobII(testCase.nums)
+		if result != testCase.want{
+			t.Errorf("RobI-case-%d Failed: result=%d, but want=%d", caseId, result, testCase.want)
+		}
+		result = RobII1015(testCase.nums)
+		if result != testCase.want{
+			t.Errorf("RobI1015-case-%d Failed: result=%d, but want=%d", caseId, result, testCase.want)
+		}
+	}
+}
+
 func TestRob(t *testing.T){
 	for caseId, testCase := range []struct{
 		nums []interface{}

@@ -367,5 +367,88 @@ func TrailingZeroes(n int) int {
 	}
 }
 
-
+/* 1952. Three Divisors
+Given an integer n, return true if n has exactly three positive divisors. Otherwise, return false.
+An integer m is a divisor of n if there exists an integer k such that n = k * m.
+*/
+/* 方法一：遍历[1,n] 闭区间内的所有正整数
+** 向上取整：比自己大的最小整数
+** 向下取整：比自己小的最大整数
+** 四舍五入：更接近自己的整数
+** 方法二：内含数学： 对于任意一个大于等于根号n(向下取整)的正除数 x, n/x也是n的正除数，且一定小于等于根号n的向下取整
+** 方法是只需遍历[1, 根号n向下取整]区间内的所有正整数，便可以统计出整数n的正除数数目。如果 x 被 n 整除，
+** 那么 x 与 n/x 都是 n 的正除数。此时需要根据 x 与 n/x是否相等来确定新增的正除数数目。即
+** 1. x == n/x  新增的数目为 1
+** 2. x != n/x  新增的数目为 2
+此题需要注意的两点：
+1. 通过 i * i <= n 来求根号n
+2. x 与 n/x是否相等来确定新增的正除数数目
+*/
+func IsThree(n int) bool {
+	cnt := 0
+	for i := 1; i*i <= n; i++{
+		if n % i == 0{
+			if i != n/i{
+				cnt += 2
+			}else{
+				cnt++
+			}
+		}
+		if cnt > 3{
+			return false
+		}
+	}
+	return cnt == 3
+}
+/* 1945. Sum of Digits of String After Convert
+** You are given a string s consisting of lowercase English letters, and an integer k.
+First, convert s into an integer by replacing each letter with its position in the alphabet (i.e., replace 'a' with 1, 'b' with 2, ..., 'z' with 26).
+Then, transform the integer by replacing it with the sum of its digits. Repeat the transform operation k times in total.
+For example, if s = "zbax" and k = 2, then the resulting integer would be 8 by the following operations:
+Convert: "zbax" ➝ "(26)(2)(1)(24)" ➝ "262124" ➝ 262124
+Transform #1: 262124 ➝ 2 + 6 + 2 + 1 + 2 + 4 ➝ 17
+Transform #2: 17 ➝ 1 + 7 ➝ 8
+Return the resulting integer after performing the operations described above.
+ */
+/*注意此方法未考虑到 数字溢出 */
+func getLucky(s string, k int) int {
+	num := 0
+	for i := 0; i < len(s); i = i+1{
+		n := int(s[i] - 'a' + 1)
+		if n > 9{
+			num *= int(math.Pow10(2))
+		}else{
+			num *= int(math.Pow10(1))
+		}
+		num += n
+	}
+	for i := 0; i < k; i++{
+		t := 0
+		for num > 0{
+			t += num % 10
+			num /= 10
+		}
+		num = t
+	}
+	return num
+}
+/*Trick: 注意到k最小从1开始计算，故可在溢出地方直接计算出一次transform 避免溢出*/
+func GetLucky(s string, k int) int {
+	var num rune // int 与 int32
+	for _, c := range s{
+		n := c - 'a' + 1
+		num += n/10 + n % 10 // 提前算出第一次transform
+	}
+	for ;k > 1 && num > 9; k--{// 扣掉第一次，num如果小于9 可直接退出
+		var sum rune
+		for { // do ...  while 循环
+			sum += num % 10
+			if num /= 10; num == 0{
+				break
+			}
+		}
+		num = sum
+	}
+	return int(num)
+}
 

@@ -35,6 +35,72 @@ func removeElementII(nums []int, val int) int {
 	}
 	return i
 }
+/* 189. Rotate Array
+** Given an array, rotate the array to the right by k steps, where k is non-negative.
+ */
+/*10.14日可以想到的：
+** 从位置 0 开始，最初令 tmp = nums[0],根据规则，位置 0 的元素会放至 (0+k)%n 的位置，互相交换位置，然后找下一个位置
+** nums[0], nums[(i+k)%n] = nums[(i+k)%n],nums[0]
+** 不断进行上述过程，直至回到初始位置 0
+** 下面是没有想到的 《== 环状替换
+** 但是有的情况，会发生当回到初始位置 0 时，有些数字可能还没有遍历到，此时我们应该从下一个数字开始重复的过程，可是这个时候怎么才算遍历结束呢？
+** 我们不妨先考虑这样一个问题：从 0 开始不断遍历，最终回到起点 0 的过程中，我们遍历了多少个元素
+** 关键点：
+** 由于最终回到了起点，故该过程恰好走了整数数量的圈，不妨设为 a 圈；再设该过程总共遍历了 b 个元素。
+** 因此，我们有 an=bk，即 an 一定为 n,k 的公倍数。又因为我们在第一次回到起点时就结束，因此 a 要尽可能小，故 an 就是 n,k 的最小公倍数 lcm(n,k)，
+** 因此 b 就为 lcm(n,k)/k
+** 这说明单次遍历会访问到 lcm(n,k)/k 个元素。为了访问到所有的元素，我们需要进行遍历的次数为
+** n / (lcm(n,k)/k) => nk / lcm(n,k) = gcd(n,k) 即 n k 的最大公约数
+** 另： 也可以使用另外一种方式完成代码：使用单独的变量 count 跟踪当前已经访问的元素数量，当 count=n 时，结束遍历过程
+ */
+func Rotate(nums []int, k int)  {
+	n := len(nums)
+	gcd := func(a, b int)int{
+		for a != 0{
+			a, b = b%a, a
+		}
+		return b
+	}
+	count := gcd(n, k)
+	for i := 0; i < count; i++{
+		j := (i+k)%n
+		for j != i{
+			nums[i], nums[j] = nums[j], nums[i]
+			j = (j+k)%n
+		}
+	}
+}
+/*使用单独的变量 count 跟踪当前已经访问的元素数量，当 count=n 时，结束遍历过程*/
+func RotateCount(nums []int, k int)  { // 这个应该是最优的（题目要求内存复杂度O(1)）
+	n := len(nums)
+	count := 1
+	for i := 0; count < n; i++{
+		j := (i+k)%n
+		for j != i{
+			nums[i], nums[j] = nums[j], nums[i]
+			j = (j+k)%n
+			count++
+		}
+		count++ // 务必记得加1
+	}
+}
+/* 方法二： 数组翻转
+** 原理： 当我们将数组的元素向右移动 k 次后，尾部 k%n 个元素会移动至数组头部，其余元素向后移动 k%n 个位置
+** 该方法为数组的翻转：我们可以先将所有元素翻转，这样尾部的 k%n 个元素就被移至数组头部，
+** 然后我们再翻转 [0, k%(n-1)] 区间的元素 以及 [k % n, n-1] 区间的元素即能得到最后的答案
+ */
+func RotateReverse(nums []int, k int)  {
+	reverse := func(a []int){
+		for i, j := 0, len(a)-1; i < j; i, j = i+1, j-1{
+			a[i], a[j] = a[j], a[i]
+		}
+	}
+	k %= len(nums)
+	reverse(nums)
+	reverse(nums[:k])
+	reverse(nums[k:])
+}
+
 /*  组合
 	1. 画出树型图
 		1.1 分析搜到到重复列表的原因
@@ -1359,75 +1425,137 @@ func NumIslandsUFSImprove(grid [][]byte) int {
 	return pUfs.count
 }
 
-// 327. Count of Range Sum
+/* 327. Count of Range Sum（区间和的个数）
+** Given an integer array nums and two integers lower and upper,
+** return the number of range sums that lie in [lower, upper] inclusive.
+** Range sum S(i, j) is defined as the sum of the elements in nums between indices i and j inclusive, where i <= j.
+** Constraints：
+** 1 <= nums.length <= 105
+** -2的31次方 <= nums[i] <= 2的31次方 - 1   注意溢出的情况
+** -10的5次方 <= lower <= upper <= 10的5次方
+** The answer is guaranteed to fit in a 32-bit integer.
+ */
 /*
 	前缀和：设前缀和数组为preSum 则问题转换为 求所有的下标对(i,j)，满足 preSum[j] - preSum[i] 属于 [lower, upper]
     O(n^2) 会超时
- */
-func countRangeSum(nums []int, lower int, upper int) int {
+	另外注意到条件-2的31次方 <= nums[i] <= 2的31次方 - 1， 注意溢出的情况
+*/
+func CountRangeSum(nums []int, lower int, upper int) int {
 	length := len(nums)
 	if length <= 0{
 		return 0
 	}
 	// 先计算前缀和
-	preSum := []int{0} // 首元素置0，前缀和可以标识单元素
+	// 易错点-2 需要long long 类型，因为可能会溢出，见case-2情况
+	preSum := []int64{0} // 首元素置0，前缀和可以标识单元素
 	for i := 0; i < length; i++{
-		preSum = append(preSum, preSum[i] + nums[i])
+		preSum = append(preSum, preSum[i] + int64(nums[i]))
 	}
 	ans := 0
 	// 下面是遍历preSum  此处需要优化，平方级别复杂度，见解法II 利用归并排序降低时间复杂度
-	for i := 1; i <= len(preSum); i++{
+	for i := 1; i < len(preSum); i++{
 		for j := 0; j < i; j++{
-			diff := preSum[j] - preSum[i]
-			if diff >= lower && diff <= upper{
+			//diff := preSum[j] - preSum[i] 错误点-1： 顺序颠倒
+			diff := preSum[i] - preSum[j]
+			if diff >= int64(lower) && diff <= int64(upper){
 				ans++
 			}
 		}
 	}
 	return ans
 }
-        /*
-  1. 前缀和数组 preSum，为了找出prefixSum[1] -- prefixSum[j]之间有多少满足以下条件的 x :
-      整数x满足 lower <= prefixSum[j] - x <= upper x属于prefixSum[0...i-1]
-      ==>  prefixSum[j] - lower >= x >= prefixSum[j] - upper
-  1.1 为了找到x的数量，利用不等式等价转换，引申出2种优化方式,
-  1.1.1 preSum排好序，然后通过两次2分查找计算出有多少个x满足条件（d2 - d1）
-       	第一次查找 找出第一个大于等于 preSum - upper 的位置 d1
-		第二次查找 找出第一个大于等于 preSum - lower 的位置 d2
- */
-type prefixSum []struct {
-	sum int // 当前前缀和
+type prefixSum struct {
+	sum int64 // 当前前缀和
 	idx int // 前缀和所在数组的位置下标
 }
-func (this prefixSum) Len() int{
-	return len(this)
-}
-func (this prefixSum) Swap(i, j int){
-	this[i], this[j] = this[j], this[i]
-}
-func (this prefixSum) Less(i, j int) bool{
-	return this[i].sum < this[j].sum
-}
-
-func CountRangeSumByMap(nums []int, lower int, upper int) int {
-	length := len(nums)
-	if length <= 0{
-		return 0
+/* 二分查找/插入
+** 前缀和条件转换为： prefixSum[j] - lower >= x >= prefixSum[j] - upper x由prefixSum[0...j-1]选出
+** 通过维护一个有序数组sumArr，表示当前的已知区间和，然后每次向右推进右端点，得到一个新的前缀和，
+** 在升序存放prefixSum[0...j-1]的数组中，二分查找：
+** 1. 找第一个 l 使得 x 大于等于 prefixSum[j] - upper
+** 2. 找第一个 r 使得 x 大于 prefixSum[j] - lower
+** r - l 就是当前右端点prefixSum[j]可以组成的区间和个数
+** 然后再把prefixSum[j] 加入到 有序数组sumArr（插入位置也是二分搜索得到），准备为下一个prefixSum[j]做准备
+** const(
+		lower_bound	= iota	// 返回第一个大于等于给定值所在的位置
+		upper_bound			// 返回第一个大于给定元素值所在的位置
+		insert_loction		// 返回给定元素值待插入的位置
+	)
+ */
+/* 在得出 prefixSum[j] - lower >= x >= prefixSum[j] - upper x由prefixSum[0...j-1]选出
+** 此时需要一个数据结构来支持下面的2个操作：
+** 1. 查询： 给定一个范围[left, right]，查询数据结构中该范围内的元素个数，即范围[prefixSum[j] - lower, prefixSum[j] - upper]
+** 2. 更新： 给定一个元素 x， 需要将它添加到数据结构中，即给定元素 prefixSum[j]
+** 从而
+** 首先将 0 放入数据结构中，随后我们从小到大枚举 ，查询 [prefixSum[j] - lower, prefixSum[j] - upper] 范围内的元素个数并计入答案。
+** 在查询完成之后，我们将 P[j]P[j] 添加进数据结构，就可以进行下一次枚举
+*/
+func CountRangeSumBinarySearch(nums []int, lower int, upper int) int {
+	// prefixSumArr := []prefixSum{}
+	prefixSumArr := []prefixSum{{0,-1}}
+	search := func(n int, f func(int)bool)int{
+		i, j := 0, n
+		for i < j{
+			mid := int(uint(i+j)>>1) // 防止溢出的一种方法
+			if !f(mid){
+				i = mid + 1 // f(i-1)== false
+			}else{
+				j = mid
+			}
+		}
+		return i
 	}
-	prefixSumidx := prefixSum{{0, 0}}
-	for i := 0; i < length; i++{
-		prefixSumidx = append(prefixSumidx, struct{sum int; idx int}{prefixSumidx[i].sum + nums[i], i+1})
+	ans, sum := 0, int64(0)
+	for i := range nums{
+		sum += int64(nums[i])
+		n := len(prefixSumArr)
+		lower_bound := func(mid int)bool{// 返回第一个大于等于给定值所在的位置
+			return prefixSumArr[mid].sum >= sum - int64(upper)
+		}
+		upper_bound := func(mid int)bool{// 返回第一个大于给定元素值所在的位置
+			return prefixSumArr[mid].sum >     sum - int64(lower)
+		}
+		insert_loction := func(mid int)bool {// 返回给定元素值待插入的位置
+			return prefixSumArr[mid].sum > sum
+		}
+		l := search(n, lower_bound)
+		r := search(n, upper_bound)
+		ans += r - l
+		loc := search(n, insert_loction)
+		prefixSumArr = append(prefixSumArr, prefixSum{})
+		copy(prefixSumArr[loc+1:], prefixSumArr[loc:])
+		prefixSumArr[loc] = prefixSum{sum, i}
 	}
-	sort.Sort(prefixSumidx)
-	fmt.Println(prefixSumidx)
-	ans := 0
-
+	if len(nums) < 6{
+		fmt.Println(prefixSumArr)
+	}
 	return ans
 }
-/*
-归并排序
+
+/* 上面二分查找方法中：
+** 在最坏情况维护的二分查找数组，查找时可能会退化到O(n)，而不是稳定O(log(n))，
+** 为了维护稳定的O(log(n))，我们需要使用平衡树来代替之前的有序数组，进行二分查找
  */
-func countRangeSumII(nums []int, lower, upper int) int {
+func CountRangeSumByMap(nums []int, lower int, upper int) int {
+	return 0
+}
+/* 归并排序: 求所有的下标对(i,j), 满足 preSum[j] - preSum[i] 属于 [lower, upper]
+** 给定两个升序排列的数组 n1 和 n2，尝试找出所有的下标对 (i, j),满足 n2[j] - n1[i] 属于 [lower, upper]
+** 在已知两个序列升序的前提下，在 n2 中维护2个指针 left, right 均指向 n2 的起始位置
+** 开始遍历 n1，考察n1的第一个元素，不断的将指针 left 向右移动，直至 n2[left] >= n1[0]+lower。
+** 此时 left 及其右边的元素均大于等于 n1[0]+lower,
+** 随后再不断地将指针right向右移动，直至n2[right] > n1[0] + upper，则 r 左边的元素均小于或等于 n1[0] + upper。
+** 此时 right - left 即满足的下标对个数
+** 由于 n1 是递增的，不难发现 left 和 right 只可能向右移动。不断重复此过程，对应n1的每个下标，都记录响应的区间[left, right)的大小
+** 我们采用归并排序的方式，能够得到左右两个数组排序后的形式，以及对应的下标对数量。
+** 对于原数组而言，若要找出全部的下标对数量，只需要再额外找出左端点在左侧数组，同时右端点在右侧数组的下标对数量，而这正是我们此前讨论的问题
+ */
+func CountRangeSumMergeSort(nums []int, lower, upper int) int {
+	// 前缀和
+	prefixSum := make([]int, len(nums) + 1)
+	for i, v := range nums{
+		prefixSum[i+1] = prefixSum[i] + v
+	}
 	var mergeCount func([]int) int
 	mergeCount = func(arr []int) int {
 		n := len(arr)
@@ -1439,15 +1567,17 @@ func countRangeSumII(nums []int, lower, upper int) int {
 		cnt := mergeCount(n1) + mergeCount(n2)
 		// 此时 n1 和 n2 均有序，升序
 		// 算法开始：统计下标对的数量
-		l, r := 0, 0
+		left, right := 0, 0
 		for _, v := range n1{
-			for l < len(n2) && n2[l] - v < lower{
-				l++
+			// 直至 n2[left] >= n1[0]+lower
+			for left < len(n2) && n2[left] - v < lower{
+				left++
 			}
-			for r < len(n2) && n2[r] - v <= upper {
-				r++
+			//直至n2[right] > n1[0] + upper
+			for right < len(n2) && n2[right] - v <= upper {
+				right++
 			}
-			cnt += r - 1
+			cnt += right - left
 		}
 		// n1 和 n2 归并填入 arr
 		p1, p2 := 0, 0
@@ -1462,12 +1592,73 @@ func countRangeSumII(nums []int, lower, upper int) int {
 		}
 		return cnt
 	}
-	// 前缀和
-	prefixSum := make([]int, len(nums) + 1)
-	for i, v := range nums{
-		prefixSum[i+1] = prefixSum[i] + v
-	}
 	return mergeCount(prefixSum)
+}
+/* 树状数组-
+wiki: A Fenwick tree or binary indexed tree is
+      a data structure that can efficiently update elements and calculate prefix sums in a table of numbers.
+** 树状数组单次更新或查询的复杂度为 O(logN)
+** ==> 前因 <==
+** 主要是用来解决前缀和的问题，前缀和有3个操作：
+** prefixSum(idx)：直接返回前缀和数组prefixSumArr[idx + 1]即可。该操作为O(1)时间复杂度
+** rangeSum(from_idx, to_idx)：直接返回prefixSumArr[to_idx + 1] - prefixSumArr[from_idx]即可。该操作为O(1)操作。
+** update(idx, delta)：更新操作需要更新prefixSumArr数组中每一个受此更新影响的前缀和，即从idx其到最后一个位置的前缀和。该操作为O(n)时间复杂度
+** 而树状数组就是来解决这个update问题的，即为了在保证求和操作依然高效的前提下优化update(idx, delta) 操作的时间复杂度
+** ==> 基本思想 <==
+** Binary Indexed Tree事实上是将根据数字的二进制表示来对数组中的元素进行逻辑上的分层存储
+** Binary Indexed Tree求和的基本思想在于，给定需要求和的位置i，例如13，
+** 我们可以利用其二进制表示法来进行分段（或者说分层）求和：
+** 13 = 2^3 + 2^2 + 2^0，则prefixSum(13) = RANGE(1, 8) + RANGE(9, 12) + RANGE(13, 13)
+** （注意此处的RANGE(x, y)表示数组中第x个位置到第y个位置的所有数字求和）
+ */
+type fenwick struct {
+	tree []int
+}
+func (f fenwick) len()int{
+	return len(f.tree)
+}
+func (f fenwick) inc(i int){
+	for ; i < f.len(); i += i&-i{
+		f.tree[i]++
+	}
+}
+func (f fenwick) sum(i int)(res int){
+	for ; i > 0; i &= i-1{
+		res += f.tree[i]
+	}
+	return
+}
+func (f fenwick) query(l, r int)(res int){
+	return f.sum(r) - f.sum(l-1)
+}
+func CountRangeSumFenwick(nums []int, lower, upper int) (cnt int) {
+	n := len(nums)
+	// 计算前缀和 preSum，以及后面统计时会用到的所有数字 allNums
+	allNums := make([]int, 1, 3*n+1)
+	preSum := make([]int, n+1)
+	for i := range nums{
+		preSum[i+1] = preSum[i] + nums[i]
+		allNums = append(allNums, preSum[i+1], preSum[i+1]-lower, preSum[i+1]-upper)
+	}
+	// 将 allNums 离散化
+	sort.Ints(allNums)
+	k := 1
+	kth := map[int]int{allNums[0]: k}
+	for i := 1; i <= 3*n; i++{
+		if allNums[i] != allNums[i-1]{
+			k++
+			kth[allNums[i]] = k
+		}
+	}
+	// 遍历 preSum，利用树状数组计算每个前缀和对应的合法区间数
+	t := fenwick{make([]int, k+1)}
+	t.inc(kth[0])
+	for _, sum := range preSum[1:]{
+		left, right := kth[sum-upper], kth[sum-lower]
+		cnt += t.query(left, right)
+		t.inc(kth[sum])
+	}
+	return
 }
 
 // 17.10. Find Majority Element LCCI
@@ -1552,12 +1743,13 @@ func CalcEquation(equations [][]string, values []float64, queries [][]string) []
 		union(id[eq[0]], id[eq[1]], values[i])
 	}
 	fmt.Println(parent, w)
+	precision := math.Pow10(5)
 	ans := make([]float64, len(queries))
 	for i, q := range queries{
 		start, hasS := id[q[0]]
 		end, hasE := id[q[1]]
 		if hasS && hasE && find(start) == find(end) {
-			ans[i] = w[start] / w[end]
+			ans[i] = math.Floor((w[start] / w[end])*precision + 0.5) / precision
 		} else {
 			ans[i] = -1
 		}
@@ -1613,12 +1805,13 @@ func CalcEquationBST(equations [][]string, values []float64, queries [][]string)
 		return -1
 	}
 	// 查询
+	precision := math.Pow10(5)
 	ans := make([]float64, len(queries))
 	for i, q := range queries{
 		start, hasS := id[q[0]]
 		end, hasE := id[q[1]]
 		if hasS && hasE {
-			ans[i] = bfs(start, end)
+			ans[i] = math.Floor(bfs(start, end)*precision + 0.5) / precision
 		}else{
 			ans[i] = -1
 		}
@@ -2088,4 +2281,334 @@ func FindErrorNumsSwap(nums []int) []int {
 	return []int{a,b}
 }
 
+/* 153. Find Minimum in Rotated Sorted Array[寻找旋转排序数组中的最小值]
+** Suppose an array of length n sorted in ascending order is rotated between 1 and n times.
+** For example, the array nums = [0,1,2,4,5,6,7] might become:
+	[4,5,6,7,0,1,2] if it was rotated 4 times.
+	[0,1,2,4,5,6,7] if it was rotated 7 times.
+** Notice that rotating an array [a[0], a[1], a[2], ..., a[n-1]] 1 time results in the array [a[n-1], a[0], a[1], a[2], ..., a[n-2]].
+** Given the sorted rotated array nums of unique elements, return the minimum element of this array.
+** You must write an algorithm that runs in O(log n) time.
+ */
+func FindMin(nums []int) int {
+	low, high := 0, len(nums)-1
+	for low < high{
+		mid := (low^high)>>1 + (low&high)
+		if nums[mid] < nums[high]{
+			high = mid
+		}else{
+			low = mid+1
+		}
+	}
+	return nums[low]
+}
+/* 154. Find Minimum in Rotated Sorted Array II[寻找旋转排序数组中的最小值 II]
+** Suppose an array of length n sorted in ascending order is rotated between 1 and n times.
+** For example, the array nums = [0,1,4,4,5,6,7] might become:
+	[4,5,6,7,0,1,4] if it was rotated 4 times.
+	[0,1,4,4,5,6,7] if it was rotated 7 times.
+Notice that rotating an array [a[0], a[1], a[2], ..., a[n-1]] 1 time results in the array [a[n-1], a[0], a[1], a[2], ..., a[n-2]].
+Given the sorted rotated array nums that may contain duplicates, return the minimum element of this array.
+You must decrease the overall operation steps as much as possible.
+ */
+/* 区别在于 有重复元素
+** 考虑数组中的最后一个元素 x ：在最小值右侧的元素，它们的值一定都小于等于 x ， 而在最小值左侧的元素，他们的值一定都大于等于x。
+** 依据上述性质，可以通过二分查找找出最小值。
+** 一共分3种情况：
+** 1. nums[mid] > nums[high]
+** 2. nums[mid] < nums[high]
+** 3. nums[mid] == nums[high]
+** 由于重复元素的存在，我们并不能确定nums[mid]究竟在最小值的左侧还是右侧，因此我们不能莽撞地忽略某一部分的元素
+** 唯一可以知道的是，由于它们的值相同，所以无论nums[high]是不是最小值，都有一个它的「替代品」nums[mid],因此依然可以继续缩
+** 即忽略二分的右端点。
+ */
+func FindMinII(nums []int) int {
+	n := len(nums)
+	low, high := 0, n-1
+	//是有序单调数组
+	if nums[low] < nums[high]{
+		return nums[low]
+	}
+	for low < high{
+		mid := (low^high)>>1 + low&high
+		if nums[mid] > nums[high]{
+			low = mid+1
+		}else if nums[mid] < nums[high]{
+			high = mid
+		}else{
+			high--
+		}
+	}
+	return nums[low]
+}
+func FindMinIILeft(nums []int) int {
+	n := len(nums)
+	low, high := 0, n-1
+	//是有序单调数组
+	if nums[low] < nums[high]{
+		return nums[low]
+	}
+	for low < high{
+		//如果二分后的数组是有序数组，则返回最左元素，即为最小
+		if nums[low] < nums[high]{
+			return nums[low]
+		}
+		mid := (low^high)>>1 + low&high
+		//若最左小于mid元素，则最左到mid是严格递增的，那么最小元素必定在mid之后
+		if nums[mid] > nums[low]{
+			low = mid+1
+		}else if nums[mid] < nums[high]{
+			high = mid
+		}else{
+			high--
+		}
+	}
+	return nums[low]
+}
+
+/*Offer 51. 数组中的逆序对  LCOF
+在数组中的两个数字，如果前面一个数字大于后面的数字，则这两个数字组成一个逆序对。输入一个数组，求出这个数组中的逆序对的总数。
+示例 1:
+输入: [7,5,6,4]
+输出: 5
+ */
+/* 归并排序 */
+func ReversePairs(nums []int) int {
+	return mergeSort(nums, 0, len(nums)-1)
+}
+func mergeSort(nums []int, start, end int)int{
+	if start >= end{
+		return 0
+	}
+	mid := (start ^ end)>> 1 + start & end
+	cnt := mergeSort(nums, start, mid) + mergeSort(nums, mid+1, end)
+	tmp := []int{}
+	i, j := start, mid+1 // 避开了 mid
+	for i <= mid && j <= end{
+		if nums[i] <= nums[j]{
+			tmp = append(tmp, nums[j])
+			cnt += j - (mid + 1)
+			i++
+		}else{
+			tmp = append(tmp, nums[j])
+			j++
+		}
+	}
+	for ;i <= mid;i++{
+		tmp = append(tmp, nums[i])
+		cnt += end - (mid+1) + 1
+	}
+	for ; j <= end; j++{
+		tmp = append(tmp, nums[j])
+	}
+	for i := start; i <= end; i++{
+		nums[i] = tmp[i-start]
+	}
+	return cnt
+}
+/* 315. Count of Smaller Numbers After Self
+** You are given an integer array nums and you have to return a new counts array.
+** The counts array has the property where counts[i] is the number of smaller elements to the right of nums[i].
+*/
+/*方法一：二分查找 复杂度：O(n(n+logn))*/
+func CountSmaller(nums []int) []int {
+	n := len(nums)
+	if n == 0 {
+		return nums
+	}
+	ans := make([]int, n)
+	sorted := []int{}
+	search := func(target int)int{// 返回插入位置
+		loc := len(sorted)
+		i, j := 0, len(sorted) - 1
+		for i <= j{
+			mid := (i^j)>>1 + i&j
+			if sorted[mid] < target{
+				i = mid + 1
+			}else{
+				loc = mid
+				j = mid - 1
+			}
+		}
+		return loc
+	}
+	for i := n-1; i >= 0; i--{
+		index := search(nums[i])
+		// 切片中间插入元素，append方法效率低，提交超时
+		//sorted = append(sorted[:index], append([]int{nums[i]}, sorted[index:]...)...)
+		// 下面这个方式，效率比上面要高
+		sorted = append(sorted, 0) // 扩充空间
+		copy(sorted[index+1:], sorted[index:])
+		sorted[index] = nums[i]
+		ans[i] = index
+	}
+	return ans
+}
+
+/* 1539. Kth Missing Positive Number
+** Given an array arr of positive integers sorted in a strictly increasing order, and an integer k.
+** Find the kth positive integer that is missing from this array.
+** 如果数组是无序的，此方法是已知最优的
+ */
+func FindKthPositive(arr []int, k int) int {
+	m := map[int]bool{}
+	for i := range arr{
+		m[arr[i]] = true
+	}
+	ans := 0
+	for j := 1; k > 0; j++{
+		if !m[j]{
+			k--
+			ans = j
+		}
+	}
+	return ans
+}
+/* 优化-1: 时间复杂度O(n+k),空间O(n)
+** 如何把 map 给取消掉，发现有个特性没有用到，即数组是升序的
+** 因此可借助此特性处理
+ */
+func FindKthPositiveIter(arr []int, k int) int {
+	var ans, cnt, i int
+	n := len(arr)
+	for j := 1; cnt < k; j++{
+		if i < n && arr[i] == j{
+			i++
+		}else{
+			ans = j
+			cnt++
+		}
+	}
+	return ans
+}
+
+/*优化-2 Binary Search
+** 利用arr[i]与其下标i关系
+** 一个不缺失元素的序列，会有arr[i]=i+1这种关系，而在缺失元素之后，会有arr[i]>i+1 可转换为==> arr[i]-i-1 > 0
+** 缺失一个的时候，相差 1， 两个则相差2，依次类推，缺失越多，两者差距越大，要找第 K 个缺失的，换言之，只要 arr[i]-i-1 == k 这便是要找的数子
+** arr[i]-i-1 == k ==> arr[i] - i == k+1  由于数组arr中并不一定存在k+1,故 找第一个大于等于的
+ */
+func FindKthPositiveBinarySearch(arr []int, k int) int {
+	left, right := 0, len(arr)
+	for left < right{
+		mid := (left ^ right)>>1 + left&right
+		if arr[mid] - mid >= k+1{
+			right = mid
+		}else{
+			left = mid + 1
+		}
+	}
+	return k  + left
+}
+
+/* 273. Integer to English Words
+** Convert a non-negative integer num to its English words representation.
+*/
+var(  // 注意对 0 的设置
+	singles	= []string{"", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"}
+	teens	= []string{"Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"}
+	tens	= []string{"", "Ten", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"}
+	thousands	= []string{"", "Thousand", "Million", "Billion"}
+)
+func NumberToWords(num int) string {
+	if num == 0{
+		return "Zero"
+	}
+	sb := strings.Builder{}
+	toEng := func(num int){
+		if num >= 100{
+			sb.WriteString(singles[num/100])
+			sb.WriteString(" Hundred ")
+			num %= 100
+		}
+		if num >= 20{
+			sb.WriteString(tens[num/10]+" ")
+			num %= 10
+		}
+		if 0 < num && num < 10{
+			sb.WriteString(singles[num]+" ")
+		}else if num >= 10{
+			sb.WriteString(teens[num-10]+" ")
+		}
+	}
+	// 迭代
+	for i, unit := 3, int(1e9); i >= 0; i--{
+		if curNum := num / unit; curNum > 0{
+			num -= curNum * unit
+			toEng(curNum) // 计算3位一组
+			sb.WriteString(thousands[i])
+			sb.WriteByte(' ')
+		}
+		unit /= 1000
+	}
+	return strings.TrimSpace(sb.String())
+}
+/*自己实现*/
+func numberToWords(num int) string {
+	if num == 0{ // 易漏点-1 特殊情况
+		return "Zero"
+	}
+	toEng := func(num int)string{
+		t := []string{}
+		if num >= 100{
+			t = append(t, singles[num/100], "Hundred")
+			num %= 100
+		}
+		if num >= 20{
+			 t = append(t, tens[num/10])
+			 num %= 10
+		}
+		// 排除 数字为 0 情况
+		if num > 0 && num < 10{
+			t = append(t, singles[num])
+		}else if num >= 10{
+			t = append(t, teens[num-10])
+		}
+		return strings.Join(t, " ")
+	}
+	unit := 0
+	ans := []string{}
+	for num > 0{
+		n := num % 1000
+		if n > 0{ // 易错点-2 针对 1000000 情况， 否则出现 one Million Thousand
+			ans = append([]string{toEng(n), thousands[unit]}, ans...)
+		}
+		unit++
+		num /= 1000
+	}
+	return strings.Trim(strings.Join(ans, " "), " ")
+}
+
+func NumberToWordsReCurive(num int) string {
+	if num == 0{ // 易漏点-1 特殊情况
+		return "Zero"
+	}
+	sb := strings.Builder{}
+	var toEng func(int)
+	toEng = func(num int){
+		switch {
+		case num == 0:
+		case num < 10:
+			sb.WriteString(singles[num]+" ")
+		case num < 20:
+			sb.WriteString(teens[num-10]+" ")
+		case num < 100:
+			sb.WriteString(tens[num/10] + " ")
+			toEng(num%10)
+		default:
+			sb.WriteString(singles[num/100] + "Hundred ")
+			toEng(num % 100)
+		}
+	}
+	for i, unit := 3, int(1e9); i >= 0; i--{
+		if curNum := num / unit; curNum > 0{
+			num -= curNum * unit
+			toEng(curNum)
+			sb.WriteString(thousands[i])
+			sb.WriteByte(' ')
+		}
+		unit /= 1000
+	}
+	return strings.TrimSpace(sb.String())
+}
 

@@ -1,5 +1,10 @@
 package heap
 
+import (
+	"container/heap"
+	"fmt"
+)
+
 /* 17.14. Smallest K LCCI
 	Design an algorithm to find the smallest K numbers in an array.
 Example:
@@ -122,11 +127,101 @@ func smallestKQS(arr []int, k int) []int {
 	return arr[:k+1]
 }
 
+/* 239. Sliding Window Maximum
+You are given an array of integers nums,
+there is a sliding window of size k which is moving from the very left of the array to the very right.
+You can only see the k numbers in the window. Each time the sliding window moves right by one position.
+Return the max sliding window.
+ */
+// 朴素解法，竟然可以AC
+func MaxSlidingWindow(nums []int, k int) []int {
+	start, end := 0, k-1
+	m := 0
+	ans := []int{}
+	max := func (s int, e int) int {
+		m := s
+		for i := s; i <= e; i++{
+			if nums[m] <= nums[i]{// 必须带上= 使得相同的尽量在里面
+				m = i
+			}
+		}
+		return m
+	}
+	m = max(start, end)
+	for end < len(nums){
+		if m >= start && m <= end{
+			if nums[m] <= nums[end]{ // 必须带上= 使得相同的尽量在里面
+				m = end
+			}
+		}else{
+			m = max(start, end)
+		}
+		ans = append(ans, nums[m])
+		start++
+		end++
+	}
+	return ans
+}
+// 解法2： 使用heap  O(nLogn)
+type hp struct {
+	nums    []int // 参与比较
+	data    []int // 存放nums索引
+}
+func (h hp)Len()int{ return len(h.data) }
+func (h hp)Less(i, j int)bool { return h.nums[h.data[i]] > h.nums[h.data[j]] } // 大顶堆
+func (h hp)Get() int { return h.data[0] }
+func (h *hp)Swap(i, j int){ h.data[i], h.data[j] = h.data[j], h.data[i] }
+func (h *hp)Push(v interface{}) { h.data = append(h.data, v.(int)) }
+func (h *hp)Pop()interface{} { ret := h.data[h.Len()-1]; h.data = h.data[:h.Len()-1]; return ret}
 
+func MaxSlidingWindowHeap(nums []int, k int) []int {
+	n := len(nums)
+	h := hp{nums: nums}
+	for i := 0; i < k; i++{
+		h.Push(i)
+	}
+	heap.Init(&h) // 需要定义一个struct，其实现了heap.Interface接口，包含Len() Swap() Less() Push() Pop()方法
+	ans := []int{nums[h.Get()]}
+	for i := k; i < n; i++{
+		heap.Push(&h, i)
+		//if h.Get() <= i-k{// 最大的 超出范围了
+		for h.Get() <= i - k{ // 这边要用 for 循环Pop 超出范围的
+			fmt.Println(nums[h.Get()], h.Len())
+			heap.Pop(&h)
+			fmt.Println(nums[h.Get()], h.Len())
+		}
+		ans = append(ans, nums[h.Get()])
+	}
+	return ans
+}
+/* 方法三： 单调队列  O(n)
+双端队列： 保证 队尾始终为新加的元素，其他小于队尾的 统统弹出
+        队首保证始终在 有效范围内，不在有效范围的 统统弹出
+ */
+func MaxSlidWindowDQ(nums []int, k int) []int{
+	q := []int{}
+	push := func(i int){
+		// 不断的弹出队尾元素，直至 新加入的元素 变为队列中最小或者是队首
+		for len(q) > 0 && nums[i] >= nums[q[len(q)-1]]{
+			q = q[:len(q)-1]
+		}
+		q = append(q, i)
+	}
+	for i := 0; i < k; i++{
+		push(i)
+	}
 
-
-
-
+	n := len(nums)
+	ans := []int{q[0]}
+	for i := k; i < n; i++{
+		push(i)
+		for q[0] <= i-k{
+			q = q[1:]
+		}
+		ans = append(ans, nums[q[0]])
+	}
+	return ans
+}
 
 
 

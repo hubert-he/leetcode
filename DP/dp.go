@@ -1,8 +1,8 @@
 package DP
 
 import (
-	"fmt"
 	"math"
+	"sort"
 )
 /*
 func max(i, j int)int {
@@ -236,7 +236,7 @@ func MaxProfitBrust(prices []int) int{
 	if days < 2 {
 		return 0
 	}
-	var ans *[]string
+	//var ans *[]string
 	res := 0
 	var dfs func(int, int, int,  []string)
 	// status 0 表示不持有股票，1表示持有股票
@@ -244,7 +244,7 @@ func MaxProfitBrust(prices []int) int{
 		if day == days {
 			if res < profit {
 				res = profit
-				ans = &action
+				//ans = &action
 			}
 			return
 		}
@@ -256,7 +256,7 @@ func MaxProfitBrust(prices []int) int{
 		}
 	}
 	dfs(0, 0, 0, []string{})
-	fmt.Println(ans)
+	//fmt.Println(ans)
 	return res
 }
 
@@ -795,6 +795,80 @@ func longestPalindrome(s string) string{
 	}
 	return string(ans)
 }
+
+/* 740. Delete and Earn
+** You are given an integer array nums.
+** You want to maximize the number of points you get by performing the following operation any number of times:
+** Pick any nums[i] and delete it to earn nums[i] points.
+** Afterwards, you must delete every element equal to nums[i] - 1 and every element equal to nums[i] + 1.
+** Return the maximum number of points you can earn by applying the above operation some number of times.
+ */
+/* 不要被 nums[i] + 1 干扰掉*/
+func DeleteAndEarnDFS(nums []int)int{
+	memo := make([]int, 1e4+1)
+	cnt := make([]int, 1e4+1)
+	for _, num := range nums{
+		cnt[num]++
+	}
+	var dfs func(num int)int
+	dfs = func(num int)int{
+		if num <= 0{
+			return 0
+		}
+		if cnt[num] == 0{
+			return dfs(num-1)
+		}
+		if memo[num] != 0{
+			return memo[num]
+		}
+		res := cnt[num]*num
+		if cnt[num-1] != 0{
+			res = max(dfs(num-1), dfs(num-2)+res)
+		}else{
+			res += dfs(num-2)
+		}
+		memo[num] = res
+		return res
+	}
+	for i := int(1e4); i >= 1; i--{
+		if cnt[i] != 0{
+			return dfs(i)
+		}
+	}
+	return 0
+}
+
+func DeleteAndEarnDP(nums []int)int{
+	n := len(nums)
+	sort.Ints(nums)
+	dp := make([]int, 2)
+	for i := 0; i < n; i++{
+
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

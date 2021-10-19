@@ -32,3 +32,36 @@ func TestToHex(t *testing.T) {
 		}
 	}
 }
+
+func TestGetMid(t *testing.T) {
+	for caseID, testCase := range []struct{
+		a 		int
+		b 		int
+		want 	int
+	}{
+		{14,15,14},
+		{2,8,5},
+	}{
+		result := GetMid(testCase.a, testCase.b)
+		if result != testCase.want{
+			t.Errorf("case-%d: result=%d, but want=%d", caseID, result, testCase.want)
+			break
+		}
+	}
+}
+
+func TestGetSum(t *testing.T) {
+	for caseID, testCase := range []struct{
+		a 		int
+		b 		int
+		want 	int
+	}{
+		{14,15,29},
+	}{
+		result := GetSum(testCase.a, testCase.b)
+		if result != testCase.want{
+			t.Errorf("case-%d: result=%d, but want=%d", caseID, result, testCase.want)
+			break
+		}
+	}
+}

@@ -11,7 +11,13 @@ import "sort"
   实现的类型是最小堆，并满足下面的条件
   !h.Less(j, i) for 0 <= i < h.Len() and 2*i+1 <= j <= 2*i+2 and j < h.Len()
  */
-
+/* sort.Interface
+type Interface interface {
+    Len() int
+    Less(i int, j int) bool
+    Swap(i int, j int)
+}
+ */
 type Interface interface {
 	sort.Interface // 携带3个接口函数，Len() Swap() Less()
 	Push(x interface{}) // add x as element {Len()}
