@@ -886,6 +886,7 @@ Return a list of two integers: the first integer is the maximum sum of numeric c
 and the second is the number of such paths that you can take to get that maximum sum, taken modulo 10^9 + 7.
 In case there is no path, return [0, 0].
  */
+/* 三维处理 未完成  思路有误区，为什么首先想到的是三维，而不是携带2个状态参数
 func PathsWithMaxScore(board []string) []int {
 	maxScore := 0
 	for i := range board{
@@ -903,27 +904,39 @@ func PathsWithMaxScore(board []string) []int {
 			dp[i][j] = make([]int, maxScore)
 		}
 	}
-	for i := 0; i <= maxScore; i++{
-		dp[0][0][i] = 1
-	}
+	dp[r-1][c-1][0] = 1
 	dir := [][]int{[]int{1,0}, []int{1,1}, []int{0,1}}
 	for i := r-1; i >= 0; i--{
 		for j := c-1; j >= 0; j--{
 			t := 0
 			if board[i][j] == 'S'{
 				t = 0
-			}
-			if board[i][j] == 'X'{
+			}else if board[i][j] == 'X'{
 				t = -1
+			}else {
+				t = int(board[i][j] - '0')
 			}
 			for k := 0; k <= maxScore; k++{
 				for _, o := range dir{
-					dp[i][j][k] += dp[i+o[0]][j+o[1]][k-t]
+					if k >= t && dp[i+o[0]][j+o[1]][k-t] != -1{
+						dp[i][j][k] += dp[i+o[0]][j+o[1]][k-t]
+					}
 				}
 			}
 		}
 	}
 	ms,mc := 0,0
-	
 	return []int{}
+}
+*/
+func PathsWithMaxScore(board []string) []int {
+	r,c := len(board), len(board[0])
+	dp := make([][][2]int, r+1)
+	for i := range dp {
+		dp[i] = make([][2]int, c+1)
+	}
+	for i := r-1; i >= 0; i--{
+		for j := c-1; j >= 0;j--{
+		}
+	}
 }
