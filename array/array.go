@@ -351,7 +351,42 @@ func LetterCasePermutationDFS(S string) (result []string){
 	dfs([]byte{}, 0)
 	return
 }
-
+/*2021-10-26 重新练习*/
+func LetterCasePermutationDFS2(s string) []string {
+	var dfs func([]byte)[][]byte
+	dfs = func(str []byte)[][]byte{
+		if len(str) <= 0{
+			return nil
+		}
+		c := str[0]
+		ret,head := [][]byte{}, [][]byte{[]byte{c}}
+		if c >= 'a' && c <= 'z'{
+			head = append(head, []byte{c-'a'+'A'})
+		}
+		if c >= 'A' && c <= 'Z'{
+			head = append(head, []byte{c-'A'+'a'})
+		}
+		sub := dfs(str[1:])
+		/* sub 有 nil 可能*/
+		for i := range sub{
+			for j := range head{
+				ret = append(ret, append(head[j], sub[i]...))
+			}
+		}
+		if len(sub) == 0{
+			for j := range head{
+				ret = append(ret, head[j])
+			}
+		}
+		return ret
+	}
+	ans := []string{}
+	t := dfs([]byte(s))
+	for i := range t{
+		ans = append(ans, string(t[i]))
+	}
+	return ans
+}
 // 39. Combination Sum
 // 针对每个元素，都有选 或 不选择两个
 func CombinationSum(candidates []int, target int) [][]int {
@@ -564,6 +599,41 @@ func CombineII(n int, k int) (ans [][]int) {
 		}
 		// i 是第一个 temp[i] + 1 != temp[i + 1] 的位置
 		temp[i]++
+	}
+	return
+}
+/* 2021-10-25 重新实现 采用递归 完成
+** dfs(n, k) = dfs(n-1, k-1) + dfs(n-1, k)
+** 分别对应选 与 不选 两种情况
+** 注意 递归结束条件 和 剪枝条件
+*/
+func CombineRecursive(n int, k int) (ans [][]int) {
+	// 根据 n 和 k 比较情况，进行剪枝
+	if n < k{
+		return
+	}
+	if n == k{// 递归出口-1
+		t := []int{}
+		for i := 1; i <= n; i++{
+			t = append(t, i)
+		}
+		ans = append(ans, t)
+	}
+	if n > k{
+		if k == 1{// 递归出口-2
+			for i := 1; i <= n; i++{
+				ans = append(ans, []int{i})
+			}
+		}else{// dfs(n, k) = dfs(n-1, k-1) + dfs(n-1, k)
+			choose := CombineRecursive(n-1, k-1)
+			ignore := CombineRecursive(n-1, k)
+			for i := range choose{
+				ans = append(ans, append(choose[i], n))
+			}
+			for i := range ignore{
+				ans = append(ans, ignore[i])
+			}
+		}
 	}
 	return
 }
@@ -2611,4 +2681,120 @@ func NumberToWordsReCurive(num int) string {
 	}
 	return strings.TrimSpace(sb.String())
 }
+/* 1863. Sum of All Subset XOR Totals
+The XOR total of an array is defined as the bitwise XOR of all its elements, or 0 if the array is empty.
+For example, the XOR total of the array [2,5,6] is 2 XOR 5 XOR 6 = 1.
+Given an array nums, return the sum of all XOR totals for every subset of nums. 
+Note: Subsets with the same elements should be counted multiple times.
+An array a is a subset of an array b if a can be obtained from b by deleting some (possibly zero) elements of b.
+Example 1:
+	Input: nums = [1,3]
+	Output: 6
+	Explanation: The 4 subsets of [1,3] are:
+	- The empty subset has an XOR total of 0.
+	- [1] has an XOR total of 1.
+	- [3] has an XOR total of 3.
+	- [1,3] has an XOR total of 1 XOR 3 = 2.
+	0 + 1 + 3 + 2 = 6
+ */
+func SubsetXORSum(nums []int) int {
+	ans := 0
+	n := len(nums)
+	var dfs func(val, idx int)
+	dfs = func(val, idx int){
+		if idx == n {
+			ans += val
+			return
+		}
+		dfs(val ^ nums[idx], idx+1) // 选idx
+		dfs(val, idx+1)				// 不选idx
+	}
+	dfs(0,0)
+	return ans
+}
 
+
+/* 1470. Shuffle the Array
+** Given the array nums consisting of 2n elements in the form [x1,x2,...,xn,y1,y2,...,yn].
+** Return the array in the form [x1,y1,x2,y2,...,xn,yn].
+*/
+/*空间复杂度O(1)解法
+** 题目限制了每一个元素 nums[i] 最大只有可能是 1000，这就意味着每一个元素只占据了 10 个 bit。（2^10 - 1 = 1023 > 1000）
+** 而一个int 有 32 bit，所以我们还可以使用剩下的 22 个 bit 做存储。实际上，每个 int，我们再借 10 个 bit 用就好了
+** 每一个 nums[i] 的最低的十个 bit（0-9 位），我们用来存储原来 nums[i] 的数字；
+** 再往前的十个 bit（10-19 位），我们用来存储重新排列后正确的数字是什么
+*/
+func Shuffle(nums []int, n int) []int {
+	for i := 0; i < 2*n; i++{
+		// 首先计算 nums[i] 对应的重新排列后的索引 j
+		j := 2*i
+		if i >= n{
+			j = 2 * (i-n) + 1
+		}
+		//取 nums[i] 的低 10 位（nums[i] & 1023），即 nums[i] 的原始信息，把他放到 nums[j] 的高十位上
+		nums[j] |= (nums[i] & 1023) << 10
+	}
+	//每个元素都取高 10 位的信息
+	for i := range nums{
+		nums[i] = nums[i]>>10
+	}
+	return nums
+}
+/* 空间复杂度O(1)解法二
+** 题目中限制每一个元素 nums[i] 都大于 0。我们可以使用负数做标记, 标记当前 nums[i] 存储的数字，是不是重新排列后的正确数字
+** 如果是，存负数；如果不是，存正数（即原本的数字，还需处理）
+** 每次处理一个nums[i] 计算这个 nums[i] 应该放置的正确位置 j。
+** 但是，nums[j] 还没有排列好，所以我们暂时把 nums[j] 放到 nums[i] 的位置上来，并且记录上，此时 nums[i] 的元素本来的索引是 j。
+** 现在，我们就可以安心地把 nums[i] 放到 j 的位置了。同时，因为这已经是 nums[i] 正确的位置，取负数，即标记这个位置已经存放了正确的元素
+** 之后，我们继续处理当前的 nums[i]，注意，此时这个新的 nums[i]，本来的索引是 j。
+** 所以我们根据 j 算出它应该存放的位置，然后把这个位置的元素放到 nums[i] 中，取负做标记
+** 这个过程以此类推。这就是代码中 while 循环做的事情。
+** 直到 nums[i] 的值也是负数，说明 i 的位置也已经是重新排列后的正确元素了，我们就可以看下一个位置了。
+ */
+func Shuffle2(nums []int, n int) []int {
+	for i := range nums{
+		// 在 for 循环中，如果某一个元素已经是小于零了，说明这个位置已经是正确元素了，可以忽略
+		if nums[i] > 0{
+			// j 描述当前的 nums[i] 对应的索引，初始为 i
+			j := i
+			// 计算 j 索引的元素，也就是现在的 nums[i]，应该放置的索引
+			for nums[i] > 0{
+				if j < n{
+					j = 2*j
+				}else{
+					j = 2*(j-n)+1
+				}
+				// 把 nums[i] 放置到 j 的位置，
+				// 同时，把 nums[j] 放到 i 的位置，在下一轮循环继续处理
+				nums[i], nums[j] = nums[j], nums[i]
+				// 使用负号标记上，现在 j 位置存储的元素已经是正确的元素了
+				nums[j] = -nums[j]
+			}
+		}
+	}
+	for i := range nums{
+		nums[i] = -nums[i]
+	}
+	return nums
+}
+/*1528. Shuffle String
+Given a string s and an integer array indices of the same length.
+The string s will be shuffled such that the character at the ith position moves to indices[i] in the shuffled string.
+Return the shuffled string.
+原地修改
+*/
+func RestoreString(s string, indices []int) string {
+	ans := []byte(s)
+	for i, c := range ans{
+		if indices[i] != i{ // 避免处理重复的封闭路径
+			idx := indices[i] // 当前字符需要被移动的目标位置
+			for idx != i{
+				ans[idx], c = c, ans[idx] // 在覆写 s[idx] 之前，先将其原始值赋给变量 c
+				indices[idx], idx = idx, indices[idx] // 将封闭路径中的 indices 数组的值设置成下标自身
+			}
+			ans[i] = c
+			indices[i] = i // 每处理一个封闭路径，就将该路径上的indices 数组的值设置成下标自身
+		}
+	}
+	return string(ans)
+}

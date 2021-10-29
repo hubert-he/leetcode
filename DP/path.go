@@ -583,6 +583,35 @@ func MinimumTotalDFS(triangle [][]int) int {
 	return dfs(0,0)
 }
 
+// 2021-10-26 重新练习，提升很大
+// dp[i][j] = min( dp[i-1][j], dp[i-1][j-1] ) + triangle[i][j]
+/* 本题还有一些其它的动态规划方法，例如： 留意 空间优化的思路， 修改原数组 这一思路
+** 从三角形的底部开始转移，到顶部结束；
+** 直接在给定的三角形数组上进行状态转移，不使用额外的空间。
+** 如果在面试中遇到类似的题目，需要和面试官进行沟通，可以询问「是否有空间复杂度限制」「是否可以修改原数组」等问题，给出符合条件的算法。
+*/
+func MinimumTotalDP(triangle [][]int) int {
+	n := len(triangle)
+	if n <= 0{ return 0 }
+	dp := []int{triangle[0][0]}
+	for i := 1; i < n; i++{
+		m := len(triangle[i])
+		t := make([]int, m)
+		for j := range triangle[i]{
+			t[j] = triangle[i][j]
+			if j > 0 && j < m-1{
+				t[j] += min(dp[j], dp[j-1])
+			}else if j == 0{
+				t[j] += dp[j]
+			}else if j == m-1{
+				t[j] += dp[j-1]
+			}
+		}
+		dp = t
+	}
+	return min(dp...)
+}
+
 /* 931. Minimum Falling Path Sum
 Given an n x n array of integers matrix, return the minimum sum of any falling path through matrix.
 A falling path starts at any element in the first row and chooses the element in the next row that is either directly below or diagonally left/right.

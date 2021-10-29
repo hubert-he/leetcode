@@ -89,6 +89,96 @@ func GenerateMatrix(n int) [][]int {
 	return matrix
 }
 
+/*LCP 29. 乐团站位
+** 某乐团的演出场地可视作 num * num 的二维矩阵 grid（左上角坐标为 [0,0])，每个位置站有一位成员。
+** 乐团共有 9 种乐器，乐器编号为 1~9，每位成员持有 1 个乐器。
+** 为保证声乐混合效果，成员站位规则为：自 grid 左上角开始顺时针螺旋形向内循环以 1，2，...，9 循环重复排列。
+** 请返回位于场地坐标 [Xpos,Ypos] 的成员所持乐器编号
+ */
+// 超时
+func orchestraLayout(num int, xPos int, yPos int) int {
+	dir := 0
+	i, j := 0, 0
+	ans := 0
+	// 设置边界
+	left, right, upper, down := 0, num-1, 0, num-1
+	upper = 1
+	for i != xPos || j != yPos{
+		switch dir {
+		case 0:
+			if j != right{
+				j++
+			}else{
+				dir = 1
+				i++
+				right--
+			}
+		case 1:
+			if i != down{
+				i++
+			}else{
+				dir = 2
+				j--
+				down--
+			}
+		case 2:
+			if j != left{
+				j--
+			}else{
+				dir = 3
+				i--
+				left++
+			}
+		case 3:
+			if i != upper{
+				i--
+			}else{
+				dir = 0
+				upper++
+				j++
+			}
+		}
+		ans++
+	}
+	//return (ans+1) % 9
+	return ans % 9 + 1 // 乐队是从1开始计的
+}
+/* 通过公式计算 思路
+** 1. 计算出不包含此位置的 外层 层数 并统计方块个数
+** 2. 在当前圈层中，统计方块个数
+** 3. 1 和 2 中就地取mod
+**
+** 1. 求所在的层数k ==> k=min(x,n-1-x,y,n-1-y)
+** 记：k(0,1,2...⌈n/2⌉ (往上取整))， C(k)=第k层的方块数目,如C(0)=16,C(1)=8,C(2)=1;
+** T(k)=第k层以外（不包括第k层的方块数目）T(0)=0,T(1)=C(0)=16,T(2)=C(0)+C(1)=16+8=24,T(3)=16+8+1=25;
+** 补集的思想计算T(k) => T(k)=n*n-(n-2k)*(n-2k)=4*k*(n-k)
+**
+** 2.求所求点(x,y)相对该层左上角点的相对路径长度
+ */
+func OrchestraLayout(num int, xPos int, yPos int) int {
+	mod := 9
+	ans := 0
+	k := utils.Min(xPos, yPos, num-1-xPos, num-1-yPos)
+	ans = num * num - (num-2*k)*(num-2*k) // 补集 计算 外圈 方块个数
+	
+	if ans == 0{
+		return mod
+	}
+	return ans
+}
+/* 885. Spiral Matrix III
+** You start at the cell (rStart, cStart) of an rows x cols grid facing east.
+** The northwest corner is at the first row and column in the grid, and the southeast corner is at the last row and column.
+** You will walk in a clockwise spiral shape to visit every position in this grid.
+** Whenever you move outside the grid's boundary,
+** we continue our walk outside the grid (but may return to the grid boundary later.).
+** Eventually, we reach all rows * cols spaces of the grid.
+** Return an array of coordinates representing the positions of the grid in the order you visited them.
+ */
+func SpiralMatrixIII(rows int, cols int, rStart int, cStart int) [][]int {
+
+}
+
 /* dfs 如果用 dfs[i][j] = min(四个方向dfs） 会发生递归死循环
 ** 从每一个周围有0的1开始dfs， 破除dfs 死循环
 */
@@ -454,6 +544,52 @@ Note:
 	A Sudoku board (partially filled) could be valid but is not necessarily solvable.
 	Only the filled cells need to be validated according to the mentioned rules.
 */
+// 2021-10-25的处理方法：模拟方式
+// 模拟方式在于困难点在于 小矩阵的处理，这个在矩阵分割有借鉴
+func IsValidSudoku1(board [][]byte) bool {
+	for i := range board{ // 处理行
+		cell := make([]bool, 9)
+		for _, c := range board[i]{
+			if c == '.'{
+				continue
+			}
+			if cell[c-'1']{
+				return false
+			}
+			cell[c-'1'] = true
+		}
+	}
+	for i := range board{// 处理列
+		cell := make([]bool, 9)
+		for j := 0; j < 9; j++{
+			c := board[j][i]
+			if c == '.'{
+				continue
+			}
+			if cell[c-'1']{
+				return false
+			}
+			cell[c-'1'] = true
+		}
+	}
+	for i := 0; i < 3; i++{ // 处理小矩阵
+		for j := 0; j < 3; j++{
+			cell := make([]bool, 9)
+			for p := 3*i; p < 3*i+3; p++{
+				for q := 3*j; q < 3*j+3; q++{
+					c := board[p][q]
+					if c != '.' && cell[c-'1']{
+						return false
+					}
+					if c != '.'{
+						cell[c-'1'] = true
+					}
+				}
+			}
+		}
+	}
+	return true
+}
 func IsValidSudoku(board [][]byte) bool {
 	var row, col [9][9]int
 	var subboxes [3][3][9]int
@@ -473,16 +609,5 @@ func IsValidSudoku(board [][]byte) bool {
 	}
 	return true
 }
-/* 885. Spiral Matrix III
-** You start at the cell (rStart, cStart) of an rows x cols grid facing east.
-** The northwest corner is at the first row and column in the grid, and the southeast corner is at the last row and column.
-** You will walk in a clockwise spiral shape to visit every position in this grid.
-** Whenever you move outside the grid's boundary,
-** we continue our walk outside the grid (but may return to the grid boundary later.).
-** Eventually, we reach all rows * cols spaces of the grid.
-** Return an array of coordinates representing the positions of the grid in the order you visited them.
- */
-func SpiralMatrixIII(rows int, cols int, rStart int, cStart int) [][]int {
 
-}
 
