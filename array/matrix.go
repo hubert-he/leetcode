@@ -144,6 +144,8 @@ func orchestraLayout(num int, xPos int, yPos int) int {
 	return ans % 9 + 1 // 乐队是从1开始计的
 }
 /* 通过公式计算 思路
+** 参考： https://leetcode-cn.com/problems/SNJvJP/solution/shu-xue-yi-ge-gong-shi-ji-ke-by-ivon_shi-mo6a/
+** 解决公式比较优雅
 ** 1. 计算出不包含此位置的 外层 层数 并统计方块个数
 ** 2. 在当前圈层中，统计方块个数
 ** 3. 1 和 2 中就地取mod
@@ -153,18 +155,40 @@ func orchestraLayout(num int, xPos int, yPos int) int {
 ** T(k)=第k层以外（不包括第k层的方块数目）T(0)=0,T(1)=C(0)=16,T(2)=C(0)+C(1)=16+8=24,T(3)=16+8+1=25;
 ** 补集的思想计算T(k) => T(k)=n*n-(n-2k)*(n-2k)=4*k*(n-k)
 **
-** 2.求所求点(x,y)相对该层左上角点的相对路径长度
+** 2.求所求点(x,y)相对该层左上角点的相对路径长度-dl
+** 画出对角线
+** 2.1 对角线以上(包含对角线) x <= y
+	dl = (x-k)+1 + (y-k)+1 - 1 = (x-k) + (y-k) + 1
+ 	绝对路径 = T(k) + dl
+** 2.2 对角线以下  x > y
+	如果直接类似2.1计算会导致(i,j) 与 (j,i)相对路径值dl相同
+	采用补集方式计算，即 在计算层数k的时候，多计算一层，然后再从下一层的入口处回退 dl 个路径
+	dl = (x - k) + (y - k) - 1
+	绝对路径 = T(k+1) - dl
  */
+// go的取模运算不同于python，而是和c++相同，如果是正数就正常操作,
+// 如果是负数的取模运算，则需要特别注意，必须(k%n+n)%n  额外加 n ！！！
 func OrchestraLayout(num int, xPos int, yPos int) int {
 	mod := 9
 	ans := 0
 	k := utils.Min(xPos, yPos, num-1-xPos, num-1-yPos)
-	ans = num * num - (num-2*k)*(num-2*k) // 补集 计算 外圈 方块个数
-	
-	if ans == 0{
-		return mod
+	dl := 0
+	if xPos > yPos{
+		ans = ((num * num)%mod - ((num-2*(k+1))*(num-2*(k+1)))%mod + mod)%mod
+		dl = ((xPos-k)%mod + ((yPos -k) - 1)%mod)%mod
+		if ans == 0{ ans = mod }
+		if dl == 0{ dl = mod }
+		ans = (ans - dl + mod) % mod
+		if ans == 0{ return mod }
+		return ans%mod
 	}
-	return ans
+	ans = ((num * num)%mod  - ((num-2*k)*(num-2*k))%mod + mod)%mod  // 补集 计算 外圈 方块个数
+	dl = ((xPos-k) + (yPos -k) + 1)%mod
+	if ans == 0{ ans = mod }
+	if dl == 0{ dl = mod }
+	ans = (ans + dl) % mod
+	if ans == 0{ return mod }
+	return ans%mod
 }
 /* 885. Spiral Matrix III
 ** You start at the cell (rStart, cStart) of an rows x cols grid facing east.
