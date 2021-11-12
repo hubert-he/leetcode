@@ -13,13 +13,13 @@ func max(i, j int)int {
 }
  */
 func max(nums ...int)int{
-	ans := nums[0]
-	for i := 1; i < len(nums); i++{
-		if nums[i] > ans {
-			ans = nums[i]
+	m := nums[0]
+	for _, u := range nums{
+		if m < u{
+			m = u
 		}
 	}
-	return ans
+	return m
 }
 
 func min(nums ...int) int {
@@ -723,7 +723,7 @@ func numWays(n int, relation [][]int, k int) int {
 }
 
 /*
-  DFS
+  DFS_BFS
  */
 func numWaysDFS(n int, relation [][]int, k int) int {
 	ans := 0
@@ -837,23 +837,229 @@ func DeleteAndEarnDFS(nums []int)int{
 	}
 	return 0
 }
+/*官方题解-1: 转换为 打家劫舍 */
+func DeleteAndEarn1(nums []int) int {
+	maxVal := max(nums...)
+	sum := make([]int, maxVal+1)
+	// 避免排序，hash
+	for _, u := range nums{
+		sum[u] += u
+	}
+	// sum 就转换为 打家劫舍的 序列
+	rob := func() int{
+		first, second := sum[0], max(sum[0], sum[1])
+		for i := 2; i < maxVal+1; i++{
+			first, second = second, max(first+sum[i], second)
+		}
+		return second
+	}
+	return rob()
+}
 
+// 2021-11-08 重刷此题
+// 分为2维，同时将情况枚举为3类， 然后得出每种情况的转移方程
 func DeleteAndEarnDP(nums []int)int{
 	n := len(nums)
 	sort.Ints(nums)
-	dp := make([]int, 2)
-	for i := 0; i < n; i++{
-
+	dp := make([][2]int, n+1)
+	dp[0][0], dp[0][1] = 0, 0
+	dp[1][0], dp[1][1] = 0, nums[0]
+	for i := 2; i <= n; i++{
+		diff := nums[i-1] - nums[i-2]
+		if diff == 0{ // 相等的情况, 一选都选
+			dp[i][0] = dp[i-1][0]
+			dp[i][1] = dp[i-1][1] + nums[i-1]
+		}else if diff == 1{ // 相差1的情况
+			dp[i][0] = max(dp[i-1][0], dp[i-1][1])
+			// 查找上一个
+			j := i-2
+			for j >= 0 && nums[j] == nums[i-2]{
+				j--
+			}
+			dp[i][1] = nums[i-1] + max(dp[j+1][0], dp[j+1][1])
+		}else{
+			dp[i][0] = max(dp[i-1][0], dp[i-1][1])
+			dp[i][1] = dp[i][0] + nums[i-1]
+		}
 	}
+	return max(dp[n][0], dp[n][1])
 }
 
+/* 55. Jump Game
+** You are given an integer array nums.
+** You are initially positioned at the array's first index,
+** and each element in the array represents your maximum jump length at that position.
+** Return true if you can reach the last index, or false otherwise.
+ */
+/* 暴力 超时*/
+func canJump(nums []int) bool {
+	n := len(nums)
+	var dfs func(int)bool
+	dfs = func(idx int)bool{
+		if idx == n-1{
+			return true
+		}
+		if nums[idx] == 0{
+			return false
+		}
+		for i := 1; i <= nums[idx]; i++{
+			if dfs(idx+i){
+				return true
+			}
+		}
+		return false
+	}
+	return dfs(0)
+}
+/* 根据暴力 画出递归树
+** 发现重复计算的节点
+*/
+func canJumpDFSD(nums []int) bool {
+	n := len(nums)
+	cache := make([]int, n)
+	for i := range cache{
+		cache[i] = -1
+	}
+	var dfs func(int)bool
+	dfs = func(idx int)bool{
+		if idx == n-1{
+			return true
+		}
+		if nums[idx] == 0{
+			return false
+		}
+		if cache[idx] == 0{
+			return false
+		}
+		if cache[idx] == 1{
+			return true
+		}
+		for i := 1; i <= nums[idx]; i++{
+			if dfs(idx+i){
+				cache[idx+i] = 1
+				return true
+			}
+			cache[idx+i] = 0
+		}
+		return false
+	}
+	return dfs(0)
+}
+/* dp[i] 表示从前面0到i-1个元素是否可以跳到第i个元素上，如果可以为true，否则false
+** dp[i] 有0到i-1位置的 dp[j] 决定，如果 dp[j] 为true 并且 j+nums[i] >= i 则可以跳到第 i 个位置
+** 初始条件： dp[0] = true
+*/
+func CanJumpDP(nums []int) bool {
+	n := len(nums)
+	dp := make([]bool, n)
+	dp[0] = true
+	for i := 1; i < n; i++{
+		for j := 0; j < i; j++{
+			if dp[j] && i <= nums[j] + j {
+				dp[i] = true
+				break
+			}
+		}
+	}
+	return dp[n-1]
+}
 
+/* 2021-11-12 重刷
+** 向前更新状态
+*/
+func canJump12(nums []int) bool {
+	// dp[i] = dp[i+j] j [1,nums[i]]
+	n := len(nums)
+	dp := make([]bool, n)
+	dp[0] = true
+	for i := range nums{
+		if dp[i]{
+			for j := 1; j < n-i && j <= nums[i]; j++{
+				dp[i+j] = true
+			}
+		}
+	}
+	return dp[n-1]
+}
 
+/* 贪心: 如果一个位置能够到达，那么这个位置左侧所有位置都能到达 */
+func CanJumpGreedy(nums []int) bool {
+	rightMost := 0 // 为当前能够到达的最大位置
+	for i := range nums{
+		if(i > rightMost) {//【关键】遍历元素位置下标大于当前能够到达的最大位置下标，不能到达
+			return false
+		}
+		//能够到达当前位置，看是否更新能够到达的最大位置righMost
+		rightMost = max(rightMost, i+nums[i])
+	}
+	//跳出则表明能够到达最大位置
+	return true
+}
+/* 45. Jump Game II
+** Given an array of non-negative integers nums, you are initially positioned at the first index of the array.
+Each element in the array represents your maximum jump length at that position.
+Your goal is to reach the last index in the minimum number of jumps.
+You can assume that you can always reach the last index.
+ */
+func JumpDFS(nums []int) int {
+	n := len(nums)
+	var dfs func(idx int)int
+	dfs = func(idx int)int{
+		if idx >= n-1{
+			return 0
+		}
+		step := math.MaxInt32
+		if  nums[idx] == 0{
+			return step
+		}
+		for i := 1; i <= nums[idx]; i++{
+			step = min(step, dfs(idx+i))
+		}
+		return step+1
+	}
+	return dfs(0)
+}
+func JumpDFSDP(nums []int) int {
+	n := len(nums)
+	cache := make([]int, n)
+	var dfs func(idx int)int
+	dfs = func(idx int)int{
+		if idx >= n-1{
+			return 0
+		}
+		step := math.MaxInt32
+		if  nums[idx] == 0{
+			return step
+		}
+		if cache[idx] != 0{
+			return cache[idx]
+		}
+		for i := 1; i <= nums[idx]; i++{
+			step = min(step, dfs(idx+i))
+		}
+		cache[idx] = step+1
+		return step+1
+	}
+	return dfs(0)
+}
 
-
-
-
-
+func JumpDP(nums []int) int {
+	n := len(nums)
+	dp := make([]int, n)
+	for i := range dp{
+		dp[i] = math.MaxInt32
+	}
+	dp[0] = 0
+	for i := 1; i < n; i--{
+		for j := 0; j < i; j++{
+			if (j + nums[j] >= i) {
+				dp[i] = min(dp[i], dp[j])
+			}
+		}
+		dp[i] += 1
+	}
+	return dp[n-1]
+}
 
 
 

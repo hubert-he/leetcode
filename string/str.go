@@ -124,6 +124,29 @@ func firstUniqChar2(s string) int {
 	}
 	return -1
 }
+// 2021-11-08 重刷此题
+// 队列具有「先进先出」的性质，因此很适合用来找出第一个满足某个条件的元素
+func FirstUniqChar3(s string) int {
+	m := [26]int{}
+	q := []int{}
+	for i := range s{
+		c := s[i] - 'a'
+		m[c]++
+		q = append(q, i)
+		for len(q) > 0 {
+			x := s[q[0]] - 'a'
+			if m[x] > 1{
+				q = q[1:]
+			}else{
+				break
+			}
+		}
+	}
+	if len(q) > 0{
+		return q[0]
+	}
+	return -1
+}
 
 /* 389. Find the Difference
 You are given two strings s and t.

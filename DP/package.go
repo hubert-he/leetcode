@@ -469,6 +469,29 @@ func CoinChangeDP(coins []int, amount int) int {
 	}
 	return dp[amount]
 }
+// 2021-11-2 重刷
+func CoinChangeDP2(coins []int, amount int) int {
+	dp := make([]int, amount+1)
+	// dp[0] = 0
+	for i := 1; i <= amount; i++{
+		dp[i] = -1
+	}
+	for i := 1; i <= amount; i++{
+		dp[i] = -1
+		for _, c := range coins{
+			if i < c{
+				continue
+			}
+			if dp[i-c] != -1 && (dp[i] == -1 || dp[i] > dp[i-c]){
+				dp[i] = dp[i-c]
+			}
+		}
+		if dp[i] != -1{
+			dp[i] += 1
+		}
+	}
+	return dp[amount]
+}
 
 /*  08.11. Coin LCCI
 Given an infinite number of quarters (25 cents), dimes (10 cents), nickels (5 cents), and pennies (1 cent),
@@ -583,7 +606,7 @@ Given a string s and a dictionary of strings wordDict,
 return true if s can be segmented into a space-separated sequence of one or more dictionary words.
 Note that the same word in the dictionary may be reused multiple times in the segmentation.
 */
-// 朴素 DFS 超时，参见testcase-1，故加DP cache
+// 朴素 DFS_BFS 超时，参见testcase-1，故加DP cache
 // 需要画出dfs 树图，找到重复计算的地方：一次DFS之后可能会计算出很多的结果
 func WordBreakDFS(s string, wordDict []string) bool {
 	n := len(s)
@@ -635,6 +658,9 @@ func WordBreakDP(s string, wordDict []string) bool {
 		for j := range wordDict{
 			ws := len(wordDict[j])
 			if i >= ws && m[s[i-ws:i]] {
+				if dp[i]{
+					break
+				}
 				dp[i] = dp[i] || dp[i-ws]
 			}
 		}
@@ -1302,3 +1328,30 @@ func PaintBinaryTree2(root *Tree.BiTreeNode, k int) int {
 /* 0 1 背包问题
 
  */
+
+/* 343. Integer Break
+Given an integer n, break it into the sum of k positive integers, where k >= 2, and maximize the product of those integers.
+
+Return the maximum product you can get.
+*/
+/* 对于的正整数 nn，当 n≥2 时，可以拆分成至少两个正整数的和
+** 令 k 是拆分出的第一个正整数，则剩下的部分是 n−k，n−k 可以不继续拆分，或者继续拆分成至少两个正整数的和。
+** 由于每个正整数对应的最大乘积取决于比它小的正整数对应的最大乘积，因此可以使用动态规划求解
+** 状态方程：
+** 创建数组 dp，其中 dp[i] 表示将正整数 i 拆分成至少两个正整数的和之后，这些正整数的最大乘积。
+** 特别地，0 不是正整数，1 是最小的正整数，0 和 1 都不能拆分，因此 dp[0]=dp[1]=0
+** 当 i >= 2 时， 假设对正整数 i 拆分出的第一个正整数是 j（1≤j<i），则有以下两种方案：
+** 将 i 拆分成 j 和 i−j 的和，且 i−j 不再拆分成多个正整数，此时的乘积是 j×(i−j)；
+** 将 i 拆分成 j 和 i−j 的和，且 i−j 继续拆分成多个正整数，此时的乘积是 j×dp[i−j]
+** 状态转移：dp[i]=max{max(j×(i−j),j×dp[i−j])} j 属于[1,i)
+ */
+func IntegerBreak(n int) int {
+	dp := make([]int, n+1)
+	dp[0],dp[1] = 0, 0
+	for i := 2; i <= n; i++{
+		for j := 1; j < i; j++{
+			dp[i] = max(dp[i], j*(i-j), j*dp[i-j])
+		}
+	}
+	return dp[n]
+}

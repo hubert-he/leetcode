@@ -23,3 +23,4 @@ func TestStoneGame(t *testing.T){
 		}
 	}
 }
+

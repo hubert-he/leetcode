@@ -1,6 +1,10 @@
 package unclassified
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+	"sort"
+)
 
 /* Binary Search 两大基本原则
 	1. 每次迭代都要缩减搜索区域  	Shrink the search scope in every iteration/recursion
@@ -95,6 +99,113 @@ func Search(n int, f func(int)bool) int{
 			i = h + 1 // 转到右半边去处理
 		} else {
 			j = h // 并不退出循环，而是继续查找，锁定最小的下标（如果有重复元素）
+		}
+	}
+	return i
+}
+
+/* 74. Search a 2D Matrix
+** Write an efficient algorithm that searches for a value in an m x n matrix. This matrix has the following properties:
+** Integers in each row are sorted from left to right.
+** The first integer of each row is greater than the last integer of the previous row.
+*/
+func SearchMatrix(matrix [][]int, target int) bool {
+	m, n := len(matrix), len(matrix[0])
+	search := func(t int)int{
+		i, j := 0, m*n
+		for i < j {
+			mid := int(uint(i+j)>>1)
+			if matrix[mid/n][mid%n] < t{
+				i = mid+1
+			}else{
+				j = mid
+			}
+		}
+		return i
+	}
+	ans := search(target)
+	return ans < m*n && matrix[ans/n][ans%n] == target
+}
+func SearchMatrix2(matrix [][]int, target int) bool {
+	m, n := len(matrix), len(matrix[0])
+	moreEqual := func(t int)bool{
+		return matrix[t/n][t%n] >= target
+	}
+	// 配置为 moreEqual 说明 查找的是第一个大于等于target 的
+	i := sort.Search(m*n, moreEqual)
+	return i < m*n && matrix[i/n][i%n] == target
+}
+// 思路2：两次二分查找，应对 二维数组中的一维数组的元素个数不一
+func SearchMatrix3(matrix [][]int, target int) bool {
+	more := func(t int)bool{
+		return matrix[t][0] > target
+	}
+	// 配置为 more 说明 查找的是第一个大于target 的
+	row := sort.Search(len(matrix), more) - 1
+	if row < 0{
+		return false
+	}
+	col := sort.SearchInts(matrix[row], target)
+	return col < len(matrix[row]) && matrix[row][col] == target
+}
+
+/* 162. Find Peak Element
+** A peak element is an element that is strictly greater than its neighbors.
+Given an integer array nums, find a peak element, and return its index.
+If the array contains multiple peaks, return the index to any of the peaks.
+You may imagine that nums[-1] = nums[n] = -∞.
+ */
+/* 注意是找其中一个峰值，而非最大的峰值
+** 根据 nums[i−1],nums[i],nums[i+1] 三者的关系决定
+** 1. nums[i−1] < nums[i] > nums[i+1]   找到一个峰值，返回 i
+** 2. nums[i−1] < nums[i] < nums[i+1]	i 上坡 i = i+1
+** 3. nums[i−1] > nums[i] > nums[i+1]   i 下坡 i = i-1
+** 4. nums[i−1] > nums[i] < nums[i+1]	任意方向
+** 根据第4个情况，缩减情况分支，规定第4情况 i = i+1
+** nums[i] < nums[i+1] i = i+1
+** nums[i] > nums[i+1] i = i-1
+** 另外， nums[i] < nums[i+1], i = i+1 ，那么位置左侧的所有位置都不可能在后续迭代找那个遍历到。
+** 「二段性」其实是指：在以 mid 为分割点的数组上，根据 nums[mid] 与 nums[mid±1] 的大小关系，
+** 可以确定其中一段满足「必然有解」，另外一段不满足「必然有解」（可能有解，可能无解）
+ */
+func FindPeakElement(nums []int) int {
+	n := len(nums)
+	get := func(i int)int{
+		if i == -1 || i >= n{
+			return math.MinInt64 // 必须是64 32的不满足最小值
+		}
+		return nums[i]
+	}
+	i, j := 0, n
+	for i < j{
+		mid := int(uint(i+j)>>1)
+		if get(mid-1) < get(mid) && get(mid) > get(mid+1){
+			return mid
+		}
+		if get(mid) > get(mid+1){
+			j = mid-1
+		}else{
+			i = mid+1
+		}
+	}
+	return i
+}
+/* 始终选择大于边界一端进行二分，可以确保选择的区间一定存在峰值，并随着二分过程不断逼近峰值位置。*/
+func FindPeakElement2(nums []int) int {
+	n := len(nums)
+	get := func(i int)int{
+		if i == -1 || i >= n{
+			return math.MinInt64 // 必须是64 32的不满足最小值
+		}
+		return nums[i]
+	}
+	i, j := 0, n
+	for i < j{
+		mid := int(uint(i+j)>>1)
+		if get(mid) > get(mid+1){
+			j = mid
+		}else{
+			i = mid+1
 		}
 	}
 	return i

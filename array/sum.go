@@ -111,6 +111,45 @@ func threeSum(nums []int, summary int) [][]int {
 	}
 	return result
 }
+// 2021-11-03 重刷此题
+func ThreeSum(nums []int) [][]int {
+	n := len(nums)
+	ans := [][]int{}
+	if n < 3{
+		return ans
+	}
+	sort.Ints(nums)
+	for i := 0; i < n; i++{
+		// 去重-1
+		if i != 0 && nums[i] == nums[i-1]{
+			continue
+		}
+		// 问题转换为求 0 - nums[i] 的 2sum 问题
+		target := 0 - nums[i]
+		j, k := i+1, n-1
+		for j < k {
+			sum := nums[j] + nums[k]
+			if sum == target{
+				ans = append(ans, []int{nums[i], nums[j], nums[k]})
+				j++
+				k--
+				// 去重-2 勿忘 j < k
+				for j < k && nums[j] == nums[j-1]{
+					j++
+				}
+				for j < k && nums[k] == nums[k+1]{
+					k--
+				}
+			}else if sum < target{
+				j++
+			}else{
+				k--
+			}
+		}
+	}
+	return ans
+}
+
 /*
 考虑一般情况： Sum(N, X) 从给定数组中找N个和为X的数问题（要求不出现重复解）。
 构建一个递归过程

@@ -1,6 +1,28 @@
 package array
 
-import "testing"
+import (
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+func TestThreeSum(t *testing.T){
+	for caseId, testcase := range []struct{
+		nums	[]int
+		want	[][]int
+	}{
+		{[]int{-1,0,1,2,-1,-4}, [][]int{[]int{-1,-1,2}, []int{-1,0,1}}},
+		{[]int{}, [][]int{}},
+		{[]int{0}, [][]int{}},
+		{[]int{0,0,0,0,0}, [][]int{[]int{0,0,0}}},
+	}{
+		result := ThreeSum(testcase.nums)
+		if !assert.Equal(t, testcase.want, result,
+			fmt.Sprintf("ThreeSum-case-%d: result=%v but want=%v", caseId, result, testcase.want)){
+			break
+		}
+	}
+}
 
 func TestMaxmiumScore(t *testing.T) {
 	for caseId, testCase := range []struct{

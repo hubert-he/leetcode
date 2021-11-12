@@ -16,6 +16,7 @@ func TestCoinChange(t *testing.T){
 		want		int
 	}{
 		{[]int{1}, 0, 0},
+		{[]int{2147483647}, 2, 0},
 		{[]int{1}, 1, 1},
 		{[]int{1, 2}, 3, 2},
 		{[]int{1,2,5}, 11, 3},
@@ -24,6 +25,7 @@ func TestCoinChange(t *testing.T){
 		{[]int{186,419,83,408}, 6249, 20},
 		{[]int{2,5,10,1}, 27, 4},
 		{[]int{224,2,217,189,79,343,101}, 2938, 11},
+		{[]int{474,83,404,3}, 264, 8},
 	}{
 		result := CoinChange(testCase.coins, testCase.amount)
 		if result != testCase.want{

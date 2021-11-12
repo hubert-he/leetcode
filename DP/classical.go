@@ -190,10 +190,43 @@ func StoneGameMath(piles []int) (ans bool) {
 	return true
 }
 
-
-
-
-
+/* 918. Maximum Sum Circular Subarray
+** Given a circular integer array nums of length n, return the maximum possible sum of a non-empty subarray of nums.
+** A circular array means the end of the array connects to the beginning of the array.
+** Formally, the next element of nums[i] is nums[(i + 1) % n] and the previous element of nums[i] is nums[(i - 1 + n) % n].
+** A subarray may only include each element of the fixed buffer nums at most once.
+** Formally, for a subarray nums[i], nums[i + 1], ..., nums[j], there does not exist i <= k1, k2 <= j with k1 % n == k2 % n.
+ */
+/* 对于环形数组，分两种情况:
+** 1. 答案在数组中间，就是最大子序和
+** 2. 答案在数组两边, 例如[5,-3,5]最大的子序和就等于数组的总和SUM-最小的子序和
+** 3. 一种特殊情况是数组全为负数，也就是SUM-最小子序和==0，最大子序和等于数组中最大的那个
+*/
+func maxSubarraySumCircular(nums []int) int {
+	n := len(nums)
+	sum := nums[0]
+	dpmax, dpmin := nums[0], nums[0]
+	ans := nums[0]
+	minVal := nums[0]
+	for i := 1; i < n; i++{
+		sum += nums[i]
+		dpmax = max(dpmax + nums[i], nums[i])
+		dpmin = min(dpmin + nums[i], nums[i])
+		if ans < dpmax{
+			ans = dpmax
+		}
+		if minVal > dpmin{
+			minVal = dpmin
+		}
+	}
+	if sum - minVal != 0{
+		return max(ans, sum-minVal)
+	}
+	return ans
+}
+/* Kadane 算法: 用来找到 A 的最大子段和, 基于动态规划
+**
+ */
 
 
 
