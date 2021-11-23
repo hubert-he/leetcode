@@ -319,6 +319,7 @@ For example, 1, 4, 9, and 16 are perfect squares while 3 and 11 are not.
 限制条件： 1<= n <= 10000
 贪心算法不适合
  */
+// 完全背包解决
 func NumSquaresDP(n int) int {
 	perfectNums := []int{}
 	for i := 1; i * i <= n; i++{
@@ -338,6 +339,19 @@ func NumSquaresDP(n int) int {
 		}
 	}
 	return dp[n]
+}
+/* 2021-11-23 重刷此题
+** 注题目要求 n = 0 为非法情况
+*/
+func numSquaresDP(n int) int {
+	dp := make([]int, n+1)
+	for i := 1; i <= n; i++{
+		m := math.MaxInt32 // 避免初始化，优化时间
+		for j := 1; j*j <= i; j++{
+			m = min(m, dp[i-j*j])
+		}
+		dp[i] = m + 1
+	}
 }
 /* 数学 -- 四平方和定理
 	1. -- 任意一个正整数都可以被表示为至多四个正整数的平方和
@@ -1334,7 +1348,7 @@ Given an integer n, break it into the sum of k positive integers, where k >= 2, 
 
 Return the maximum product you can get.
 */
-/* 对于的正整数 nn，当 n≥2 时，可以拆分成至少两个正整数的和
+/* 对于的正整数 n，当 n≥2 时，可以拆分成至少两个正整数的和
 ** 令 k 是拆分出的第一个正整数，则剩下的部分是 n−k，n−k 可以不继续拆分，或者继续拆分成至少两个正整数的和。
 ** 由于每个正整数对应的最大乘积取决于比它小的正整数对应的最大乘积，因此可以使用动态规划求解
 ** 状态方程：
@@ -1354,4 +1368,57 @@ func IntegerBreak(n int) int {
 		}
 	}
 	return dp[n]
+}
+/* dp[i]=max{max(j×(i−j),j×dp[i−j])} j 属于[1,i)
+** 计算 dp[i] 时，j 的值遍历了从 1 到 i−1 的所有值，因此总时间复杂度是 O(n^2)
+** 转移方程包含两项,当 j固定时， dp[i]的值由 j×(i−j),j×dp[i−j]较大值决定，因此需要分2项考虑
+** j×dp[i−j] => 计算 dp[i] 的值只需要考虑 j=2 和 j=3 的情况,不需要遍历从 11 到 i-1i−1 的所有值
+**
+** j×(i−j) =>
+** 如果j >= 4 则 dp[j] >= j 当且仅当 j = 4 时等号成立；
+** 因此 i - j >= 4的情况下，有 dp[i-j] >= i-j 和 dp[i] >= j * dp[i-j] >= j *(i-j), 此时计算中不需要考虑 j*(i-j)的值
+** 如果 i-j < 4, 计算dp[i]的值就需要考虑j*(i-j)的值；
+** 1. j=1 则1*（i-1) = i-1
+** 		当i = 2 或 i = 3 时有 dp[i] = i-1
+**		当 i >= 4 有 dp[i] >= i >= i-1 显然 当 i>=4时 j = 1 不可能取到最大乘积，故 j=1 不需要考虑
+** 2. j >= 4 dp[i] 是否可能等于 j * (i-j) ?
+**	 当 i 固定，要是的j * (i-j)最大，j 的值应该取 j = i/2
+** 	 j >= 4 若要满足 j = i/2, 则 i >= 8, 此时i-j >= 4 ==> dp[i-j] >= i-j ==> j*dp[i-j] >= j*(i-j)
+** 	 由此可见，当 j >= 4 计算dp[i] 只需要考虑 j * dp[i-j], 不需要考虑 j*(i-j)
+** 3. 另外，在使用 j * dp[i-j] 计算 dp[i] 时， j = 2 和 j = 3的情况 一定优于 j >= 4 的情况，
+**	 因此，无论考虑 j * dp[i-j] 还是考虑 j * (i-j)， 都只需要考虑 j = 2 和 j = 3 的情况
+** 特殊边界： n = 2  唯一拆分，最大乘积 1
+** 当 n >= 3 转移方程为： dp[i] = max(2*(i-2), 2 * dp[i-2], 3 * dp[i-3], 3 * dp[i-3])
+ */
+func IntegerBreakII(n int) int {
+	if n < 4{
+		return n-1
+	}
+	dp := make([]int, n + 1)
+	dp[2] = 1
+	for i := 3; i <= n; i++ {
+		dp[i] = max(max(2 * (i - 2), 2 * dp[i - 2]), max(3 * (i - 3), 3 * dp[i - 3]))
+	}
+	return dp[n]
+}
+/* 数学推论
+** 1. 将数字 n 尽可能以因子 3 等分时，乘积最大
+** 2. 若拆分的数量 a 确定， 则 各拆分数字相等时 ，乘积最大
+** 拆分规则：
+	最优： 3 。把数字 n 可能拆为多个因子 3 ，余数可能为 0,1,2 三种情况。
+	次优： 2 。若余数为 2 ；则保留，不再拆为 1+1 。
+	最差： 1 。若余数为 1 ；则应把一份 3+1 替换为 2+2，因为 2×2>3×1。
+ */
+func integerBreak3(n int) int {
+	if n <= 3 {
+		return n - 1
+	}
+	quotient := n / 3
+	remainder := n % 3
+	if remainder == 0 {
+		return int(math.Pow(3, float64(quotient)))
+	} else if remainder == 1 {
+		return int(math.Pow(3, float64(quotient - 1))) * 4
+	}
+	return int(math.Pow(3, float64(quotient))) * 2
 }

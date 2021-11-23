@@ -65,7 +65,28 @@ func generateParenthesis(n int) []string {
 	return ans
 }
 
-
+func GenerateParenthesisBt(n int) []string {
+	ans := []string{}
+	var backtrack func(cur []byte, open int, close int)
+	backtrack = func(cur []byte, open int, close int){
+		if len(cur) == 2*n{
+			ans = append(ans, string(cur))
+			return
+		}
+		if open < n{
+			cur = append(cur, '(')
+			backtrack(cur, open+1, close)
+			cur = cur[:len(cur)-1]
+		}
+		if close < open{
+			cur = append(cur, ')')
+			backtrack(cur, open, close+1)
+			cur = cur[:len(cur)-1]
+		}
+	}
+	backtrack([]byte{}, 0,0)
+	return ans
+}
 
 
 

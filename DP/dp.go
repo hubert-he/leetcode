@@ -1,8 +1,10 @@
 package DP
 
 import (
+	"container/heap"
 	"math"
 	"sort"
+	"strconv"
 )
 /*
 func max(i, j int)int {
@@ -23,10 +25,10 @@ func max(nums ...int)int{
 }
 
 func min(nums ...int) int {
-	m := math.MaxInt32
-	for _, n := range nums{
-		if m > n{
-			m = n
+	m := nums[0]
+	for _, c := range nums{
+		if m > c{
+			m = c
 		}
 	}
 	return m
@@ -769,33 +771,6 @@ func numWaysDP(n int, relation [][]int, k int) int {
 	 return dp[k][n-1]
 }
 
-// 5. Longest Palindromic Substring
-/* 暴力求出所有子串，然后逐个判断
- */
-func longestPalindrome(s string) string{
-	var isPalindrome func([]byte) bool
-	isPalindrome = func(ss []byte) bool {
-		for i, j := 0, len(ss)-1; i < j; i,j = i+1, j-1{
-			if ss[i] != ss[j]{
-				return false
-			}
-		}
-		return true
-	}
-	length := len(s)
-	ans := []byte{}
-	for i := 0; i < length; i++{
-		for j := i; j < length; j++{
-			if isPalindrome([]byte(s[i:j+1])){
-				if len(ans) < (j-i+1){
-					ans = []byte(s[i:j+1])
-				}
-			}
-		}
-	}
-	return string(ans)
-}
-
 /* 740. Delete and Earn
 ** You are given an integer array nums.
 ** You want to maximize the number of points you get by performing the following operation any number of times:
@@ -1061,13 +1036,294 @@ func JumpDP(nums []int) int {
 	return dp[n-1]
 }
 
+/* 264. Ugly Number II
+** An ugly number is a positive integer whose prime factors are limited to 2, 3, and 5.
+** Given an integer n, return the nth ugly number.
+*/
+// 方法一：直接求，方法超时
+func nthUglyNumber(n int) int {
+	dp := map[int]bool{1: true, 2:true, 3:true}
+	if n < 4{
+		return n
+	}
+	k := 4
+	for i := 4; i <= n;{
+		for {
+			if k % 2 == 0{
+				if dp[k/2]{
+					dp[k] = true
+					i++
+					k++
+					break
+				}
+			}
+			if k % 3 == 0{
+				if dp[k/3]{
+					dp[k] = true
+					i++
+					k++
+					break
+				}
+			}
+			if k % 5 == 0{
+				if dp[k/5]{
+					dp[k] = true
+					i++
+					k++
+					break
+				}
+			}
+			k++
+		}
+	}
+	return k-1
+}
+/* DP2
+** 由上面除的方式，改成乘的方式，凑出下一个
+ */
+func NthUglyNumber(n int) int {
+	dp := make([]int, n+1)
+	dp[1] = 1
+	i, j, k := 1, 1, 1
+	for idx := 1; idx <= n; idx++{
+		num2, num3, num5 := dp[i]*2, dp[j]*3, dp[k]*5
+		dp[idx] = min(num2, num3, num5)
+		if dp[idx] == num2{
+			i++
+		}
+		if dp[idx] == num3{
+			j++
+		}
+		if dp[idx] == num5{
+			k++
+		}
+	}
+	return dp[n]
+}
+/* 使用堆
+**
+*/
+type hp struct {sort.IntSlice}
+func(h *hp) Push(v interface{}){
+	h.IntSlice = append(h.IntSlice, v.(int))
+}
+func(h *hp) Pop()interface{}{
+	n := len(h.IntSlice)
+	v := h.IntSlice[n-1]
+	h.IntSlice = h.IntSlice[:n-1]
+	return v
+}
+func NthUglyNumberHeap(n int) int {
+	h := &hp{sort.IntSlice{1}}
+	vis := map[int]bool{1: true}
+	ans := 0
+	for i := 1;i <=n; i++{
+		ans = heap.Pop(h).(int)
+		for _, f := range []int{2,3,5}{
+			next := ans*f
+			// 去重
+			if !vis[next]{
+				heap.Push(h, next)
+				vis[next] = true
+			}
+		}
+	}
+	return ans
+}
+/* 91. Decode Ways
+** A message containing letters from A-Z can be encoded into numbers using the following mapping:
+'A' -> "1"
+'B' -> "2"
+...
+'Z' -> "26"
+To decode an encoded message, all the digits must be grouped then mapped back into letters using the reverse of the mapping above (there may be multiple ways).
+For example, "11106" can be mapped into:
+"AAJF" with the grouping (1 1 10 6)
+"KJF" with the grouping (11 10 6)
+Note that the grouping (1 11 06) is invalid because "06" cannot be mapped into 'F' since "6" is different from "06".
+Given a string s containing only digits, return the number of ways to decode it.
 
+The answer is guaranteed to fit in a 32-bit integer.
+ */
+// 2021-11-16 刷出此题，
+func numDecodingsI(s string) int {
+	n := len(s)
+	if s[0] == '0'{
+		return 0
+	}
+	// dp[i] = dp[i-1] + dp[i-2],根据是否与前一位结合 还是不结合
+	dp := [2]int{1, 1}
+	for i := 2; i <= n; i++{
+		// 优化
+		//x, _ := strconv.Atoi(s[i-2:i])
+		x := (s[i-2]-'0')*10 + s[i-1]-'0'
+		if s[i-1] == '0'{// 只能是: 与前一位结合
+			if s[i-2] == '0'{ //连续2个0 非法
+				return 0
+			}else{// 只能是: 与前一位结合
+				if x <= 26{
+					dp[i%2] = dp[(i-2)%2]
+				}else{// 非法
+					return 0
+				}
+			}
+		}else{// 可以单独 也可以结合，结合的情况要注意不能超过26
+			if s[i-2] == '0'{// 此情况只能 单独 ，因为不能出现前缀 0 的情况
+				dp[i%2] = dp[(i-1)%2]
+			}else{
+				if x <= 26{// 此情况 可单独 亦可 结合
+					dp[i%2] = dp[(i-1)%2] + dp[(i-2)%2]
+				}else{// 此情况 只可单独
+					dp[i%2] = dp[(i-1)%2]
+				}
+			}
+		}
+	}
+	return dp[n%2]
+}
 
+/* 413. Arithmetic Slices
+** An integer array is called arithmetic if it consists of at least three elements and if the difference between any two consecutive elements is the same.
+For example, [1,3,5,7,9], [7,7,7,7], and [3,-1,-5,-9] are arithmetic sequences.
+Given an integer array nums, return the number of arithmetic subarrays of nums.
+A subarray is a contiguous subsequence of the array.
+ */
+/*暴力： 判断所有的子数组是不是等差数列，如果是的话就累加次数
+** 复杂度 O(n^3)
+*/
+func numberOfArithmeticSlicesBrust(nums []int) int {
+	sn := len(nums)
+	isArithmetic := func(arr []int)bool{
+		n := len(arr)
+		if n < 3{
+			return false
+		}
+		for i := 1; i < n-1; i++{
+			if arr[i-1] - arr[i] != arr[i] - arr[i+1]{
+				return false
+			}
+		}
+		return true
+	}
+	ans := 0
+	for i := 0; i < sn-2; i++{
+		for j := i+2; j < sn; j++{
+			if isArithmetic(nums[i:j+1]){
+				ans++
+			}
+		}
+	}
+	return ans
+}
+/*双指针（滑动窗口） 的解法
+** 在方法一的暴力枚举中， 我们对每个长度大于等于3的序列都进行了是否为等差数列的判断
+** 其实，如果我们已经知道一个子数组的前面部分不是等差数列以后，那么后面部分就不用判断了
+** 等差数列的所有的相邻数字的差是固定的
+** 因此，对于每个起始位置，我们只需要向后进行一遍扫描，直到不再构成等差数列为止，此时已经没有必要再向后扫描
+** 即 固定起点，判断后面的等差数列有多少个
+*/
+func numberOfArithmeticSlicesTwoPointer(nums []int) int {
+	n := len(nums)
+	ans := 0
+	for i := 0; i < n-2; i++{
+		d := nums[i+1] - nums[i]
+		for j := i+1; j < n-1; j++{
+			if nums[j+1] - nums[j] == d{
+				ans++
+			}else{
+				break
+			}
+		}
+	}
+	return ans
+}
+/* 固定起点，判断后面的等差数列有多少个
+** 递归解法: 定义递归函数 slices(A, end)的含义是区间 A[0, end] 中，以 end 作为终点的，等差数列的个数
+** A[0, end]内的以 end 作为终点的等差数列的个数，相当于在 A[0, end - 1]的基础上，增加了 A[end]
+** 有两种情况：
+** 1. A[end] - A[end - 1] == A[end - 1] - A[end - 2]时，说明增加的A[end]能和前面构成等差数列，那么 slices(A, end) = slices(A, end - 1) + 1；
+** 2. A[end] - A[end - 1] != A[end - 1] - A[end - 2]时， 说明增加的 A[end]不能和前面构成等差数列，所以slices(A, end) = 0；
+** 最后，我们要求的是整个数组中的等差数列的数目，所以需要把 0 <= end <= len(A - 1)0<=end<=len(A−1) 的所有递归函数的结果累加起来。
+ */
+func numberOfArithmeticSlicesDFS(nums []int) int {
+	n := len(nums)
+	if n < 2{
+		return 0
+	}
+	ans := 0
+	end := n-1
+	if nums[end] - nums[end-1] == nums[end-1] - nums[end-2]{
+		ans = 1 + numberOfArithmeticSlicesDFS(nums[:end-1])
+	}else{
+		ans = numberOfArithmeticSlicesDFS(nums[:end-1])
+	}
+	return ans
+}
 
+func numberOfArithmeticSlices(nums []int) int {
+	n := len(nums)
+	ans := 0
+	if n == 1{
+		return ans
+	}
+	d, t := nums[0] - nums[1], 0
+	for i := 2; i < n; i++{
+		if nums[i-1] - nums[i] == d{
+			t++
+		}else{
+			d, t = nums[i-1] - nums[i], 0
+		}
+		ans += t
+	}
+	return ans
+}
 
+/*221. Maximal Square
+** Given an m x n binary matrix filled with 0's and 1's, find the largest square containing only 1's and return its area.
+*/
+// 此题可以用二分法，复杂度在 O(log(min(m,n)*m*n*m*n))
+/* dp(i,j) 表示以(i,j) 为右下角, 且只包含 1 的正方形的边长最大值.
+** 如果我们能计算出所有 dp(i,j) 的值，那么其中的最大值即为矩阵中只包含 1 的正方形的边长最大值，其平方即为最大正方形的面积
+** 如何计算 dp 中的每个元素值呢？对于每个位置 (i,j)，检查在矩阵中该位置的值：
+** 1. 如果该位置的值是 0，则 dp(i,j)=0，因为当前位置不可能在由 1 组成的正方形中；
+** 2. 如果该位置的值是 1，则 dp(i,j) 的值由其上方、左方和左上方的三个相邻位置的 dp 值决定，即
+** 	dp[i][j] = min(dp[i-1][j], dp[i-1][j-1], dp[i][j-1]) + 1
+** 初始以及边界条件：
+**  如果i和j中至少有一个为 0， 则以位置(i,j)为右下角的最大正方形的边长只能为1， 即 dp[i][j] = 1
+*/
+func maximalSquare(matrix [][]byte) int {
+	m, n := len(matrix), len(matrix[0])
+	dp := [2][]int{}
+	for i := range dp{
+		dp[i] = make([]int, n)
+	}
+	maxSide := 0
+	for i := 0; i < m; i++{
+		for j := 0; j < n; j++{
+			if matrix[i][j] == '0'{
+				dp[i%2][j] = 0
+			}else{
+				if i == 0 || j == 0 {
+					dp[i%2][j] = 1
+				}else{
+					dp[i%2][j] = min(dp[(i-1)%2][j], dp[i%2][j-1], dp[(i-1)%2][j-1]) + 1
+				}
+				if maxSide < dp[i%2][j]{
+					maxSide = dp[i%2][j]
+				}
+			}
+		}
+	}
+	return maxSide * maxSide
+}
+/* 1277. Count Square Submatrices with All Ones
+**Given a m * n matrix of ones and zeros, return how many square submatrices have all ones.
+ */
+// dp[i][j]表示(i,j)为右下角的正方形的最大边长, 也表示以(i,j)为右下角的正方形的数目--- 这一点没有想到
+// 在计算出所有的dp[i][j]后，将其累加，即为矩阵中正方形的数目
+func countSquares(matrix [][]int) int {
 
-
-
+}
 
 
 

@@ -452,3 +452,45 @@ func GetLucky(s string, k int) int {
 	return int(num)
 }
 
+/* 279. Perfect Squares
+Given an integer n, return the least number of perfect square numbers that sum to n.
+A perfect square is an integer that is the square of an integer; in other words, it is the product of some integer with itself.
+For example, 1, 4, 9, and 16 are perfect squares while 3 and 11 are not.
+限制条件： 1<= n <= 10000
+贪心算法不适合
+*/
+/* 数学 -- 四平方和定理
+	1. -- 任意一个正整数都可以被表示为至多四个正整数的平方和
+	2. -- 当且仅当 n != 4^k * (8m + 7) 时， n可以被表示为至多三个正整数的平方和。
+	      因此当 n == 4^k * (8m + 7)时， n只能被表示成 4 个正整数的平方和，可以直接返回4
+当  n != 4^k * (8m + 7)， 情况可能为 1， 2， 3
+answer=1： 则必有n 为完全平方数
+answer=2： 则有 n = a^2 + b^2， 只需要枚举所有的 a ([1, 根号n]), 判断 n - a^2 是否为完全平方数即可
+answer=3： 排除法。
+*/
+
+func NumSquaresMath(n int) int {
+	checkAnswer4 := func(x int)bool{
+		for x % 4 == 0{
+			x /= 4
+		}
+		return x % 8 == 7
+	}
+	isPerfectSquare := func(x int)bool {
+		y := int(math.Sqrt(float64(x)))
+		return y*y == x
+	}
+	if isPerfectSquare(n) {
+		return 1
+	}
+	if checkAnswer4(n) {
+		return 4
+	}
+	for i := 1; i * i <= n; i++{
+		j := n - i*i
+		if isPerfectSquare(j) {
+			return 2
+		}
+	}
+	return 3
+}

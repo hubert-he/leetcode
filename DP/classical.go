@@ -228,10 +228,240 @@ func maxSubarraySumCircular(nums []int) int {
 **
  */
 
+/*122. Best Time to Buy and Sell Stock II
+** You are given an integer array prices where prices[i] is the price of a given stock on the ith day.
+** On each day, you may decide to buy and/or sell the stock. You can only hold at most one share of the stock at any time.
+** However, you can buy it then immediately sell it on the same day.
+** Find and return the maximum profit you can achieve.
+*/
+// 注意初始情况，总要开始选择买入
+func maxProfit(prices []int) int {
+	// 一天一共3种情况： 1. 买 2. 卖 3. 不操作
+	// 买入dp[i][0] = max(dp[i-1][1]-prices[i], dp[i-1][0])  持有一支股票的情况
+	// 卖出dp[i][1] = max(dp[i-1][0]+prices[i], dp[i-1][1])  不持有股票的情况
+	dp := make([]int, 2)
+	dp[0], dp[1] = -prices[0], 0
+	n := len(prices)
+	for i := 1; i < n; i++{
+		t := dp[0]
+		dp[0] = max(dp[1]-prices[i], dp[0])
+		dp[1] = max(t+prices[i], dp[1])
+	}
+	return max(dp...)
+}
+/* 贪心的方法：
+** 由于股票的购买没有限制，因此整个问题等价于寻找 x 个不相交的区间 (li, ri] 使得如下的等式最大化 SUM(a[ri]-a[li])
+** 上述等价于：
+** 		对于(li, ri]这一个区间贡献的价值a[ri]-a[li], 等价于 (li, li+1], (li+1, li+2], ..., (ri-1, ri] 这若干区间长度为1的区间价值和
+**		a[ri]-a[li] = a[ri]-a[ri-1] + a[ri-1]-a[ri-2] + ... + a[li+1] - a[li]
+**		问题简化为 找 x 个长度为1的区间 (li, li+1] 使得 SUM(a[li+1]-a[li]) 最大 i属于 [1,x]
+** 		贪心的角度考虑我们每次选择贡献大于 0 的区间即能使得答案最大化
+** 		需要说明的是，贪心算法只能用于计算最大利润，计算的过程并不是实际的交易过程
+ */
+func maxProfitII(prices []int) (ans int) {
+	for i := 1; i < len(prices); i++ {
+		ans += max(0, prices[i]-prices[i-1])
+	}
+	return
+}
 
+/* 309. Best Time to Buy and Sell Stock with Cooldown
+** You are given an array prices where prices[i] is the price of a given stock on the ith day.
+Find the maximum profit you can achieve.
+You may complete as many transactions as you like (i.e., buy one and sell one share of the stock multiple times) with the following restrictions:
+After you sell your stock, you cannot buy stock on the next day (i.e., cooldown one day).
+Note: You may not engage in multiple transactions simultaneously (i.e., you must sell the stock before you buy again).
+*/
+func maxProfitIII(prices []int) int {
+	n := len(prices)
+	dp := make([]int, 3)
+	dp[0] = -prices[0]	// 手上持有股票的最大收益
+	dp[1] = 0 			// 手上不持有股票，并且处于冷冻期中的累计最大收益
+	dp[2] = 0			// 手上不持有股票，并且不在冷冻期中的累计最大收益
+	for i := 1; i < n; i++{
+		dp0 := dp[0]
+		dp1 := dp[1]
+		dp[0] = max(dp[0], dp[2]-prices[i])
+		dp[1] = dp0 + prices[i]
+		dp[2] = max(dp1, dp[2])
+	}
+	return max(dp[1], dp[2])
+}
 
+/* 以下部分是 经典题目系列
+** Longest Common SubString -- 最长公共子串
+** Longest Common Subsequence -- 最长公共子序列
+*/
 
+/* 1143. Longest Common Subsequence
+** Given two strings text1 and text2, return the length of their longest common subsequence.
+** If there is no common subsequence, return 0.
+** A subsequence of a string is a new string generated from the original string with some characters (can be none)
+** deleted without changing the relative order of the remaining characters.
+** For example, "ace" is a subsequence of "abcde".
+** A common subsequence of two strings is a subsequence that is common to both strings.
+ */
+func LongestCommonSubsequence(text1 string, text2 string) int {
 
+}
+/* 5. Longest Palindromic Substring
+** Given a string s, return the longest palindromic substring in s.
+ */
+/* 暴力求出所有子串，然后逐个判断
+ */
+func longestPalindrome(s string) string{
+	var isPalindrome func([]byte) bool
+	isPalindrome = func(ss []byte) bool {
+		for i, j := 0, len(ss)-1; i < j; i,j = i+1, j-1{
+			if ss[i] != ss[j]{
+				return false
+			}
+		}
+		return true
+	}
+	length := len(s)
+	ans := []byte{}
+	for i := 0; i < length; i++{
+		for j := i; j < length; j++{
+			if isPalindrome([]byte(s[i:j+1])){
+				if len(ans) < (j-i+1){
+					ans = []byte(s[i:j+1])
+				}
+			}
+		}
+	}
+	return string(ans)
+}
+/* 把原来的字符串倒置了，然后找他们俩的最长的公共子串就可以
+** 题目转换为 求最长公共子串问题
+** 定义dp[i][j]为公共子串的长度
+** dp[i][j] = dp[i-1][j-1] + 1
+ */
+func longestPalindromeDP(s string) string{
+
+}
+
+func longestPalindromeDP2(s string) string{
+	n := len(s)
+	if n < 2{
+		return s
+	}
+	maxLen, begin := 1, 0
+	// dp[i][j]表示s[i:j+1]是否为回文串
+	dp := make([][]bool, n)
+	for i := range dp{
+		dp[i] = make([]bool, n)
+		// 初始化: 所有长度为1的子串都是回文串
+		dp[i][i] = true
+	}
+	// 子串长度 从小 到 大 开始递推
+	// 先枚举子串长度
+	for l := 2; l <= n; l++{
+		// 枚举左边界，左边界的上限设置可以宽松些
+		for i := 0; i < n; i++{
+			// 由于 l 和 i 可以确定右边界， 即 j-i+1得
+			j := i + l - 1
+			//若右边界越界，退出当前循环
+			if j >= n{
+				break
+			}
+			if s[i] != s[j] {
+				dp[i][j] = false
+			}else{
+				if j - i < 3{ // 特殊情况
+					dp[i][j] = true
+				}else{
+					dp[i][j] = dp[i+1][j-1]
+				}
+			}
+			// 只要dp[i][l]=true 成立，就表示s[i:l+1]是回文，此时记录回文的长度和起始索引
+			if dp[i][j] && j - i + 1 > maxLen{
+				maxLen = j-i+1
+				begin = i
+			}
+		}
+	}
+	return s[begin:begin+maxLen]
+}
+
+/* 516. Longest Palindromic Subsequence
+** Given a string s, find the longest palindromic subsequence's length in s.
+** A subsequence is a sequence that can be derived from another sequence by deleting some or no elements without changing the order of the remaining elements.
+ */
+/* 基本规律：
+** 对于一个子序列而言，如果它是回文子序列，并且长度大于 2，那么将它首尾的两个字符去除之后，它仍然是个回文子序列。
+** 因此可以用动态规划的方法计算给定字符串的最长回文子序列
+** dp[i][j] 表示字符串 s 的下标范围 [i,j] 内的最长回文子序列的长度
+** 边界：
+** 1. 任何长度为 1 的子序列都是回文子序列： dp[i][i] = 1
+** 2. 0 <= i <= j < n, 非此条件下 dp[i][j] = 0
+** i < j 情况：
+** 1. s[i] = s[j]
+	则首先得到 s 的下标范围 [i+1,j−1] 内的最长回文子序列，然后在该子序列的首尾分别添加 s[i] 和 s[j]，即可得到 s 的下标范围 [i,j] 内的最长回文子序列，
+	因此 dp[i][j]=dp[i+1][j−1]+2；
+** 2. s[i] != s[j]
+	则 s[i] 和 s[j] 不可能同时作为同一个回文子序列的首尾，因此 dp[i][j]=max(dp[i+1][j],dp[i][j−1])。
+	其实此处dp[i][j]=max(dp[i+1][j],dp[i][j−1], dp[i+1][j-1]), 但是dp[i+1][j-1] 状态合并掉了
+** 由于状态转移方程都是从长度较短的子序列向长度较长的子序列转移，因此需要注意动态规划的循环顺序。
+** 最终得到 dp[0][n−1] 即为字符串 ss 的最长回文子序列的长度
+ */
+
+func LongestPalindromeSubseq(s string) int {
+	n := len(s)
+	dp := make([][]int, n)
+	for i := range dp{
+		dp[i] = make([]int, n)
+	}
+	for i := n-1; i >= 0; i--{
+		dp[i][i] = 1
+		for j := i+1; j < n; j++{
+			if s[i] == s[j]{
+				dp[i][j] = dp[i+1][j-1] + 2
+			}else{
+				dp[i][j] = max(dp[i+1][j], dp[i][j-1])
+			}
+		}
+	}
+	return dp[0][n-1]
+}
+/* 归类为区间DP
+** 之所以可以使用区间 DP 进行求解，是因为在给定一个回文串的基础上，如果在回文串的边缘分别添加两个新的字符，可以通过判断两字符是否相等来得知新串是否回文
+** 使用小区间的回文状态可以推导出大区间的回文状态值
+** 从图论意义出发就是，任何一个长度为 len 的回文串，必然由「长度为 len−1」或「长度为 len−2」的回文串转移而来。
+** 两个具有公共回文部分的回文串之间存在拓扑序（存在由「长度较小」回文串指向「长度较大」回文串的有向边）。
+** 通常区间 DP 问题都是，常见的基本流程为：
+** 1. 从小到大枚举区间大小 len
+** 2. 枚举区间左端点 l，同时根据区间大小 len 和左端点计算出区间右端点 r = l + len - 1
+** 通过状态转移方程求 f[l][r] 的值
+ */
+func LongestPalindromeSubseqDP(s string) int {
+	n := len(s)
+	dp := make([][]int, n)
+	for i := range dp{
+		dp[i] = make([]int, n)
+	}
+	for len := 1; len <= n; len++{
+		for l := 0; l+len-1 < n; l++{
+			r := l+len-1
+			if len == 1{
+				dp[l][r] = 1
+			}else if len == 2{
+				if s[l] == s[r]{
+					dp[l][r] = 2
+				}else {
+					dp[l][r] = 1
+				}
+			}else{
+				if s[l] == s[r]{
+					dp[l][r] = max(dp[l][r], dp[l+1][r], dp[l][r-1], dp[l+1][r-1]+2)
+				}else{
+					dp[l][r] = max(dp[l][r], dp[l+1][r], dp[l][r-1], dp[l+1][r-1])
+				}
+			}
+		}
+	}
+	return dp[0][n-1]
+}
 
 
 

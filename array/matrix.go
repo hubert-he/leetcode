@@ -634,4 +634,253 @@ func IsValidSudoku(board [][]byte) bool {
 	return true
 }
 
+/* 1292. Maximum Side Length of a Square with Sum Less than or Equal to Threshold
+** Given a m x n matrix mat and an integer threshold.
+** Return the maximum side-length of a square with a sum less than or equal to threshold or return 0 if there is no such square.
+** 注意额外增加为0的首行首列，方便处理
+	1 <= m, n <= 300
+	m == mat.length
+	n == mat[i].length
+	0 <= mat[i][j] <= 10000
+	0 <= threshold <= 10^5
+ */
+/* 二维数组前缀和：dp[i][j] = mat[i][j] + dp[i-1][j] + dp[i][j-1] - dp[i-1][j-1]
+** 设二维数组 A 的大小为 m * n，行下标的范围为 [1, m]，列下标的范围为 [1, n]
+** 数组 P 是 A 的前缀和数组，等价于 P 中的每个元素 P[i][j]：
+** 1. 如果 i 和 j 均大于 0，那么 P[i][j] 表示 A 中以 (1, 1) 为左上角，(i, j) 为右下角的矩形区域的元素之和；
+** 2. 如果 i 和 j 中至少有一个等于 0，那么 P[i][j] 也等于 0。
+** 数组 P 可以帮助我们在 O(1) 的时间内求出任意一个矩形区域的元素之和。
+** 具体地，设我们需要求和的矩形区域的左上角为 (x1, y1)，右下角为 (x2, y2)，则该矩形区域的元素之和可以表示为：
+**  sum = A[x1...x2][y1...y2] = P[x2][y2] - P[x1 - 1][y2] - P[x2][y1 - 1] + P[x1 - 1][y1 - 1]
+*/
+func maxSideLength(mat [][]int, threshold int) int {
+	m, n := len(mat), len(mat[0])
+	// 前缀和 第一元素为 0，引入前缀 0 方便条件处理
+	dp := make([][]int, m+1)
+	for i := range dp{
+		dp[i] = make([]int, n+1)
+	}
+	/* 此处理解错误，二维前缀和，在边界位置 其实为一维前缀和
+	// 初始化
+	copy(dp[0], mat[0])
+	for i := 0; i < m; i++{
+		dp[i][0] = mat[i][0]
+	}
+	// 前缀和 第一元素为 0，引入前缀 0 方便条件处理
+	for i := 0; i < m; i++{
+		for j := 0; j < n; j++{
+			dp[i][j] = mat[i][j]
+			if i > 0{
+				dp[i][j] += dp[i-1][j]
+			}
+			if j > 0{
+				dp[i][j] += dp[i][j-1]
+			}
+			if i > 0 && j > 0{
+				dp[i][j] -= dp[i-1][j-1]
+			}
+		}
+	}
+	*/
+	for i := 1; i <= m; i++{
+		for j := 1; j <= n; j++{
+			dp[i][j] = mat[i-1][j-1] + dp[i-1][j] + dp[i][j-1] - dp[i-1][j-1]
+		}
+	}
+	ans := 0
+	/* 题意是正方形区域，并且是任意位置开始的
+	for i := 1; i < m; i++{
+		for j := 1; j < n; j++{
+			if dp[i][j] <= threshold{
+				ans = max(ans, i, j)
+			}
+		}
+	}
+	*/
+	// 区域和(右下角坐标i，j， 长宽为 k) = dp[i][j] - dp[i-k][j] - dp[i][j-k] + dp[i-k][j-k]
+	for k := 1; k <= m && k <= n; k++{
+		for i := m; i > 0; i--{
+			for j := n; j > 0; j--{
+				if i - k < 0 || j - k < 0{
+					continue
+				}
+				t := dp[i][j] - dp[i-k][j] - dp[i][j-k] + dp[i-k][j-k]
+				if t <= threshold{
+					if ans < k {
+						ans = k
+					}
+				}
+			}
+		}
+	}
+	return ans
+}
+/*二分： 注意题目限制条件： 全是正数或0
+** 查找的正方形的边长越长，其计算出来的元素总和越大。
+** 我们可以二分正方形的边长，在满足阈值条件下尽可能地扩大正方形的边长，其等价于在升序数组中查找一个小于等于 k 的最大元素。
+** 二分的具体思路：
+	控制 l 到 h 都是可能可能的值
+	如果 mid 满足阈值条件，则 l = mid，l 可能是答案，不能直接舍去。
+	如果 mid 不满足阈值条件，则 h = mid - 1。
+	当 l = h 或 l + 1 = h 时跳出循环（小提示：l = mid 可能造成死循环，通过 l + 1 == h 条件跳出），判断 l 和 h 两个是最优解。
+*/
+func maxSideLength2(mat [][]int, threshold int) int {
+	m, n := len(mat), len(mat[0])
+	sn := m
+	if sn > n{
+		sn = n
+	}
+	// 前缀和 第一元素为 0，引入前缀 0 方便条件处理
+	dp := make([][]int, m+1)
+	for i := range dp{
+		dp[i] = make([]int, n+1)
+	}
+	for i := 1; i <= m; i++{
+		for j := 1; j <= n; j++{
+			dp[i][j] = mat[i-1][j-1] + dp[i-1][j] + dp[i][j-1] - dp[i-1][j-1]
+		}
+	}
+	ans := 0
+	// 二分查找
+	start, end := 0, sn
+	for start <= end{
+		mid := int(uint(start+end)>>1)
+		target := 0
+		for i := m; i > 0; i--{
+			for j := n; j > 0; j--{
+				if i - mid < 0 || j - mid < 0{
+					continue
+				}
+				t := dp[i][j] - dp[i-mid][j] - dp[i][j-mid] + dp[i-mid][j-mid]
+				if t <= threshold{
+					target = t
+					if ans < mid{
+						ans = mid
+					}
+				}
+			}
+		}
+		if target == 0{
+			end = mid-1
+		}else{
+			start = mid +1
+		}
+	}
+	return ans
+}
+// 优化3：回到暴力枚举的方法上，枚举算法中包括三重循环，其中前两重循环枚举正方形的左上角位置，而第三重循环枚举的是正方形的边长
+// 优化思路-1： 如果边长为 c 的正方形的元素之和已经超过阈值，那么我们就没有必要枚举更大的边长了。
+//		因为数组 mat 中的所有元素均为非负整数，如果固定了左上角的位置 (i, j)（即前两重循环），那么随着边长的增大，正方形的元素之和也会增大
+// 优化思路-2： 由于我们的目标是找到边长最大的正方形，那么如果我们在前两重循环枚举到 (i, j) 之前已经找到了一个边长为 c' 的正方形，
+//		那么在枚举以 (i, j) 为左上角的正方形时，我们可以忽略所有边长小于等于 c' 的正方形，直接从 c' + 1 开始枚举
+func maxSideLength3(mat [][]int, threshold int) int {
+	ans := 0
+	m, n := len(mat), len(mat[0])
+	sn := m
+	if sn > n{
+		sn = n
+	}
+	prefixSum := make([][]int, m+1)
+	for i := range prefixSum{
+		prefixSum[i] = make([]int, n+1)
+	}
+	for i := 1; i <= m; i++{
+		for j := 1; j <= n; j++{
+			prefixSum[i][j] = mat[i-1][j-1] + prefixSum[i-1][j] + prefixSum[i][j-1] - prefixSum[i-1][j-1]
+		}
+	}
+	sum := func(i, j, c int)int{
+		return prefixSum[i+c][j+c] - prefixSum[i+c][j] - prefixSum[i][j+c] + prefixSum[i][j]
+	}
+	for i := 0; i < m; i++{
+		for j := 0; j < n; j++{
+			for c := ans + 1; c <= sn; c++{//优化思路-2
+				if i+c <= m && j+c <= n && sum(i,j,c) <= threshold{
+					ans++
+				}else{ // 优化思路-1
+					break
+				}
+			}
+		}
+	}
+	return ans
+}
+/* 与二维前缀和 相似的题目 可作为训练使用
+** 1314. Matrix Block Sum
+** Given a m x n matrix mat and an integer k, return a matrix answer where each answer[i][j] is the sum of all elements mat[r][c] for:
+	i - k <= r <= i + k,
+	j - k <= c <= j + k, and
+	(r, c) is a valid position in the matrix.
+Example 1:
+	Input: mat = [[1,2,3],[4,5,6],[7,8,9]], k = 1
+	Output: [[12,21,16],[27,45,33],[24,39,28]]
+Example 2:
+	Input: mat = [[1,2,3],[4,5,6],[7,8,9]], k = 2
+	Output: [[45,45,45],[45,45,45],[45,45,45]]
+*/
+func matrixBlockSum(mat [][]int, k int) [][]int {
+	m, n := len(mat), len(mat[0])
+	ans := make([][]int, m)
+	for i := range ans {
+		ans[i] = make([]int, n)
+	}
+	dp := make([][]int, m+1)
+	for i := range dp{
+		dp[i] = make([]int, n+1)
+	}
+	for i := 1; i <= m; i++{
+		for j := 1; j <= n; j++{
+			dp[i][j] = mat[i-1][j-1] + dp[i-1][j] + dp[i][j-1] - dp[i-1][j-1]
+		}
+	}
+	for i := range ans {
+		for j := range ans[i]{
+			r1, c1 := i-k, j-k
+			r2, c2 := i+k, j+k
+			if r1 < 0{
+				r1 = 0
+			}
+			if c1 < 0 {
+				c1 = 0
+			}
+			if r2 >= m{
+				r2 = m-1
+			}
+			if c2 >= n {
+				c2 = n-1
+			}
+			// 留意 索引值 不同
+			ans[i][j] = dp[r2+1][c2+1] - dp[r2+1][c1] - dp[r1][c2+1] + dp[r1][c1]
+		}
+	}
+	return ans
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

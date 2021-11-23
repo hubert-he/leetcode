@@ -323,4 +323,57 @@ func GetMid(a, b int)int{
 	return (a & b) + (a^b)>>1
 }
 
+/* 201. Bitwise AND of Numbers Range
+** Given two integers left and right that represent the range [left, right],
+** return the bitwise AND of all numbers in this range, inclusive.
+*/
+// 超时
+func rangeBitwiseAnd(left int, right int) int {
+	if left == 0{
+		return 0
+	}
+	ans := left
+	for left <= right{
+		ans &= left
+		left++
+	}
+	return ans
+}
+// 对所有数字执行按位与运算的结果是所有对应二进制字符串的公共前缀再用零补上后面的剩余位
+// 所有这些二进制字符串的公共前缀也即指定范围的起始和结束数字 m 和 n 的公共前缀
+// 可以列出 9 到 12 二进制查看
+// 题目转换成 给定两个整数，我们要找到它们对应的二进制字符串的公共前缀
+// 方法一： 位移法
+// 1. 将两个数字不断向右移动，直到数字相等，即数字被缩减为它们的公共前缀
+// 2. 通过将公共前缀向左移动，将零添加到公共前缀的右边以获得最终结果
+func rangeBitwiseAnd2(left int, right int) int {
+	shift := 0
+	for left < right{
+		left, right = left >> 1, right >> 1
+		shift++
+	}
+	return left << shift
+}
+// 方法二： Brian Kernighan 算法
+/* 位移相关的算法叫做「Brian Kernighan 算法」，它用于清除二进制串中最右边的 11
+** Brian Kernighan 算法的关键在于我们每次对 number 和 number−1 之间进行按位与运算后，number 中最右边的 1 会被抹去变成 0
+** 对于给定的范围 [m,n]（m<n），我们可以对数字 n 迭代地应用上述技巧，清除最右边的 1，直到它小于或等于 m，此时非公共前缀部分的 1 均被消去。
+** 因此最后我们返回 n 即可
+ */
+func rangeBitwiseAndBK(left int, right int) int {
+	for left < right{
+		right &= (right-1)
+	}
+	return right
+}
+
+
+
+
+
+
+
+
+
+
 
