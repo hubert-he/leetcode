@@ -49,7 +49,7 @@ func main () {
 	// Load your secret key from a safe place and reuse it across multiple
 	// NewCipher calls. (Obviously don't use this example key for anything
 	// real.) If you want to convert a passphrase to a key, use a suitable
-	// package like bcrypt or scrypt.
+	// knapsack like bcrypt or scrypt.
 	key, _ := hex.DecodeString("49e084d20fa540076c05a03faa8a4464")
 	iv, _ := hex.DecodeString("55e033412319e944")
 	plaintext := PKCS5Padding([]byte("hello backup\n"), aes.BlockSize)

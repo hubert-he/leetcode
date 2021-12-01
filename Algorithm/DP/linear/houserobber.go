@@ -1,7 +1,7 @@
-package DP
+package linear
 
 import (
-	"../Tree"
+	"../../../Tree"
 	"fmt"
 	"math"
 )
@@ -131,6 +131,27 @@ func RobII(nums []int) int {
 		dp0[i%2] = max(nums[i]+dp0[(i-2)%2], dp0[(i-1)%2])
 	}
 	return max(dp0[(s-1)%2], dp1[(s-1)%2])
+}
+
+/*2021-11-30 重刷此题 使用二次 DP 很明显 可以合并 */
+func RobII_2(nums []int) int {
+	n := len(nums)
+	if n <= 3{
+		return max(nums...)
+	}
+	ans := math.MinInt32
+	// 抢第一个
+	dp := [2]int{nums[0], nums[0]}
+	for i := 3; i < n; i++{
+		dp[i%2] = max(dp[(i-2)%2]+nums[i-1], dp[(i-1)%2])
+	}
+	ans = dp[(n-1)%2]
+	// 不抢第一个
+	dp = [2]int{nums[1], 0}
+	for i := 3; i < n; i++{
+		dp[i%2] = max(dp[(i-2)%2]+nums[i-1], dp[(i-1)%2])
+	}
+	return max(ans, dp[(n-2)%2]+nums[n-1], dp[(n-1)%2])
 }
 
 /*2021-10-15更新： 可以预先计算出 选第一 和 不选第一个导致的序列情况， 最后比较可能情况*/
@@ -339,6 +360,30 @@ func MinCostI2(cost [][3]int) int {
 	last := (s-1)%2
 	return min(dp[last][0], dp[last][1], dp[last][2])
 }
+/* 2021-11-20 重刷此题 */
+func minCost_2(costs [][]int) int {
+	houses := len(costs)
+	colors := len(costs[0])
+	dp := [2][]int{}
+	for i := range dp{
+		dp[i] = make([]int, colors)
+	}
+	for i := 1; i <= houses; i++{
+		// 可算想到这个初始化了。。。。。
+		for o := range dp[i%2]{
+			dp[i%2][o] = math.MaxInt32
+		}
+		for j := 0; j < colors; j++{
+			for k := 0; k < colors; k++{
+				if j != k{
+					dp[i%2][j] = min(dp[(i-1)%2][k]+costs[i-1][j], dp[i%2][j])
+				}
+			}
+		}
+	}
+	return min(dp[houses%2]...)
+}
+
 /* 265. Paint House II
   There are a row of n houses, each house can be painted with one of the k colors.
   The cost of painting each house with a certain color is different.
@@ -439,6 +484,31 @@ func MinCostII2(cost [][]int) int {
 	}
 	return min1
 }
+
+/* 2021-11-20 重刷此题 */
+func minCostII_2(costs [][]int) int {
+	houses := len(costs)
+	colors := len(costs[0])
+	dp := [2][]int{}
+	for i := range dp{
+		dp[i] = make([]int, colors)
+	}
+	for i := 1; i <= houses; i++{
+		// 可算想到这个初始化了。。。。。
+		for o := range dp[i%2]{
+			dp[i%2][o] = math.MaxInt32
+		}
+		for j := 0; j < colors; j++{
+			for k := 0; k < colors; k++{
+				if j != k{
+					dp[i%2][j] = min(dp[(i-1)%2][k]+costs[i-1][j], dp[i%2][j])
+				}
+			}
+		}
+	}
+	return min(dp[houses%2]...)
+}
+
 /*  1473. Paint House III
   There is a row of m houses in a small city, each house must be painted with one of the n colors (labeled from 1 to n),
   some houses that have been painted last summer should not be painted again.

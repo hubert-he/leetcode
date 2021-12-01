@@ -1,4 +1,4 @@
-package DP
+package linear
 
 import "math"
 
@@ -190,44 +190,6 @@ func StoneGameMath(piles []int) (ans bool) {
 	return true
 }
 
-/* 918. Maximum Sum Circular Subarray
-** Given a circular integer array nums of length n, return the maximum possible sum of a non-empty subarray of nums.
-** A circular array means the end of the array connects to the beginning of the array.
-** Formally, the next element of nums[i] is nums[(i + 1) % n] and the previous element of nums[i] is nums[(i - 1 + n) % n].
-** A subarray may only include each element of the fixed buffer nums at most once.
-** Formally, for a subarray nums[i], nums[i + 1], ..., nums[j], there does not exist i <= k1, k2 <= j with k1 % n == k2 % n.
- */
-/* 对于环形数组，分两种情况:
-** 1. 答案在数组中间，就是最大子序和
-** 2. 答案在数组两边, 例如[5,-3,5]最大的子序和就等于数组的总和SUM-最小的子序和
-** 3. 一种特殊情况是数组全为负数，也就是SUM-最小子序和==0，最大子序和等于数组中最大的那个
-*/
-func maxSubarraySumCircular(nums []int) int {
-	n := len(nums)
-	sum := nums[0]
-	dpmax, dpmin := nums[0], nums[0]
-	ans := nums[0]
-	minVal := nums[0]
-	for i := 1; i < n; i++{
-		sum += nums[i]
-		dpmax = max(dpmax + nums[i], nums[i])
-		dpmin = min(dpmin + nums[i], nums[i])
-		if ans < dpmax{
-			ans = dpmax
-		}
-		if minVal > dpmin{
-			minVal = dpmin
-		}
-	}
-	if sum - minVal != 0{
-		return max(ans, sum-minVal)
-	}
-	return ans
-}
-/* Kadane 算法: 用来找到 A 的最大子段和, 基于动态规划
-**
- */
-
 /*122. Best Time to Buy and Sell Stock II
 ** You are given an integer array prices where prices[i] is the price of a given stock on the ith day.
 ** On each day, you may decide to buy and/or sell the stock. You can only hold at most one share of the stock at any time.
@@ -286,6 +248,43 @@ func maxProfitIII(prices []int) int {
 		dp[2] = max(dp1, dp[2])
 	}
 	return max(dp[1], dp[2])
+}
+
+/* 376. Wiggle Subsequence
+** A wiggle sequence is a sequence where the differences between successive numbers strictly alternate between positive and negative.
+** The first difference (if one exists) may be either positive or negative.
+** A sequence with one element and a sequence with two non-equal elements are trivially wiggle sequences.
+** For example,
+** [1, 7, 4, 9, 2, 5] is a wiggle sequence because the differences (6, -3, 5, -7, 3) alternate between positive and negative.
+** In contrast, [1, 4, 7, 2, 5] and [1, 7, 4, 5, 5] are not wiggle sequences.
+** The first is not because its first two differences are positive, and the second is not because its last difference is zero.
+** A subsequence is obtained by deleting some elements (possibly zero) from the original sequence,
+** leaving the remaining elements in their original order.
+** Given an integer array nums, return the length of the longest wiggle subsequence of nums.
+ */
+func wiggleMaxLength(nums []int) int {
+
+}
+
+/* 如果是求 subarray 的话，即连续的子序列 */
+func wiggleMaxLength_subArray(nums []int) int {
+	dp := make([]int, 2)
+	ans := 1
+	n := len(nums)
+	dp[0], dp[1] = 1, 1
+	for i := 1; i < n; i++{
+		d := nums[i] - nums[i-1]
+		if d > 0{
+			dp[0] = dp[1] + 1
+			dp[1] = 1
+			ans = max(dp[0], ans)
+		}else{
+			dp[1] = dp[0] + 1
+			dp[0] = 1
+			ans = max(ans, dp[1])
+		}
+	}
+	return ans
 }
 
 /* 以下部分是 经典题目系列

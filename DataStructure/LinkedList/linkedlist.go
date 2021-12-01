@@ -72,5 +72,24 @@ func SortListMergeSort(head *ListNode) *ListNode {
 	return merge(SortListMergeSort(head), SortListMergeSort(h))
 }
 
+/* 287. Find the Duplicate Number
+** Given an array of integers nums containing n + 1 integers where each integer is in the range [1, n] inclusive.
+** There is only one repeated number in nums, return this repeated number.
+** You must solve the problem without modifying the array nums and uses only constant extra space.
+ */
+// Floyd 判圈算法 快慢指针判断环，并找出环的节点
+func findDuplicate(nums []int) int {
+	slow, fast := nums[0], nums[nums[0]]
+	for slow != fast{
+		slow = nums[slow]
+		fast = nums[nums[fast]]
+	}
+	slow = 0
+	for slow != fast{
+		slow = nums[slow]
+		fast = nums[fast]
+	}
+	return slow
+}
 
 

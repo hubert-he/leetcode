@@ -1,7 +1,7 @@
-package DP
+package linear
 
 import "testing"
-import "../Tree"
+import "../../../Tree"
 
 func TestRobDP(t *testing.T){
 	for caseId, testCase := range []struct{

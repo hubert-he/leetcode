@@ -1,4 +1,4 @@
-package DP
+package linear
 
 import (
 	"container/heap"
@@ -137,6 +137,98 @@ func maxSubArraySimply(nums []int) int {
 	}
 	return ans
 }
+
+/* 152. Maximum Product Subarray
+** Given an integer array nums, find a contiguous non-empty subarray within the array that has the largest product,
+** and return the product.
+** It is guaranteed that the answer will fit in a 32-bit integer.
+** A subarray is a contiguous subsequence of the array.
+*/
+/* 考虑当前位置如果是一个负数的话，那么我们希望以它前一个位置结尾的某个段的积也是个负数，这样就可以负负得正，并且我们希望这个积尽可能「负得更多」，即尽可能小。
+** 如果当前位置是一个正数的话，我们更希望以它前一个位置结尾的某个段的积也是个正数，并且希望它尽可能地大。于是这里我们可以再维护一个 fmin(i)，
+** 它表示以第 i 个元素结尾的乘积最小子数组的乘积，那么我们可以得到这样的动态规划转移方程：
+** 代码所示 转移方程
+ */
+func maxProduct(nums []int) int {
+	n := len(nums)
+	dp := make([]int, 2) // 0:存最小 1：存最大
+	dp[0], dp[1] = nums[0], nums[0]
+	//ans := math.MinInt32 注意初始值
+	ans := nums[0]
+	for i := 1; i < n; i++{
+		t := make([]int, 2)
+		// 取dp[0]*nums[i], dp[1]*nums[i], nums[i] 之间的极大 极小 值
+		t[0] = min(dp[0]*nums[i], dp[1]*nums[i], nums[i])
+		t[1] = max(dp[0]*nums[i], dp[1]*nums[i], nums[i])
+		dp = t
+		ans = max(ans, dp[1])
+	}
+	return ans
+}
+
+/* 487. Max Consecutive Ones II
+** Given a binary array nums, return the maximum number of consecutive 1's in the array if you can flip at most one 0.
+** Follow up:
+	What if the input numbers come in one by one as an infinite stream? In other words,
+	you can't store all numbers coming from the stream as it's too large to hold in memory.
+	Could you solve it efficiently?
+*/
+/* 必须把 是否flip 0 的状态 反映到 动态方程中
+** z这个是看到使用dp ，才想起的转移方程
+*/
+func FindMaxConsecutiveOnes(nums []int) int {
+	dp := make([]int, 2)
+	ans := 0
+	for i := range nums{
+		if nums[i] == 0{
+			dp[0] = dp[1]+1
+			dp[1] = 0
+			ans = max(ans, dp[0])
+		}else{
+			dp[0]++
+			dp[1]++
+			ans = max(ans, dp[0], dp[1])
+		}
+	}
+	return ans
+}
+/* 918. Maximum Sum Circular Subarray
+** Given a circular integer array nums of length n, return the maximum possible sum of a non-empty subarray of nums.
+** A circular array means the end of the array connects to the beginning of the array.
+** Formally, the next element of nums[i] is nums[(i + 1) % n] and the previous element of nums[i] is nums[(i - 1 + n) % n].
+** A subarray may only include each element of the fixed buffer nums at most once.
+** Formally, for a subarray nums[i], nums[i + 1], ..., nums[j], there does not exist i <= k1, k2 <= j with k1 % n == k2 % n.
+ */
+/* 对于环形数组，分两种情况:
+** 1. 答案在数组中间，就是最大子序和
+** 2. 答案在数组两边, 例如[5,-3,5]最大的子序和就等于数组的总和SUM-最小的子序和
+** 3. 一种特殊情况是数组全为负数，也就是SUM-最小子序和==0，最大子序和等于数组中最大的那个
+ */
+func maxSubarraySumCircular(nums []int) int {
+	n := len(nums)
+	sum := nums[0]
+	dpmax, dpmin := nums[0], nums[0]
+	ans := nums[0]
+	minVal := nums[0]
+	for i := 1; i < n; i++{
+		sum += nums[i]
+		dpmax = max(dpmax + nums[i], nums[i])
+		dpmin = min(dpmin + nums[i], nums[i])
+		if ans < dpmax{
+			ans = dpmax
+		}
+		if minVal > dpmin{
+			minVal = dpmin
+		}
+	}
+	if sum - minVal != 0{
+		return max(ans, sum-minVal)
+	}
+	return ans
+}
+/* Kadane 算法: 用来找到 A 的最大子段和, 基于动态规划
+**
+ */
 
 /* 16.17. 连续数列
 	利用前缀和计算，但是复杂度在 平方级别
@@ -1316,6 +1408,161 @@ func maximalSquare(matrix [][]byte) int {
 	}
 	return maxSide * maxSide
 }
+/* 746. Min Cost Climbing Stairs
+** You are given an integer array cost where cost[i] is the cost of ith step on a staircase.
+** Once you pay the cost, you can either climb one or two steps.
+** You can either start from the step with index 0, or the step with index 1.
+** Return the minimum cost to reach the top of the floor.
+*/
+// 2021-11-24 重刷此题
+func minCostClimbingStairs(cost []int) int {
+	// dp[i] = min(dp[i-1]+cost[i-1], dp[i-2]+cost[i-2])
+	dp := [2]int{}
+	n := len(cost)+1 // 跳出去的
+	for i := 3; i <= n; i++{
+		dp[i%2] = min(dp[(i-1)%2]+cost[i-2], dp[(i-2)%2]+cost[i-3])
+	}
+	return dp[n%2]
+}
+
+/* 1182. Shortest Distance to Target Color
+** You are given an array colors, in which there are three colors: 1, 2 and 3.
+** You are also given some queries. Each query consists of two integers i and c,
+** return the shortest distance between the given index i and the target color c. If there is no solution return -1.
+Constraints:
+	1 <= colors.length <= 5*10^4
+	1 <= colors[i] <= 3
+	1 <= queries.length <= 5*10^4
+	queries[i].length == 2
+	0 <= queries[i][0] < colors.length
+	1 <= queries[i][1] <= 3
+*/
+/* 通用做法是二分，但是这里使用DP思路
+** 题目限制颜色数量最大为 3
+*/
+func shortestDistanceColor(colors []int, queries [][]int) []int {
+	n := len(colors)
+	dp_left := make([][3]int, n)
+	dp_right := make([][3]int, n)
+	// 初始化
+	for i := range dp_left{
+		for j := range dp_left[i]{
+			dp_left[i][j] = -1
+		}
+	}
+	for i := range dp_right{
+		for j := range dp_right[i]{
+			dp_right[i][j] = -1
+		}
+	}
+	dp_left[0][colors[0]-1] = 0
+	dp_right[n-1][colors[n-1]-1] = 0
+	for i := 1; i < n; i++{
+		// dp[i] = dp[i-1]+1
+		for j := range dp_left[i]{
+			if dp_left[i-1][j] == -1{
+				dp_left[i][j] = -1
+			}else{
+				dp_left[i][j] = dp_left[i-1][j] + 1
+			}
+		}
+		dp_left[i][colors[i]-1] = 0
+	}
+	for i := n-2; i >= 0; i--{
+		// dp[i] = dp[i+1]+1
+		for j := range dp_right[i]{
+			if dp_right[i+1][j] == -1{
+				dp_right[i][j] = -1
+			}else{
+				dp_right[i][j] = dp_right[i+1][j] + 1
+			}
+		}
+		dp_right[i][colors[i]-1] = 0
+	}
+	ans := []int{}
+	for i := range queries{
+		idx, color := queries[i][0], queries[i][1]
+		// 忽略了 初始值为-1情况
+		//ans = append(ans, min(dp_left[idx][color-1], dp_right[idx][color-1]))
+		if dp_left[idx][color-1] == -1{
+			ans = append(ans, dp_right[idx][color-1])
+		}else if dp_right[idx][color-1] == -1{
+			ans = append(ans, dp_left[idx][color-1])
+		}else {
+			ans = append(ans, min(dp_left[idx][color-1], dp_right[idx][color-1]))
+		}
+	}
+	return ans
+}
+// 官方的写法，有 2个 编码 可以学习借鉴
+func shortestDistanceColorDP(colors []int, queries [][]int) []int {
+	n := len(colors)
+	dp_left := make([][3]int, n)
+	dp_right := make([][3]int, n)
+	// 初始化
+	for i := range dp_left{
+		for j := range dp_left[i]{
+			dp_left[i][j] = -1
+		}
+	}
+	for i := range dp_right{
+		for j := range dp_right[i]{
+			dp_right[i][j] = -1
+		}
+	}
+	dp_left[0][colors[0]-1] = 0
+	dp_right[n-1][colors[n-1]-1] = 0
+	for i := 1; i < n; i++{
+		// dp[i] = dp[i-1]+1
+		// 编码优化-1: 默认值已经是 -1
+		for j := range dp_left[i]{
+			if dp_left[i-1][j] != -1{
+				dp_left[i][j] = dp_left[i-1][j] + 1
+			}
+		}
+		dp_left[i][colors[i]-1] = 0
+	}
+	for i := n-2; i >= 0; i--{
+		// dp[i] = dp[i+1]+1
+		// 编码优化-1: 默认值已经是 -1
+		for j := range dp_right[i]{
+			if dp_right[i+1][j] != -1{
+				dp_right[i][j] = dp_right[i+1][j] + 1
+			}
+		}
+		dp_right[i][colors[i]-1] = 0
+	}
+	ans := []int{}
+	for i := range queries{
+		idx, color := queries[i][0], queries[i][1]
+		// 忽略了 初始值为-1情况
+		//ans = append(ans, min(dp_left[idx][color-1], dp_right[idx][color-1]))
+		/*
+		if dp_left[idx][color-1] == -1{
+			ans = append(ans, dp_right[idx][color-1])
+		}else if dp_right[idx][color-1] == -1{
+			ans = append(ans, dp_left[idx][color-1])
+		}else {
+			ans = append(ans, min(dp_left[idx][color-1], dp_right[idx][color-1]))
+		}
+		 */
+		// 编码优化-2:
+		d := math.MaxInt32
+		if dp_left[idx][color-1] != -1{
+			d = min(d, dp_left[idx][color-1])
+		}
+		if dp_right[idx][color-1] != -1{
+			d = min(d, dp_right[idx][color-1])
+		}
+		if d == math.MaxInt32{
+			ans = append(ans, -1)
+		}else{
+			ans = append(ans, d)
+		}
+	}
+	return ans
+}
+
 /* 1277. Count Square Submatrices with All Ones
 **Given a m * n matrix of ones and zeros, return how many square submatrices have all ones.
  */

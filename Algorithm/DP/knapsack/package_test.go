@@ -1,8 +1,8 @@
-package DP
+package knapsack
 
 import (
 	"testing"
-	"../tree"
+	"../../../tree"
 )
 
 func TestCanPartition(t *testing.T) {

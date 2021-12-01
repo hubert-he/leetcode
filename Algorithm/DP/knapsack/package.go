@@ -1,10 +1,11 @@
-package DP
+package knapsack
 
 import (
 	"math"
 	"sort"
 	"strings"
-	"../tree"
+	"../../../tree"
+	"../../../utils"
 )
 
 /*类属组合优化-NP完全问题-无法直接求解-通过穷举+验证求解
@@ -46,9 +47,9 @@ func KnapsackZeroONe1(N int, C int, v []int, w []int)int{
 		for j := 0; j <= C; j++{
 			// 额外条件：「当前剩余的背包容量」>=「物品的体积」
 			if j >= v[i]{
-				dp[i][j] = max(dp[i-1][j], dp[i-1][j-v[i]] + w[i])
+				dp[i][j] = utils.Max(dp[i-1][j], dp[i-1][j-v[i]] + w[i])
 			}else{
-				dp[i][j] = max(dp[i-1][j], 0)
+				dp[i][j] = utils.Max(dp[i-1][j], 0)
 			}
 		}
 	}
@@ -71,9 +72,9 @@ func KnapsackZeroONe2(N int, C int, v []int, w []int)int{
 	for i := 1; i < N; i++{
 		for j := 0; j <= C; j++{
 			if j >= v[i]{
-				dp[i&1][j] = max(dp[(i-1)&1][j], dp[i-1][j-v[i]] + w[i])
+				dp[i&1][j] = utils.Max(dp[(i-1)&1][j], dp[i-1][j-v[i]] + w[i])
 			}else{
-				dp[i&1][j] = max(dp[(i-1)&1][j], 0)
+				dp[i&1][j] = utils.Max(dp[(i-1)&1][j], 0)
 			}
 		}
 	}
@@ -91,11 +92,46 @@ func KnapsackZeroONe3(N int, C int, v []int, w []int)int{
 		for j := C; j >= v[i]; j--{
 			no := dp[j] // 不选择该 i 物品
 			yes := dp[j-v[i]] + w[i] // 选择该 i 物品
-			dp[j] = max(no, yes)
+			dp[j] = utils.Max(no, yes)
 		}
 	}
 	return dp[C]
 }
+
+/* 1230. Toss Strange Coins
+** You have some coins.  The i-th coin has a probability prob[i] of facing heads when tossed.
+** Return the probability that the number of coins facing heads equals target if you toss every coin exactly once.
+ */
+/* 01背包变形问题
+** 状态定义：
+** 集合：从0到第 i 枚硬币，正面朝上个数等于 j 的概率
+** 属性： 概率
+
+** 状态转移：
+** 抛第 i 枚硬币，要么朝上，要么朝下两种状态
+** 上： dp[i][j] = dp[i-1][j-1]*p[i]
+** 下： dp[i][j] = dp[i-1][j]*(1-p[i])
+** 综合： dp[i][j] = dp[i-1][j-1]*p[i] + dp[i-1][j]*(1-p[i])
+ */
+func probabilityOfHeads(prob []float64, target int) float64 {
+	n := len(prob)
+	dp := [2][]float64{}
+	for i := range dp{
+		dp[i] = make([]float64, target+1)
+	}
+	// 初始化
+	dp[0][0] = 1
+	// dp[1][0], dp[1][1] = 1-prob[0], prob[0] <== 这个初始化方式不好，参考[0.5,0.5,0.5,0.5,0.5] target = 0 情况，dp[1][1]会初始化溢出
+	for i := 1; i <= n; i++{
+		dp[i%2][0] = dp[(i-1)%2][0]*(1-prob[i-1]) // 单独处理
+		for j := 1; j <= i && j <= target; j++{
+		//for j := 1; j <= target; j++{
+			dp[i%2][j] = dp[(i-1)%2][j-1]*prob[i-1] + dp[(i-1)%2][j]*(1-prob[i-1])
+		}
+	}
+	return dp[n%2][target]
+}
+
 /* 416. 分割等和子集-Partition Equal Subset Sum
 给你一个 只包含正整数 的 非空 数组 nums 。请你判断是否可以将这个数组分割成两个子集，使得两个子集的元素和相等。
 Given a non-empty array nums containing only positive integers,
@@ -127,7 +163,7 @@ func CanPartition(nums []int) bool {
 			if j >= t{
 				yes = dp[j-t] + t
 			}
-			dp[j] = max(yes, no)
+			dp[j] = utils.Max(yes, no)
 		}
 	}
 	// 如果最大价值等于 target，说明可以拆分成两个「等和子集」
@@ -250,7 +286,7 @@ func LastStoneWeightII(stones []int) int {
 	dp := make([]int, target+1)
 	for i := range stones{
 		for j := target; j >= stones[i]; j--{
-			dp[j] = max(dp[j], dp[j-stones[i]]+stones[i])
+			dp[j] = utils.Max(dp[j], dp[j-stones[i]]+stones[i])
 		}
 	}
 	return sum - 2 * dp[target]
@@ -306,7 +342,7 @@ func UnboundedKnapsackProblem(N int, V int, c []int, w []int) int {
 			if j >= c[i] { // 可以选此类物品
 				yes = dp[j - c[i]] + w[i]
 			}
-			dp[j] = max(no, yes)
+			dp[j] = utils.Max(no, yes)
 		}
 	}
 	return dp[V]
@@ -335,7 +371,7 @@ func NumSquaresDP(n int) int {
 			if j >= perfectNums[i]{
 				yes = dp[j-perfectNums[i]] + 1
 			}
-			dp[j] = min(no, yes)
+			dp[j] = utils.Min(no, yes)
 		}
 	}
 	return dp[n]
@@ -348,7 +384,7 @@ func numSquaresDP(n int) int {
 	for i := 1; i <= n; i++{
 		m := math.MaxInt32 // 避免初始化，优化时间
 		for j := 1; j*j <= i; j++{
-			m = min(m, dp[i-j*j])
+			m = utils.Min(m, dp[i-j*j])
 		}
 		dp[i] = m + 1
 	}
@@ -447,7 +483,7 @@ func CoinChange(coins []int, amount int) int {
 			t := dfs(num - coins[i])
 			//fmt.Println(num, coins[i], "-->", t)
 			if t >= 0 {
-				ret = min(ret, t+1)
+				ret = utils.Min(ret, t+1)
 			}
 		}
 		if ret == math.MaxInt32{
@@ -474,7 +510,7 @@ func CoinChangeDP(coins []int, amount int) int {
 	for i := range coins{
 		for j := 0; j <= amount; j++{
 			if j >= coins[i]{
-				dp[j] = min(dp[j], dp[j-coins[i]] + 1)
+				dp[j] = utils.Min(dp[j], dp[j-coins[i]] + 1)
 			}
 		}
 	}
@@ -699,7 +735,7 @@ func MultiPackage(N int, C int, s []int, v []int, w []int)int{
 	dp[0], dp[1] = make([]int, C+1), make([]int, C+1)
 	// 初始化
 	for i := 0; i <= C; i++{
-		k := min(i / v[0], s[0])
+		k := utils.Min(i / v[0], s[0])
 		dp[0][i] = k * w[0]
 	}
 	for i := 1; i < N; i++{
@@ -715,7 +751,7 @@ func MultiPackage(N int, C int, s []int, v []int, w []int)int{
 					yes = y
 				}
 			}
-			dp[i&1][j] = max(no, yes)
+			dp[i&1][j] = utils.Max(no, yes)
 		}
 	}
 	return dp[(N-1)&1][C]
@@ -780,7 +816,7 @@ func BoundKnapsackBinary(N int, C int, s []int, v []int, w []int)int{
 	dp := make([]int, C+1)
 	for i := 0; i < len(worth); i++{
 		for j := C; j >= cost[i]; j--{
-			dp[j] = max(dp[j], dp[j - cost[i]] + worth[i])
+			dp[j] = utils.Max(dp[j], dp[j - cost[i]] + worth[i])
 		}
 	}
 	return dp[C]
@@ -870,7 +906,7 @@ func GroupingKnapsack(N int, C int, S []int, v [][]int, w [][]int) int{
 					yes = dp[i-1][j-vi[k]]+wi[k]
 				}
 			}
-			dp[i][j] = max(no, yes)
+			dp[i][j] = utils.Max(no, yes)
 		}
 	}
 	//fmt.Println(dp)
@@ -885,7 +921,7 @@ func GroupingKnapsack1(N int, C int, S []int, v [][]int, w [][]int) int{
 		for j := C; j >= 0; j--{
 			// no := dp[i-1][j] 被优化在之前的dp[j]保存的数值中
 			for k := 0; k < S[i-1] && j >= vi[k]; k++{
-				dp[j] = max(dp[j], dp[j-vi[k]] + wi[k])
+				dp[j] = utils.Max(dp[j], dp[j-vi[k]] + wi[k])
 			}
 		}
 	}
@@ -1049,7 +1085,7 @@ func FindMaxForm(strs []string, m int, n int) int {
 				if j >= t0 && k >= t1{
 					yes = dp[(i-1)&1][j-t0][k-t1] + 1
 				}
-				dp[i&1][j][k] = max(no, yes)
+				dp[i&1][j][k] = utils.Max(no, yes)
 			}
 		}
 	}
@@ -1080,7 +1116,7 @@ func FindMaxForm2(strs []string, m int, n int) int {
 		*/
 		for j := m; j >= zeros; j-- {
 			for k := n; k >= ones; k-- {
-				dp[j][k] = max(dp[j][k], dp[j-zeros][k-ones]+1)
+				dp[j][k] = utils.Max(dp[j][k], dp[j-zeros][k-ones]+1)
 			}
 		}
 	}
@@ -1158,7 +1194,7 @@ func ProfitableSchemes(n int, minProfit int, group []int, profit []int) int {
 				no := dp[i&1][j][k]
 				yes := 0
 				if j >= group[i]{
-					yes = dp[i&1][j-group[i]][max(0, k-profit[i])]
+					yes = dp[i&1][j-group[i]][utils.Max(0, k-profit[i])]
 				}
 				dp[(i+1)&1][j][k] = (yes + no) % mod
 			}
@@ -1189,7 +1225,7 @@ func ProfitableSchemesDP(n int, minProfit int, group []int, profit []int) int {
 		members, earn := group[i], profit[i]
 		for j := n; j >= members; j-- {
 			for k := minProfit; k >= 0; k-- {
-				dp[j][k] = (dp[j][k] + dp[j-members][max(0, k-earn)]) % mod
+				dp[j][k] = (dp[j][k] + dp[j-members][utils.Max(0, k-earn)]) % mod
 			}
 		}
 	}
@@ -1293,18 +1329,18 @@ func PaintBinaryTree(root *Tree.BiTreeNode, k int) int {
 		}
 		dp[node][0] = maxLeft + maxRight // root 不染色
 	 */
-		dp[node][0] = max(dp[node.Left]...) + max(dp[node.Right]...)
+		dp[node][0] = utils.Max(dp[node.Left]...) + utils.Max(dp[node.Right]...)
 		// root 染色：左子树染色 j 个，右子树染色 i - 1 - j 个时，加上 root.val 的和
 		// 需要求出 dp[root][i]的值
 		for i := 1; i <=k; i++{
 			for j := 0; j < i; j++{
-				dp[node][i] = max(dp[node][i], dp[node.Left][j]+dp[node.Right][i-j-1]+node.Val.(int))
+				dp[node][i] = utils.Max(dp[node][i], dp[node.Left][j]+dp[node.Right][i-j-1]+node.Val.(int))
 			}
 		}
 
 	}
 	dfs(root)
-	return max(dp[root]...) // 不超过
+	return utils.Max(dp[root]...) // 不超过
 }
 // 递归返回数组的方式
 func PaintBinaryTree2(root *Tree.BiTreeNode, k int) int {
@@ -1317,16 +1353,16 @@ func PaintBinaryTree2(root *Tree.BiTreeNode, k int) int {
 		left,right := dfs(node.Left), dfs(node.Right)
 		dp := make([]int, k+1)
 		// 不选root
-		dp[0] = max(left...) + max(right...)
+		dp[0] = utils.Max(left...) + utils.Max(right...)
 		// 选root
 		for i := 1; i <= k; i++{
 			for j := 0; j < i; j++{
-				dp[i] = max(dp[i], left[j] + right[i-1 - j] + node.Val.(int))
+				dp[i] = utils.Max(dp[i], left[j] + right[i-1 - j] + node.Val.(int))
 			}
 		}
 		return dp
 	}
-	return max(dfs(root)...)
+	return utils.Max(dfs(root)...)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1364,7 +1400,7 @@ func IntegerBreak(n int) int {
 	dp[0],dp[1] = 0, 0
 	for i := 2; i <= n; i++{
 		for j := 1; j < i; j++{
-			dp[i] = max(dp[i], j*(i-j), j*dp[i-j])
+			dp[i] = utils.Max(dp[i], j*(i-j), j*dp[i-j])
 		}
 	}
 	return dp[n]
@@ -1397,7 +1433,7 @@ func IntegerBreakII(n int) int {
 	dp := make([]int, n + 1)
 	dp[2] = 1
 	for i := 3; i <= n; i++ {
-		dp[i] = max(max(2 * (i - 2), 2 * dp[i - 2]), max(3 * (i - 3), 3 * dp[i - 3]))
+		dp[i] = utils.Max(utils.Max(2 * (i - 2), 2 * dp[i - 2]), utils.Max(3 * (i - 3), 3 * dp[i - 3]))
 	}
 	return dp[n]
 }

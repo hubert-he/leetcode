@@ -25,7 +25,7 @@ type Interface interface {
 }
 
 /*
-  Init establishes the heap invariants(不变式) required by the other routines in this package.
+  Init establishes the heap invariants(不变式) required by the other routines in this knapsack.
   Init is idempotent(幂等性) with respect to the heap invariants and may be called whenever the heap
   invariants may have been invalidated. The Complexity is O(n) where n = h.Len()
  */

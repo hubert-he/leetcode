@@ -14,7 +14,7 @@ import (
 描述：rand包实现了伪随机数生成器，随机数从Source生成。包水平的函数都使用的默认的公共Source，该Source会在程序每次运行时都产生确定的序列。
      如果需要每次运行产生不同的序列，应使用Seed函数进行初始化。
      Default Source可以安全的用于多go程并发， 但是 如果Source是通过NewSource生成的，则不能用在mutiple goroutine
-注意：此包不是安全相关的，如果需要安全相关的，查阅 crypto/rand package
+注意：此包不是安全相关的，如果需要安全相关的，查阅 crypto/rand knapsack
 类型：
 Source：Source代表一个生成均匀分布在范围[0, 1<<63)的int64值的（伪随机的）资源。
 	type Source interface { // 接口

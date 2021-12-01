@@ -9,7 +9,7 @@ scp "github.com/bramvdbogaerde/go-scp"
 )
 
 func main() {
-	// Use SSH key authentication from the auth package
+	// Use SSH key authentication from the auth knapsack
 	// we ignore the host key in this example, please change this if you use this library
 	//clientConfig, _ := auth.PrivateKey("username", "/path/to/rsa/key", ssh.InsecureIgnoreHostKey())
 	clientConfig, _ := auth.PasswordKey("hubert", "asdf@321", ssh.InsecureIgnoreHostKey(),)

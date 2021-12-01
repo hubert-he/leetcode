@@ -1,4 +1,4 @@
-package DP
+package linear
 
 import "testing"
 
