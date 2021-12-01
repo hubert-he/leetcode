@@ -262,6 +262,20 @@ func maxProfitIII(prices []int) int {
 ** leaving the remaining elements in their original order.
 ** Given an integer array nums, return the length of the longest wiggle subsequence of nums.
  */
+/* 每当我们选择一个元素作为摆动序列的一部分时，这个元素要么是上升的，要么是下降的，这取决于前一个元素的大小。
+** 那么列出状态表达式为
+** 1. up[i]: 表示以前 i 个元素中的某一个为结尾的最长的「上升摆动序列」的长度
+** 2. down[i]: 表示以前 i 个元素中的某一个为结尾的最长的「下降摆动序列」的长度
+** 状态转移规则：
+** 1. 当 nums[i] <= nums[i-1]时， 我们无法选出更长的「上升摆动序列」的方案，因为对于任何以 nums[i] 结尾的「上升摆动序列」，
+		我们都可以将nums[i] 替换为 nums[i−1]，使其成为以nums[i−1] 结尾的「上升摆动序列」
+** 2. 当 nums[i] > nums[i-1]时，我们既可以从 up[i-1] 进行转移， 也可从 down[i-1]转移。
+** 状态方程：
+	up[i] 	= up[i-1] 						if nums[i] <= nums[i-1]
+		  	= max(up[i-1], down[i-1] + 1) 	if nums[i] > nums[i-1]
+	down[i] = down[i-1]						if nums[i] >= nums[i-1]
+			= max(up[i-1] + 1, down[i-1])	if nums[i] < nums[i-1]
+ */
 func wiggleMaxLength(nums []int) int {
 
 }
