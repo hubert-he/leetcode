@@ -171,9 +171,11 @@ func CanPartition(nums []int) bool {
 }
 /* 直接思路
   状态定义：
-  	dp[i][j]定义为 前 i 个数字，其选择的数字总和是否为 j
+  	dp[i][j]定义为 从数组的 [0,i] 下标范围内选取若干个正整数（可以是 0 个），是否存在一种选取方案使得被选取的正整数的和等于 j
   状态转移方程：还是对应 nums[i] 选 与 不选
 	dp[i][j] = dp[i-1][j] || dp[i-1][j-nums[i]]
+  ==> 可以看出 每一行的 dp 值都只与上一行的 dp 值有关， 可以降维度来优化空间
+  ==> 但是要注意 j-nums[i] 比 j 要小， 因此降维过程中，内循环要从最大开始，防止结果被覆盖
   ==> 转1维度
 	dp[j] = dp[j] || dp[j-nums[i]]
  */
@@ -201,6 +203,111 @@ func CanPartitionDP(nums []int) bool {
 		}
 	}
 	return dp[target]
+}
+
+/* DFS 暴力解法  2021-12-14 重刷此题
+*/
+func canPartition_DFS(nums []int) bool {
+	//n := len(nums)
+	sum := 0
+	for i := range nums{
+		sum += nums[i]
+	}
+	// target = sum/2
+	if sum & 0x1 == 1{
+		return false
+	}
+	// 前缀和：要求连续， 转为0-1 knapsack
+	var dfs func(a []int, target int)bool
+	dfs = func(a []int, target int)bool{
+		an := len(a)
+		if target == 0{
+			return true
+		}
+		if an == 0 || target < 0{
+			return false
+		}
+		for i := range a{
+			// 选
+			// 不选
+			if dfs(a[i+1:], target-a[i]) || dfs(a[i+1:], target){
+				return true
+			}
+		}
+		return false
+	}
+	return dfs(nums, sum/2)
+}
+// DFS 方法 dfs函数参数选为 索引值 方便dp
+func canPartition_DFS2(nums []int) bool {
+	n := len(nums)
+	sum := 0
+	for i := range nums{
+		sum += nums[i]
+	}
+	// target = sum/2
+	if sum & 0x1 == 1{
+		return false
+	}
+	// 前缀和：要求连续， 转为0-1 knapsack
+	var dfs func(start int, target int)bool
+	dfs = func(start int, target int)bool{
+		if target == 0{
+			return true
+		}
+		if start >= n || target < 0{
+			return false
+		}
+		for i := start; i < n; i++{
+			// 选
+			// 不选
+			if dfs(i+1, target-nums[i]) || dfs(i+1, target){
+				return true
+			}
+		}
+		return false
+	}
+	return dfs(0, sum/2)
+}
+// 转换为 DFS DP
+func canPartition_DFSDP(nums []int) bool {
+	n := len(nums)
+	sum := 0
+	for i := range nums{
+		sum += nums[i]
+	}
+	// target = sum/2
+	if sum & 0x1 == 1{
+		return false
+	}
+	dp := make([]int, sum/2+1)
+	// 前缀和：要求连续， 转为0-1 knapsack
+	var dfs func(start int, target int)bool
+	dfs = func(start int, target int)bool{
+		if target == 0{
+			return true
+		}
+		if start >= n || target < 0{
+			return false
+		}
+		if dp[target] != 0{
+			if dp[target] == 1{
+				return true
+			}
+			return false
+		}
+		for i := start; i < n; i++{
+			// 选
+			// 不选
+			if dfs(i+1, target-nums[i]) || dfs(i+1, target){
+				dp[target] = 1
+				return true
+			}
+		}
+		dp[target] = 2
+		return false
+	}
+	return dfs(0, sum/2)
 }
 
 /* 494. Target Sum
@@ -463,7 +570,7 @@ func CoinChangeBFS(coins []int, amount int) int {
 
 func CoinChange(coins []int, amount int) int {
 	cache := make([]int, amount+1)
-	for i := range cache{
+	for i := range cache{ // 易错点-1： 初始化 为 最大值
 		cache[i] = math.MaxInt32
 	}
 	cache[0] = 0
@@ -640,7 +747,14 @@ func ChangeDFSDP(amount int, coins []int) int {
 	ans = dfs(n, amount)
 	return ans
 }
-
+/* 注意循环次序， 组合问题
+** 不能交换次序，因为我们这里定义的子问题是，必须选择第k个硬币时，凑成金额i的方案。如果交换了，我们的子问题就变了，那就是对于金额 i, 我们选择硬币的方案。
+** 对于硬币从 0 到 k，我们必须使用第k个硬币的时候，当前金额的组合数
+** 此状态数组 dp[i] 表示的是对于第k个硬币能凑的组合数： dp[i] = dp[i] + dp[i-k]
+** 表示  前 k-1 个硬币凑齐金额 i 的组合数 加上 在原来 i-k 的基础上使用硬币的组合数
+** 那就是用前 k 的硬币凑齐金额 i ，要分为两种情况，一种是没有用前 k-1 个硬币就凑齐了，一种是前面已经凑到了 i-k ，现在就差第 k 个硬币了
+** 这种状态划分，确定不漏不重
+ */
 func ChangeDP(amount int, coins []int) int {
 	dp := make([]int, amount+1)
 	dp[0] = 1

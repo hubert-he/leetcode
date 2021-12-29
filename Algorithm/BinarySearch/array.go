@@ -30,6 +30,29 @@ func MissingElement(nums []int, k int) int {
 	}
 	return nums[i]+k
 }
+// 2021-12-20 刷出此题
+func missingElement(nums []int, k int) int {
+	i, j := 0, len(nums)
+	diff := (nums[j-1] - nums[i]) - (j - i - 1)
+	if k > diff{
+		return nums[j-1] + k - diff
+	}
+	for i <= j {
+		mid := int(uint(i+j)>>1)
+		diff := (nums[mid] - nums[0]) - (mid - 0)
+		//fmt.Println(mid, diff)
+		if diff < k{
+			i = mid + 1
+		}else if diff > k{
+			j = mid - 1
+		}else{
+			j = mid - 1
+		}
+	}
+	//fmt.Println("=>", i, j, nums[i])
+	return nums[j] + k - (nums[j] - nums[0] - j)
+}
+
 // 官方题解
 func MissingElement2(nums []int, k int) int {
 	n := len(nums)
@@ -90,7 +113,7 @@ func findPeakGrid(mat [][]int) []int {
 			downVal = mat[mid+1][down]
 		}
 		// 中间行最大，并且又是行内最大值，所以找到 直接 return
-		if curVal >= upVal && curVal >= downVal{
+		if curVal >= upVal && curVal >= downVal{ // 注意 等号
 			ans = append(ans, mid, cur)
 			break
 		}

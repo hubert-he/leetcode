@@ -1,4 +1,4 @@
-package array
+package Math
 
 import (
 	"fmt"
@@ -493,4 +493,42 @@ func NumSquaresMath(n int) int {
 		}
 	}
 	return 3
+}
+/* 650. 2 Keys Keyboard
+** There is only one character 'A' on the screen of a notepad. You can perform two operations on this notepad for each step:
+	Copy All: You can copy all the characters present on the screen (a partial copy is not allowed).
+	Paste: You can paste the characters which are copied last time.
+** Given an integer n, return the minimum number of operations to get the character 'A' exactly n times on the screen.
+*/
+/* 对一个数 分解质因子， 这里学习 分解一个数 为素数的乘积
+** 另外此题也可以用DP 解决
+*/
+func minSteps(n int) int {
+	ans := 0
+	// 分解质因子: 对 n 进行质因数分解，统计所有质因数的和，即为最终的答案
+	for i := 2; i * i <= n; i++{
+		for n%i == 0 {
+			fmt.Println(i)
+			n /= i
+			ans += i
+		}
+	}
+	// 8 的话 8 = 2*2*2*1
+	// 例如：986 分解为  2 * 17 * 29
+	fmt.Println(n) // 985 分解为 197 * 5
+	if n > 1 {
+		ans += n
+	}
+	return ans
+}
+
+/* 96. Unique Binary Search Trees
+** Given an integer n, return the number of structurally unique BST's (binary search trees) which has exactly n nodes of unique values from 1 to n.
+ */
+/* 此题可以DP 解决
+** 这里来学习 Catalan number 即卡特兰数 或者 明安图数（蒙古族数学家明安图）是组合数学中一种常出现于各种计数问题中的数列
+**
+*/
+func numTrees(n int) int {
+
 }

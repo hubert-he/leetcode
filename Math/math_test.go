@@ -1,4 +1,4 @@
-package array
+package Math
 
 import (
 	"testing"

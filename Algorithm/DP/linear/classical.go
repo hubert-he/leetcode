@@ -250,230 +250,50 @@ func maxProfitIII(prices []int) int {
 	return max(dp[1], dp[2])
 }
 
-/* 376. Wiggle Subsequence
-** A wiggle sequence is a sequence where the differences between successive numbers strictly alternate between positive and negative.
-** The first difference (if one exists) may be either positive or negative.
-** A sequence with one element and a sequence with two non-equal elements are trivially wiggle sequences.
-** For example,
-** [1, 7, 4, 9, 2, 5] is a wiggle sequence because the differences (6, -3, 5, -7, 3) alternate between positive and negative.
-** In contrast, [1, 4, 7, 2, 5] and [1, 7, 4, 5, 5] are not wiggle sequences.
-** The first is not because its first two differences are positive, and the second is not because its last difference is zero.
-** A subsequence is obtained by deleting some elements (possibly zero) from the original sequence,
-** leaving the remaining elements in their original order.
-** Given an integer array nums, return the length of the longest wiggle subsequence of nums.
- */
-/* 每当我们选择一个元素作为摆动序列的一部分时，这个元素要么是上升的，要么是下降的，这取决于前一个元素的大小。
-** 那么列出状态表达式为
-** 1. up[i]: 表示以前 i 个元素中的某一个为结尾的最长的「上升摆动序列」的长度
-** 2. down[i]: 表示以前 i 个元素中的某一个为结尾的最长的「下降摆动序列」的长度
-** 状态转移规则：
-** 1. 当 nums[i] <= nums[i-1]时， 我们无法选出更长的「上升摆动序列」的方案，因为对于任何以 nums[i] 结尾的「上升摆动序列」，
-		我们都可以将nums[i] 替换为 nums[i−1]，使其成为以nums[i−1] 结尾的「上升摆动序列」
-** 2. 当 nums[i] > nums[i-1]时，我们既可以从 up[i-1] 进行转移， 也可从 down[i-1]转移。
-** 状态方程：
-	up[i] 	= up[i-1] 						if nums[i] <= nums[i-1]
-		  	= max(up[i-1], down[i-1] + 1) 	if nums[i] > nums[i-1]
-	down[i] = down[i-1]						if nums[i] >= nums[i-1]
-			= max(up[i-1] + 1, down[i-1])	if nums[i] < nums[i-1]
- */
-func wiggleMaxLength(nums []int) int {
-
-}
-
-/* 如果是求 subarray 的话，即连续的子序列 */
-func wiggleMaxLength_subArray(nums []int) int {
-	dp := make([]int, 2)
-	ans := 1
-	n := len(nums)
-	dp[0], dp[1] = 1, 1
-	for i := 1; i < n; i++{
-		d := nums[i] - nums[i-1]
-		if d > 0{
-			dp[0] = dp[1] + 1
-			dp[1] = 1
-			ans = max(dp[0], ans)
-		}else{
-			dp[1] = dp[0] + 1
-			dp[0] = 1
-			ans = max(ans, dp[1])
-		}
-	}
-	return ans
-}
-
-/* 以下部分是 经典题目系列
-** Longest Common SubString -- 最长公共子串
-** Longest Common Subsequence -- 最长公共子序列
+/* 238. Product of Array Except Self
+** Given an integer array nums, return an array answer such that answer[i] is equal to the product of all the elements of nums except nums[i].
+The product of any prefix or suffix of nums is guaranteed to fit in a 32-bit integer.
+You must write an algorithm that runs in O(n) time and without using the division operation.
+Constraints:
+	2 <= nums.length <= 105
+	-30 <= nums[i] <= 30
+	The product of any prefix or suffix of nums is guaranteed to fit in a 32-bit integer.
+Follow up: 
+	Can you solve the problem in O(1) extra space complexity? (The output array does not count as extra space for space complexity analysis.)
 */
-
-/* 1143. Longest Common Subsequence
-** Given two strings text1 and text2, return the length of their longest common subsequence.
-** If there is no common subsequence, return 0.
-** A subsequence of a string is a new string generated from the original string with some characters (can be none)
-** deleted without changing the relative order of the remaining characters.
-** For example, "ace" is a subsequence of "abcde".
-** A common subsequence of two strings is a subsequence that is common to both strings.
- */
-func LongestCommonSubsequence(text1 string, text2 string) int {
-
-}
-/* 5. Longest Palindromic Substring
-** Given a string s, return the longest palindromic substring in s.
- */
-/* 暴力求出所有子串，然后逐个判断
- */
-func longestPalindrome(s string) string{
-	var isPalindrome func([]byte) bool
-	isPalindrome = func(ss []byte) bool {
-		for i, j := 0, len(ss)-1; i < j; i,j = i+1, j-1{
-			if ss[i] != ss[j]{
-				return false
-			}
-		}
-		return true
-	}
-	length := len(s)
-	ans := []byte{}
-	for i := 0; i < length; i++{
-		for j := i; j < length; j++{
-			if isPalindrome([]byte(s[i:j+1])){
-				if len(ans) < (j-i+1){
-					ans = []byte(s[i:j+1])
-				}
-			}
-		}
-	}
-	return string(ans)
-}
-/* 把原来的字符串倒置了，然后找他们俩的最长的公共子串就可以
-** 题目转换为 求最长公共子串问题
-** 定义dp[i][j]为公共子串的长度
-** dp[i][j] = dp[i-1][j-1] + 1
- */
-func longestPalindromeDP(s string) string{
-
-}
-
-func longestPalindromeDP2(s string) string{
-	n := len(s)
-	if n < 2{
-		return s
-	}
-	maxLen, begin := 1, 0
-	// dp[i][j]表示s[i:j+1]是否为回文串
-	dp := make([][]bool, n)
-	for i := range dp{
-		dp[i] = make([]bool, n)
-		// 初始化: 所有长度为1的子串都是回文串
-		dp[i][i] = true
-	}
-	// 子串长度 从小 到 大 开始递推
-	// 先枚举子串长度
-	for l := 2; l <= n; l++{
-		// 枚举左边界，左边界的上限设置可以宽松些
-		for i := 0; i < n; i++{
-			// 由于 l 和 i 可以确定右边界， 即 j-i+1得
-			j := i + l - 1
-			//若右边界越界，退出当前循环
-			if j >= n{
-				break
-			}
-			if s[i] != s[j] {
-				dp[i][j] = false
-			}else{
-				if j - i < 3{ // 特殊情况
-					dp[i][j] = true
-				}else{
-					dp[i][j] = dp[i+1][j-1]
-				}
-			}
-			// 只要dp[i][l]=true 成立，就表示s[i:l+1]是回文，此时记录回文的长度和起始索引
-			if dp[i][j] && j - i + 1 > maxLen{
-				maxLen = j-i+1
-				begin = i
-			}
-		}
-	}
-	return s[begin:begin+maxLen]
-}
-
-/* 516. Longest Palindromic Subsequence
-** Given a string s, find the longest palindromic subsequence's length in s.
-** A subsequence is a sequence that can be derived from another sequence by deleting some or no elements without changing the order of the remaining elements.
- */
-/* 基本规律：
-** 对于一个子序列而言，如果它是回文子序列，并且长度大于 2，那么将它首尾的两个字符去除之后，它仍然是个回文子序列。
-** 因此可以用动态规划的方法计算给定字符串的最长回文子序列
-** dp[i][j] 表示字符串 s 的下标范围 [i,j] 内的最长回文子序列的长度
-** 边界：
-** 1. 任何长度为 1 的子序列都是回文子序列： dp[i][i] = 1
-** 2. 0 <= i <= j < n, 非此条件下 dp[i][j] = 0
-** i < j 情况：
-** 1. s[i] = s[j]
-	则首先得到 s 的下标范围 [i+1,j−1] 内的最长回文子序列，然后在该子序列的首尾分别添加 s[i] 和 s[j]，即可得到 s 的下标范围 [i,j] 内的最长回文子序列，
-	因此 dp[i][j]=dp[i+1][j−1]+2；
-** 2. s[i] != s[j]
-	则 s[i] 和 s[j] 不可能同时作为同一个回文子序列的首尾，因此 dp[i][j]=max(dp[i+1][j],dp[i][j−1])。
-	其实此处dp[i][j]=max(dp[i+1][j],dp[i][j−1], dp[i+1][j-1]), 但是dp[i+1][j-1] 状态合并掉了
-** 由于状态转移方程都是从长度较短的子序列向长度较长的子序列转移，因此需要注意动态规划的循环顺序。
-** 最终得到 dp[0][n−1] 即为字符串 ss 的最长回文子序列的长度
- */
-
-func LongestPalindromeSubseq(s string) int {
-	n := len(s)
-	dp := make([][]int, n)
-	for i := range dp{
-		dp[i] = make([]int, n)
-	}
+// 前后缀 积 2021-12-08 刷出此题
+func productExceptSelf(nums []int) []int {
+	n := len(nums)
+	dp := make([]int, n+1)
+	dp[n] = 1
 	for i := n-1; i >= 0; i--{
-		dp[i][i] = 1
-		for j := i+1; j < n; j++{
-			if s[i] == s[j]{
-				dp[i][j] = dp[i+1][j-1] + 2
-			}else{
-				dp[i][j] = max(dp[i+1][j], dp[i][j-1])
-			}
-		}
+		dp[i] = dp[i+1]*nums[i]
 	}
-	return dp[0][n-1]
+	prefix := make([]int, n+1)
+	prefix[0] = 1
+	for i := 1; i <= n; i++{
+		prefix[i] = prefix[i-1]*nums[i-1]
+	}
+	for i := range nums{
+		nums[i] = dp[i+1]*prefix[i]
+	}
+	return nums
 }
-/* 归类为区间DP
-** 之所以可以使用区间 DP 进行求解，是因为在给定一个回文串的基础上，如果在回文串的边缘分别添加两个新的字符，可以通过判断两字符是否相等来得知新串是否回文
-** 使用小区间的回文状态可以推导出大区间的回文状态值
-** 从图论意义出发就是，任何一个长度为 len 的回文串，必然由「长度为 len−1」或「长度为 len−2」的回文串转移而来。
-** 两个具有公共回文部分的回文串之间存在拓扑序（存在由「长度较小」回文串指向「长度较大」回文串的有向边）。
-** 通常区间 DP 问题都是，常见的基本流程为：
-** 1. 从小到大枚举区间大小 len
-** 2. 枚举区间左端点 l，同时根据区间大小 len 和左端点计算出区间右端点 r = l + len - 1
-** 通过状态转移方程求 f[l][r] 的值
- */
-func LongestPalindromeSubseqDP(s string) int {
-	n := len(s)
-	dp := make([][]int, n)
-	for i := range dp{
-		dp[i] = make([]int, n)
+
+// 算是O(1) 空间复杂度
+func productExceptSelf2(nums []int) []int {
+	n := len(nums)
+	dp := make([]int, n)
+	dp[0] = 1
+	for i := 1; i < n; i++{
+		dp[i] = nums[i-1]*dp[i-1]
 	}
-	for len := 1; len <= n; len++{
-		for l := 0; l+len-1 < n; l++{
-			r := l+len-1
-			if len == 1{
-				dp[l][r] = 1
-			}else if len == 2{
-				if s[l] == s[r]{
-					dp[l][r] = 2
-				}else {
-					dp[l][r] = 1
-				}
-			}else{
-				if s[l] == s[r]{
-					dp[l][r] = max(dp[l][r], dp[l+1][r], dp[l][r-1], dp[l+1][r-1]+2)
-				}else{
-					dp[l][r] = max(dp[l][r], dp[l+1][r], dp[l][r-1], dp[l+1][r-1])
-				}
-			}
-		}
+	r := 1
+	for i := n-1; i >= 0; i--{
+		dp[i] = dp[i]*r
+		r *= nums[i]
 	}
-	return dp[0][n-1]
+	return dp
 }
 
 

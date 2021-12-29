@@ -18,6 +18,9 @@ package string
 ** dp[i][j] = i  			若 t[i] == j
 **          = dp[i+1][j] 	若 t[i] != j
 ** 每次 O(1) 找出 t 中下一个位置
+** 同类题目：
+** 1055. Shortest Way to Form String
+** 1182. 与目标颜色间的最短距离
  */
 func isSubsequence(s string, t string) bool {
 	ns, nt := len(s), len(t)
@@ -80,3 +83,381 @@ func isSubsequence2(s string, t string) bool {
 	}
 	return true
 }
+
+/* 1055. Shortest Way to Form String
+** A subsequence of a string is a new string
+** that is formed from the original string by deleting some (can be none) of the characters without disturbing the relative positions of the remaining characters.
+** (i.e., "ace" is a subsequence of "abcde" while "aec" is not).
+Given two strings source and target,
+** return the minimum number of subsequences of source such that their concatenation equals target. If the task is impossible, return -1.
+ */
+/* 2012-12-06 DP思路 卡在 当前匹配到的字符串 这一层
+** 1. 当有字符不在源字符串中， 可返回-1
+** 2. dp[i]: 表示以 i 结尾的目标字符串使用源串可构造出的最少数量
+** 3. 转移方程： 设当前匹配到的字符串是tmp 这个时候分2种情况：
+**    3.1 tmp 是 源串的子序列， 则 dp[i] = dp[i-1]
+**	  3.2 tmp 不是 源串的子序列， 则 dp[i] = dp[i-1] + 1 且重新初始 tmp 作为当前匹配到的字符串
+** 初始边界： dp[0] = 1
+** 例子：source="abc",target="abcbc"
+** 遍历目标字符串target，当前遍历的下标设为i。
+	初始情况：tmp="a",dp[0]=1
+	i=1,tmp="ab", tmp是source的子序列,所以dp[1]=dp[0]=1
+	i=2,tmp="abc", tmp是source的子序列,所以dp[2]=dp[1]=1
+	i=3,tmp="abcb", tmp不是source的子序列,所以dp[3]=dp[2]+1=2，且更新tmp为当前字符的字符串，即tmp="b"
+	i=4,tmp="bc",tmp是source的子序列,所以dp[4]=dp[3]=2
+	结束，返回dp[4]=2
+ */
+func ShortestWay(source string, target string) int {
+	dp := 1
+	n := len(target)
+	tmp := []byte{}
+	for i := 1; i <= n; i++{
+		tmp = append(tmp, target[i])
+		if !isSubsequence(source, string(tmp)){
+			tmp = []byte{target[i]}
+			dp = dp + 1
+		}
+	}
+	return dp
+}
+
+/*712. Minimum ASCII Delete Sum for Two Strings
+** Given two strings s1 and s2, return the lowest ASCII sum of deleted characters to make two strings equal.
+*/
+/* 状态定义： dp[i][j]: 表示字符串s1[i:] 和 s2[j:] 达到相等所需删除的字符的 ASCII 值的最小和，最终的答案为 dp[0][0]
+** 1. 当 s1[i:] 和 s2[j:] 中的某一个字符串为空时， dp[i][j]的值即为另一个非空字符串的所有字符的ASCII值的最小和
+**    例如：当s2[j:]为空时，此时有 j = len(s2) 状态转移方程： dp[i][j] = s1.asciiSumFromPos(i) 转换为递推=>
+**    dp[i][j] = dp[i+1][j] + s1.asciiAtPos(i)
+**2. 两个字符串都非空时，
+** 2.1 如果 s1[i] = s2[j], 那么当前位置的两个字符相同，他们不需要被删除，状态转移方程：
+		dp[i][j] = dp[i+1][j+1]
+** 2.2 如果 s1[i] != s2[j],那么我们至少要删除s1[i] 和 s2[j]两个字符中的一个，方程：
+** 		dp[i][j] = min(dp[i+1][j] + s1.asciiAtPos(i), dp[i][j+1] + s2.asciiAtPos(j))
+*/
+func minimumDeleteSum(s1 string, s2 string) int {
+	n1, n2 := len(s1), len(s2)
+	dp := make([][]int, n1+1)
+	for i := range dp{
+		dp[i] = make([]int, n2+1)
+	}
+	// 初始化, 对应第一种情况
+	for i := n1-1; i >= 0; i--{
+		dp[i][n2] = dp[i+1][n2] + int(s1[i])
+	}
+	for i := n2-1; i >= 0; i--{
+		dp[n1][i] = dp[n1][i+1] + int(s2[i])
+	}
+	for i := n1-1; i >= 0; i--{
+		for j := n2-1; j >= 0; j--{
+			if s1[i] == s2[j]{
+				dp[i][j] = dp[i+1][j+1]
+			}else{
+				dp[i][j] = min(dp[i+1][j]+int(s1[i]), dp[i][j+1]+int(s2[j]))
+			}
+		}
+	}
+	return dp[0][0]
+}
+/* 方法二： 转换为 LCS 去处理
+** dp[i][j] 为S1, S2最大公共子串的所有字母的和，那么该问题的解为 Sum(S1,S2) - 2 * dp[s1.size()][s2.size()]
+*/
+func MinimumDeleteSum_LCS(s1 string, s2 string) int {
+	n1, n2 := len(s1), len(s2)
+	sum := 0
+	for i := range s1{
+		sum += int(s1[i])
+	}
+	for i := range s2{
+		sum += int(s2[i])
+	}
+	// lcs 求最大公共子序列
+	dp := make([][]int, n1+1)
+	for i := range dp{
+		dp[i] = make([]int, n2+1)
+	}
+	for i := 1; i <= n1; i++{
+		for j := 1; j <= n2; j++{
+			if s1[i-1] == s2[j-1]{
+				dp[i][j] = dp[i-1][j-1] + int(s1[i-1]) // s1[i] == s2[j]
+			}else{
+				dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+			}
+		}
+	}
+	return sum - dp[n1][n2]*2
+}
+
+/* 647. Palindromic Substrings
+** Given a string s, return the number of palindromic substrings in it.
+** A string is a palindrome when it reads the same backward as forward.
+** A substring is a contiguous sequence of characters within the string.
+ */
+/* 枚举思路-1：枚举出所有的子串，然后再判断这些子串是否是回文
+	复杂度立方级， 枚举子串 平方级别， 判断回文 线性级别
+** 枚举思路-1：枚举每一个可能的回文中心，然后用两个指针分别向左右两边拓展，当两个指针指向的元素相同的时候就拓展，否则停止拓展
+	复杂度平方级， 枚举回文中心的是线性， 对于每个回文中心拓展的次数也是线性
+** 	核心： 分奇偶确定 字符串中心位置。 即 如果回文长度是奇数，那么回文中心是一个字符；如果回文长度是偶数，那么中心是两个字符
+**  处理方法一： 2个循环分别处理 偶数长度 和 奇数长度的 回文
+**  处理方法二： 也可用一个循环处理，理论：
+** 		长度为 n 的字符串会生成 2n−1 组回文中心[li, ri], 其中 li = i/2, ri = li + i%2
+**		这样我们只要从 0 到 2n-2遍历i， 就可以得到所有可能的回文中心，把两种情况统一起来
+**		为什么是2*n-1 表示 n + n-1 <== 单个字符为中心的 以及 双字符为中心的 相加
+** 		情况类似于 aaa ==> a#a#a 这种情况
+** 处理方法三： 更直观的方式奇偶两种情况统一起来，即在每个字符两边加间隔符后，由于 奇 + 偶 = 奇 以及 奇 + 奇 = 奇
+** 		得到新字符串必定奇数个，然后利用中心扩展计算个数
+*/
+// 处理方法二
+func countSubstrings(s string) int {
+	n := len(s)
+	ans := 0
+	for i := 0; i < 2*n-1; i++{
+		// 计算两个端点的初始状态，
+		// 单个节点的时候， left 和 right 指向同一个中心, left = i/2  right = left + 0
+		// 两个节点的时候， left 和 right 相差一个， left = i/2  right = left + 1
+		left := i/2
+		right := left + i % 2 //奇偶
+		for left >= 0 && right < n && s[left] == s[right]{
+			// 往两边扩散
+			left--
+			right++
+			ans++
+		}
+	}
+	return ans
+}
+
+// Manacher算法的第一阶段 来求解， 即处理方法三
+func countSubstrings_1(s string) int {
+	nstr := []byte{'#'}
+	n := len(s)
+	for i := 0; i < n; i++{
+		nstr = append(nstr, s[i], '#')
+	}
+	ans := 0
+	for i := 0; i < len(nstr); i++{
+		j := 1
+		for i-j >= 0 && i+j < len(nstr) && nstr[i-j] == nstr[i+j]{
+			j++
+		}
+		// 理解 奇偶 直接 j/2
+		// 统计答案, 当前贡献为 (f[i] - 1) / 2 向上取整
+		ans += j/2
+	}
+	return ans
+}
+// 利用在源串中加 前后缀 来省略 下标越界的 条件判断
+func countSubstrings_2(s string) int {
+	nstr := []byte{'$', '#'}
+	n := len(s)
+	for i := 0; i < n; i++{
+		nstr = append(nstr, s[i], '#')
+	}
+	nstr = append(nstr, '!')
+	ans := 0
+	//for i := 0; i < len(nstr); i++{
+	for i := 1; i < len(nstr)-1; i++{
+		j := 1
+		//for i-j >= 0 && i+j < len(nstr) && nstr[i-j] == nstr[i+j]{
+		for nstr[i-j] == nstr[i+j]{ // 利用在源串中加 前后缀 来省略 下标越界的 条件判断
+			j++
+		}
+		// 理解 奇偶 直接 j/2
+		// 统计答案, 当前贡献为 (f[i] - 1) / 2 向上取整
+		ans += j/2
+	}
+	return ans
+}
+// 要想降低复杂度，类似于KMP， 充分利用已经得到的信息。
+// 已知-1： 回文字符串都是对称的
+// 已知-2： 如果一个长回文字符串的对称点左面包含一个小的回文字符串，那么对称过去到右面也必然会包含一个小的回文字符串
+/* 已知-3: 回文字符串边界的情况讨论: 观察对称点左面出现的这个小回文字符串，这个字符串有三种情况
+** 1. 如果左侧小回文字符串的左边界在大回文字符串的左边界之内，那么右面对称出的小回文字符串也不会触碰到大回文字符串的右边界
+	比如“dacaxacad”这个字符串，左侧的“aca”没有超过这个大回文字符串的左边界，那么右面对称出的“aca”也不会超过右边界。
+	也就是说，在这种情况下，右面这个小回文字符串的长度与对称的小回文字符串的长度相等，「 绝对不会超过 」这个大回文字符串。
+** 2. 如果左侧小回文字符串的左边界超过了大回文字符串的左边界，那这个右面对称出的小回文字符串会正好触碰到大回文字符串的右边界，但是不会超出。
+	比如观察这个字符串“dcbabcdxdcbabce”。左侧的小回文字符串「 dcbabcd 」的边界超出了大回文字符串「 cbabcdxdcbabc 」的左边界
+	对称过来的右侧的小回文字符串的边界会刚好卡在大回文字符串的右边界。
+	这是由于大回文字符串右边界之外的下一个字母（此处是“e”）绝对不是左边界的那个字母“d”的对称，所以右边的小回文字符串延申到边界之后也无法继续延申下去了
+	在这种情况下，右面这个小回文字符串的右边界与大回文字符串的右边界相同，那么这个小回文字符串的长度也「绝对不会超过」这个大回文字符串
+** 3. 如果左侧小回文字符串的左边界正好卡在大回文字符串的左边界上，那么右面对称出的小回文字符串有可能会继续延伸下去，超过大回文字符串的右边界。
+	比如观察这个字符串“abcdcbabcdxdcbabcdxdcb"，左边的小回文字符串「dcbabcd」的左边界正好卡在大回文字符串「dcbabcdxdcbabcd」的左边界上，
+	那么对称过来的大回文字符串是有可能继续延申下去的。比如在这个例子中，右面以“a”为对称点的小回文字符串「bcdxdcbabcdxdcb」一直能向右延申到整个字符串的结尾。
+	在这种情况下，右面这个小回文字符串的右边界至少与大回文字符串的有边界相同，并且有可能会延申。也就是说这个小回文字符串的长度可能会超过这个大回文字符串
+** 为何会这样，因为是从左到右扫描遍历的
+** 综合上面三种情况，得知 情况1和2 是不需要再次中心扩展搜寻回文，故而跳过很多字母，情况3 需要继续中心搜索
+** 用 f(i) 来表示以 s 的第 i 位为回文中心，可以拓展出的最大回文半径，那么f(i)−1 就是以 i 为中心的最大回文串长度（消除掉#间隔符后的）
+** Manacher 算法依旧需要枚举 s 的每一个位置并先假设它是回文中心，但是它会利用已经计算出来的状态来更新 f(i)，而不是向「中心拓展」一样盲目地拓展
+** 当我们知道一个 i 对应的 f(i) 的时候，我们就可以很容易得到它的右端点为 i + f(i) - 1
+** Manacher 算法如何通过已经计算出的状态来更新 f(i)
+** Manacher 算法要求我们维护「当前最大的回文的右端点 rMax」 以及 这个回文右端点对应的回文中心iMax。
+** 顺序遍历s， 假设当前遍历的下标为 i。 我们知道在求解 f(i)之前我们应当已经得到了从[1,i-1]所有的 f ， 并且当前已经有了一个最大回文右端点rMax
+** 以及它对应的回文中心iMax
+**
+*/
+func countSubstrings_3(s string) int {
+	nstr := []byte{'$','#'}
+	n := len(s)
+	for i := 0; i < n; i++{
+		nstr = append(nstr, s[i], '#')
+	}
+	nstr = append(nstr, '!')
+	n = len(nstr)
+	f := make([]int, n) // 中间数组
+	ans := 0
+	iMax := 0  // 这个回文右端点对应的回文中心
+	rMax := 0 //当前最大的回文的右端点
+	for i := 1; i < n; i++{
+		// 初始化f[i]
+		if i <= rMax{// 说明 i 被包含在当前最大回文子串内
+			f[i] = min(rMax - i + 1, f[2 * iMax - i]) // f[2 * iMax - i] 为 i 以 iMax 为镜像的位置
+		}else{
+			f[i] = 1 // 不在的话，走正常的中心扩展计算， 这里的 f[i] 类似于countSubstrings_2 中的 j
+		}
+		// 初始化之后，我们可以保证此时的s[i+f(i)−1]=s[i−f(i)+1],要继续拓展这个区间，
+		// 我们就要继续判断s[i+f(i)] 和 s[i - f(i)]s[i−f(i)] 是否相等
+		// 如果相等将 f(i) 自增, 否则退出循环
+		// 另外需要注意的是不能让下标越界，有一个很简单的办法，就是在开头加一个 $，并在结尾加一个 !，
+		// 这样开头和结尾的两个字符一定不相等，循环就可以在这里终止。
+		for nstr[i+f[i]] == nstr[i-f[i]]{ // 利用 源字符串加 前后缀 来防止下标越界
+			f[i]++ //这里的 f[i] 类似于countSubstrings_2 中的 j
+		}
+		// 动态维护 iMax 和 rMax 中心和最右边界 同步更新
+		if i + f[i] - 1 > rMax{
+			iMax = i
+			rMax = i + f[i] - 1
+		}
+		// 统计答案, 当前贡献为 (f[i] - 1) / 2 上取整
+		ans += f[i]/2
+	}
+	return ans
+}
+
+/* DP
+** 状态：dp[i][j]: 表示字符串s在[i,j]区间的子串是否是一个回文串
+** 状态转移： 当 s[i] = s[j] && (j-i < 2 || dp[i+1][j-1]) 时， dp[i][j] = true, 否则为false
+** 1. 当只有一个字符时，比如 a 自然是一个回文串
+** 2. 当有两个字符时，如果是相等的，比如 aa，也是一个回文串
+** 3. 根据子状态推断
+ */
+func countSubstrings_DP(s string) int {
+	n := len(s)
+	dp := make([][]bool, n)
+	for i := range dp{
+		dp[i] = make([]bool, n)
+	}
+	ans := 0
+	for j := 0; j < n; j++{
+		for i := 0; i <= j; i++{
+			if s[i] == s[j] && ( j - i < 2 || dp[i+1][j-1]){
+				dp[i][j] = true
+				ans++
+			}
+		}
+	}
+	return ans
+}
+
+/* 5. Longest Palindromic Substring
+** Given a string s, return the longest palindromic substring in s.
+ */
+/* 中心扩展 */
+func longestPalindrome(s string) string {
+	ns := []byte{'^', '#'}
+	for i := range s{
+		ns = append(ns, s[i], '#')
+	}
+	n := len(ns)
+	//f := make([]int, n)
+	ns = append(ns, '$')
+	ans := []byte{}
+	for i := 1; i < n; i++{
+		j := 1
+		for ns[i-j] == ns[i+j]{
+			j++
+		}
+		if len(ans) < (j-1)*2+1{
+			ans = ns[i-j+1:i+j-1]
+		}
+	}
+	//return strings.Replace(string(ans), "#", "", -1)
+	//双指针就地删除字符#
+	i := 0
+	for j := 0; j < len(ans); j++{
+		if ans[j] != '#'{
+			ans[i] = ans[j]
+			i++
+		}
+	}
+	return string(ans[:i])
+}
+/* 额外构造数组 f， 通过manacher 算法 降低复杂度
+** 引入了回文半径或者臂长的概念, 表示 中心扩展算法向外扩展的长度。即如果一个中心位置的最大回文字符串长度为 2 * r + 1, 其半径为 r
+** 现定义 i 为当前需要扩展的位置， j 为最近的最大回文串的中心位置， 其半径为 r
+** 如果 j + r > i 表示 i 在其覆盖范围内，则可以跳过某些字符，来进行中心扩展判断
+** 为了方便处理此情况， 再次引入 i 的 镜像位置，镜像位置计算公式： j - (i-j) => 2*j-i，
+** 以 i 为中心的回文串是 大回文串j的 右侧   以 i的镜像为中心的回文串 是 大回文串j 的 左侧
+** 设 镜像点(2*j-i)的臂长/半径为 n
+** 另外可知 中心点 j 回文串的边界范围是 [j-r, j+r]
+情况-1：如果左侧小回文字符串的左边界在大回文字符串的左边界之内，那么右面对称出的小回文字符串也不会触碰到大回文字符串的右边界
+		右面这个小回文字符串的长度与对称的小回文字符串的长度相等，「 绝对不会超过 」这个大回文字符串
+		判断条件即 j + r > i + n ==> j + r - i > n
+情况-2：如果左侧小回文字符串的左边界超过了大回文字符串的左边界，那这个右面对称出的小回文字符串会正好触碰到大回文字符串的右边界，但是不会超出
+		右面这个小回文字符串的右边界与大回文字符串的右边界相同，那么这个小回文字符串的长度也「绝对不会超过」这个大回文字符串
+		判断条件即 j = r == i + n ==> j + r - i == n
+情况-3：如果左侧小回文字符串的左边界正好卡在大回文字符串的左边界上，那么右面对称出的小回文字符串有可能会继续延伸下去，超过大回文字符串的右边界
+		右面这个小回文字符串的右边界至少与大回文字符串的有边界相同，并且有可能会延申。也就是说这个小回文字符串的长度可能会超过这个大回文字符串
+		判断条件即 j - r == 2*j-i - n ==> j - i + r == n
+所有情况 合并：
+** 如果 不在覆盖位置， 即 j + r < i 则 继续原来的中心扩展判断, 并记录右半径在最右边的回文字符串，将其中心作为 j ，避免重复计算
+ */
+func longestPalindrome_Manacher(s string) string {
+	ns := []byte{'^', '#'}
+	for i := range s{
+		ns = append(ns, s[i], '#')
+	}
+	n := len(ns)
+	f := make([]int, n)
+	ns = append(ns, '$')
+	iMax := 0  // 这个回文右端点对应的回文中心
+	rMax := 0 //当前最大的回文的右端点
+	ans := []byte{}
+	for i := 1; i < n; i++{
+		// 初始化f[i]
+		if i <= rMax{// 说明 i 被包含在当前最大回文子串内
+			f[i] = min(rMax - i + 1, f[2 * iMax - i]) // f[2 * iMax - i] 为 i 以 iMax 为镜像的位置
+			// 情况-1 的时候  f[i] 为 i镜像位置的回文半径， 即 f[2 * iMax - i]
+			// 情况-2 的时候， f[i] 为 rMax - i + 1
+			// 情况-3 的时候， f[i] 为 rMax - i + 1
+		}else{
+			f[i] = 1 // 不在的话，走正常的中心扩展计算， 这里的 f[i] 类似于countSubstrings_2 中的 j
+		}
+		j := f[i] // 合并了情况1-3 为 初始化f[i] 从此处继续中心判断
+		//j := 1
+		for ns[i-j] == ns[i+j]{
+			j++
+		}
+
+		// 更新 iMax 和 rMax 中心和最右边界 同步更新f[i]的值
+		f[i] = j
+		if i + f[i] - 1 > rMax{ // 判断是否超过当前的最右边界
+			iMax = i
+			rMax = i + f[i] - 1
+		}
+		if len(ans) < (j-1)*2+1{ // i 为中心的 臂长/半径 为 j-1
+			ans = ns[i-j+1:i+j-1]
+		}
+	}
+	//return strings.Replace(string(ans), "#", "", -1)
+	//双指针就地删除字符#
+	i := 0
+	for j := 0; j < len(ans); j++{
+		if ans[j] != '#'{
+			ans[i] = ans[j]
+			i++
+		}
+	}
+	return string(ans[:i])
+}
+
+
+

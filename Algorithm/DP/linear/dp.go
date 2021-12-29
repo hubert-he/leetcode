@@ -4,47 +4,8 @@ import (
 	"container/heap"
 	"math"
 	"sort"
-	"strconv"
 )
-/*
-func max(i, j int)int {
-	if i > j {
-		return i
-	}
-	return j
-}
- */
-func max(nums ...int)int{
-	m := nums[0]
-	for _, u := range nums{
-		if m < u{
-			m = u
-		}
-	}
-	return m
-}
 
-func min(nums ...int) int {
-	m := nums[0]
-	for _, c := range nums{
-		if m > c{
-			m = c
-		}
-	}
-	return m
-}
-// 排除except 下标的 值
-func min2(except int, nums ...int) int{
-	m := math.MaxInt32
-	for i := range nums{
-		if m > nums[i] && i != except{
-			m = nums[i]
-		}
-	}
-	return m
-}
-
-//
 func CanWinNim(n int) bool {
 	if n <= 3{
 		return true

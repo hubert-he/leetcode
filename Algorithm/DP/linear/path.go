@@ -783,7 +783,7 @@ func FindPathsDFSDP(m int, n int, maxMove int, startRow int, startColumn int) in
 	dir := [2][]int{[]int{0, -1, 0, 1}, []int{-1, 0, 1, 0}}
 	var dfs func(row, col, left int) int
 	dfs = func(row, col, left int) int{
-		if left < 0{
+		if left <= 0{
 			return 0
 		}
 		if row >=m || row < 0 || col >= n || col < 0{
@@ -808,10 +808,45 @@ func FindPathsDFSDP(m int, n int, maxMove int, startRow int, startColumn int) in
 	//fmt.Println(dp)
 	return ans
 }
+// 2021-12-14 重新刷出此题
+func findPaths(m int, n int, maxMove int, startRow int, startColumn int) int {
+	const mod int = 1e9 + 7
+	dirs := [][]int{[]int{0,1}, []int{1,0}, []int{-1, 0}, []int{0,-1}}
+	dp := make([][][]int, m+1)
+	for i := range dp{
+		dp[i] = make([][]int, n+1)
+		for j := range dp[i]{
+			dp[i][j] = make([]int, maxMove+1)
+			for k := range dp[i][j]{
+				dp[i][j][k] = -1
+			}
+		}
+	}
+	var dfs func(left, x, y int)int
+	dfs = func(left, x, y int)int{
+		if x >= m || y >= n || x < 0 || y < 0{
+			return 1
+		}
+		if left <= 0{
+			return 0
+		}
+		if dp[x][y][left] != -1{
+			return dp[x][y][left]
+		}
+		ret := 0
+		for _, d := range dirs{
+			xx, yy := x + d[0], y + d[1]
+			ret = (ret + dfs(left-1, xx, yy))%mod
+		}
+		dp[x][y][left] = ret%mod
+		return ret
+	}
+	return dfs(maxMove, startRow, startColumn)
+}
 /* 需要修改维度表示
 	dp[k][i][j]表示球移动 k 次之后位于坐标(i, j)的路径数量
 	当 k = 0时，球一定位于(startRow,startColumn),因此边界条件：
-	<1> dp[0][startRow][startColumn] = 1
+	<1> dp[0][startRow][startColumn] = 1  当i=0时，球一定位于起始坐标
 	<2> dp[0][i][j] = 0, (i,j) != (startRow,startColumn)
 	如果球移动i+1次之后，球一定位于(i,j)相邻坐标，记为(ii, jj) 此时分2类情况
 	<1> (ii,jj)在正常范围内
@@ -835,7 +870,7 @@ func FindPathsDP(m int, n int, maxMove int, startRow int, startColumn int) int {
 	for k := 0; k < maxMove; k++{
 		for i := 0; i < m; i++{
 			for j := 0; j < n; j++{
-				if dp[k][i][j] > 0{
+				if dp[k][i][j] > 0{ // <========== 技巧： 找到起始的方法
 					for _, dir := range dirs{
 						ii, jj := i+dir.x, j+dir.y
 						if ii >= 0 && ii < m && jj >= 0 && jj < n{ // 正常范围内
@@ -1062,3 +1097,82 @@ func PathsWithMaxScore2(board []string) []int {
 	}
 	return dp[0][0][:]
 }
+
+/* 361. Bomb Enemy
+** Given an m x n matrix grid where each cell is either a wall 'W', an enemy 'E' or empty '0',
+** return the maximum enemies you can kill using one bomb.
+** You can only place the bomb in an empty cell.
+** The bomb kills all the enemies in the same row and column from the planted point until it hits the wall
+** since it is too strong to be destroyed.
+ */
+// 此题容易产生误区混乱
+// 2021-12-13 未能思考出 分四个方向进行dp 最后汇总的思路
+func maxKilledEnemies(grid [][]byte) int {
+	m, n := len(grid), len(grid[0])
+	dp := make([][]int, m)
+	for i := range dp{
+		dp[i] = make([]int, n)
+	}
+	// 按行进行递推
+	for r := 0; r < m; r++{
+		pre := 0
+		// 从左到右递推结果
+		for c := 0; c < n; c++{
+			if grid[r][c] == 'W' { pre = 0 }
+			if grid[r][c] == 'E' { pre += 1 }
+			dp[r][c] += pre
+		}
+		// 从右至左 递推结果
+		pre = 0
+		for c := n-1; c >= 0; c--{
+			if grid[r][c] == 'W' { pre = 0 }
+			if grid[r][c] == 'E' { pre += 1 }
+			dp[r][c] += pre
+			if grid[r][c] == 'E'{ dp[r][c] -= 1}
+		}
+	}
+	// 按列进行递推
+	for c := 0; c < n; c++{
+		pre := 0
+		// 从上至下递推
+		for r := 0; r < m; r++{
+			if grid[r][c] == 'W' { pre = 0 }
+			if grid[r][c] == 'E' { pre += 1 }
+			dp[r][c] += pre
+		}
+		// 从下至上递推
+		for r := m-1; r >= 0; r--{
+			if grid[r][c] == 'W' { pre = 0 }
+			if grid[r][c] == 'E' { pre += 1 }
+			dp[r][c] += pre
+			if grid[r][c] == 'E'{ dp[r][c] -= 1}
+		}
+	}
+	ans := 0
+	for i := range dp{
+		for j := range dp[i]{
+			// 可见 ans 不关注 grid 为 E 的情况，因此上面dp 计算 E 格的时候 可忽略减 1
+			if grid[i][j] == '0' && ans < dp[i][j]{
+				ans = dp[i][j]
+			}
+		}
+	}
+	return ans
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
