@@ -1,95 +1,10 @@
 package backtracking
 
-import "sort"
-
-/* 22. Generate Parentheses
-** Given n pairs of parentheses, write a function to generate all combinations of well-formed parentheses.
-["(((())))","((()()))","((())())","((()))()","(()(()))","(()()())","(()())()","(())(())","(())()()","()((()))","()(()())","()(())()","()()(())","()()()()"]
-["(((())))","((()()))","((())())","((()))()","(()(()))","(()()())","(()())()",           "(())()()","()((()))","()(()())","()(())()","()()(())","()()()()"]
- */
-/* 这种计算方式不对，对漏掉 (())(()) 情况
-func generateParenthesis(n int) []string {
-	m := map[string]bool{"()":true}
-	for i := 1; i < n; i++{
-		t := map[string]bool{}
-		for k := range m{
-			t["("+k+")"] = true
-			t["()"+k] = true
-			t[k+"()"] = true
-		}
-		m = t
-	}
-	ans := []string{}
-	for k := range m{
-		ans = append(ans, k)
-	}
-	return ans
-}
-*/
-/* 暴力: 生成所有2的2n次方个序列，然后检查每一个序列是否有效
-** 长度为 n 的序列就是在长度为 n-1 的序列前加一个 '(' 或 ')'
-** 序列有效性检查：
-**    遍历这个序列，并使用一个变量 balance 表示左括号的数量减去右括号的数量。
-**    如果在遍历过程中 balance 的值小于零，或者结束时 balance 的值不为零，那么该序列就是无效的，否则它是有效的
- */
-
-func generateParenthesis(n int) []string {
-	ans := []string{}
-	valid := func(s []byte)bool{
-		balance := 0
-		for _, c := range s{
-			if c == '('{
-				balance++
-			}
-			if c == ')'{
-				balance--
-			}
-			if balance < 0 {
-				return false
-			}
-		}
-		return balance == 0
-	}
-	var dfs func(current []byte, pos int)
-	dfs = func(current []byte, pos int){
-		if pos == len(current){
-			if valid(current){
-				ans = append(ans, string(current))
-			}
-			return
-		}
-		current[pos] = '('
-		dfs(current, pos+1)
-		current[pos] = ')'
-		dfs(current, pos+1)
-	}
-	dfs(make([]byte, n*2), 0)
-	return ans
-}
-
-func GenerateParenthesisBt(n int) []string {
-	ans := []string{}
-	var backtrack func(cur []byte, open int, close int)
-	backtrack = func(cur []byte, open int, close int){
-		if len(cur) == 2*n{
-			ans = append(ans, string(cur))
-			return
-		}
-		if open < n{
-			cur = append(cur, '(')
-			backtrack(cur, open+1, close)
-			cur = cur[:len(cur)-1]
-		}
-		if close < open{
-			cur = append(cur, ')')
-			backtrack(cur, open, close+1)
-			cur = cur[:len(cur)-1]
-		}
-	}
-	backtrack([]byte{}, 0,0)
-	return ans
-}
-
+import (
+	"fmt"
+	"sort"
+	"strconv"
+)
 /* 39. Combination Sum
 ** Given an array of distinct integers candidates and a target integer target,
 ** return a list of all unique combinations of candidates where the chosen numbers sum to target.
@@ -264,12 +179,280 @@ func CombinationSum2(candidates []int, target int) [][]int {
 	return result
 }
 
+/* 489. Robot Room Cleaner
+** You are controlling a robot that is located somewhere in a room.
+** The room is modeled as an m x n binary grid where 0 represents a wall and 1 represents an empty slot.
+** The robot starts at an unknown location in the root that is guaranteed to be empty,
+** and you do not have access to the grid, but you can move the robot using the given API Robot.
+** You are tasked to use the robot to clean the entire room (i.e., clean every empty cell in the room).
+** The robot with the four given APIs can move forward, turn left, or turn right. Each turn is 90 degrees.
+** When the robot tries to move into a wall cell, its bumper sensor detects the obstacle, and it stays on the current cell.
+** Design an algorithm to clean the entire room using the following APIs:
+	interface Robot {
+	  // returns true if next cell is open and robot moves into the cell.
+	  // returns false if next cell is obstacle and robot stays on the current cell.
+	  boolean move();
 
+	  // Robot will stay on the same cell after calling turnLeft/turnRight.
+	  // Each turn will be 90 degrees.
+	  void turnLeft();
+	  void turnRight();
 
+	  // Clean the current cell.
+	  void clean();
+	}
+** Note that the initial direction of the robot will be facing up.
+** You can assume all four edges of the grid are all surrounded by a wall.
+ */
+type Robot struct {}
+func (robot *Robot) Move() bool {return true}
+func (robot *Robot) TurnLeft() {}
+func (robot *Robot) TurnRight() {}
+func (robot *Robot) Clean() {}
+func cleanRoom(robot *Robot) {
+	visited := map[[2]int]bool{}
+	// 思维误区：考虑方向，顺时针=> 0:up  1:right  2: down, 3:left
+	dirs := [][]int{[]int{-1,0}, []int{0,1}, []int{1,0}, []int{0,-1}}
+	var dfs func(cur [2]int, direction int)
+	dfs = func(cur [2]int, direction int){
+		visited[cur] = true
+		robot.Clean()
+		// 思维误区：考虑方向，顺时针: 0: 'up', 1: 'right', 2: 'down', 3: 'left'
+		for i := range dirs{
+			next_dir := (direction+i) % 4
+			next := [2]int{cur[0]+dirs[next_dir][0], cur[1]+dirs[next_dir][1]}
+			if !visited[next] && robot.Move(){
+				dfs(next, next_dir)
+				// 此处递归回来后，robot 要回到原位置 并恢复朝向
+				robot.TurnLeft()
+				robot.TurnLeft()
+				robot.Move()
+				robot.TurnLeft()
+				robot.TurnLeft()
+			}
+			// turn the robot following chosen direction : clockwise
+			// 所以前提要求 robot 方向要恢复
+			robot.TurnRight()
+		}
+	}
+	dfs([2]int{0,0}, 0)// 0 向前
+}
 
+/* 282. Expression Add Operators
+** Given a string num that contains only digits and an integer target,
+** return all possibilities to insert the binary operators '+', '-', and/or '*' between the digits of num
+** so that the resultant expression evaluates to the target value.
+Note that operands in the returned expressions should not contain leading zeros.
+ */
+/* 往 num 中间的 n−1 个空隙添加 + 号、- 号或 * 号，或者不添加符号
+** 隐含的要求：
+**	1. 有乘法，所以需要考虑 运算符优先级的问题
+**	2. 前导0 情况
+**	3. + 和 - 不作为一元运算符， 也即 运算符不能出现在表达式的首部
+ */
+// 2022-01-18 刷出此题
+func AddOperators(num string, target int) []string {
+	exp := [][]byte{}
+	op := []byte{'+', '-', '*'}
+	for i := range num{
+		/*
+		for j := range exp{
+			if exp[j] == nil { continue }
+			//t := exp[j]  shallow copy 会污染
+			t := make([]byte, len(exp[j]))
+			copy(t, exp[j])
+			// 消除前缀0的情况
+			if i > 0 && num[i-1] != '0'{
+				exp[j] = append(exp[j], num[i]) // 情况1：不加符号的情况
+			}else{// 清理到残缺的
+				// exp[j] = nil 方式1 置 nil
+				exp = append(exp[:j], exp[j+1:]...)// 方式2 直接删
+			}
+			for k := range op{
+				exp = append(exp, append(t, op[k], num[i]))
+			}
+		} */
+		tmp := [][]byte{}
+		for j := range exp{
+			n := len(exp[j])
+			t := make([]byte, n)
+			copy(t, exp[j])
+			// 消除前缀0的情况
+			//if i > 0 && num[i-1] != '0'{ 这个条件会漏情况， 100*0 此100 这种情况
+			var o int
+			for o = n-1; o >= 0 && t[o] != '+' && t[o] != '-' && t[o] != '*'; o--{ }
+			if t[o+1] != '0'{
+				//tmp = append(tmp, append(exp[j], num[i]))
+				tmp = append(tmp, append(t, num[i]))
+			}
+			for k := range op{
+				//tmp = append(tmp, append(exp[j], ops[k], num[i]))
+				tmp = append(tmp, append(t, op[k], num[i]))
+			}
+		}
+		exp = tmp
+		if len(exp) == 0{
+			exp = append(exp, []byte{num[i]})
+		}
+	}
+	// 此compute 实现方式 可参见 面试题 16.26. Calculator LCCI（实现在题目下方）
+	compute := func(exp string)int{
+		tmp, result := 0, 0
+		preop, sign := '+', 1
+		st := []int{}
+		for i := range exp{
+			c := exp[i]
+			switch c {
+			case '+':
+				if preop == '*' {
+					st[len(st)-1] *= tmp * sign
+				} else {
+					st = append(st, tmp*sign)
+				}
+				preop, sign = '+', 1
+				tmp = 0
+			case '-':
+				if preop == '*' {
+					st[len(st)-1] *= tmp * sign
+				} else {
+					st = append(st, tmp*sign)
+				}
+				preop, sign = '-', -1
+				tmp = 0
+			case '*':
+				if preop == '*' {
+					st[len(st)-1] *= tmp * sign
+				} else {
+					st = append(st, tmp*sign)
+				}
+				preop, sign = '*', 1
+				tmp = 0
+			default:
+				tmp = tmp*10 + int(c-'0')
+			}
+		}
+		//st = append(st, tmp) 需要分情况
+		if preop == '*'{
+			st[len(st)-1] *= tmp * sign
+		}else{
+			st = append(st, tmp*sign)
+		}
+		for i := range st{
+			result += st[i]
+		}
+		return result
+	}
+	ans := []string{}
+	for i := range exp{
+		fmt.Println(string(exp[i]), compute(string(exp[i])))
+		if compute(string(exp[i])) == target{
+			ans = append(ans, string(exp[i]))
+		}
+	}
+	return ans
+}
 
+func AddOperators_DFS(num string, target int) []string {
+	n := len(num)
+	ans := []string{}
+	var dfs func(idx int, prev int, cur int, s string)
+	dfs = func(idx int, prev int, cur int, s string) {
+		if idx == n{
+			if cur == target { // 符合情况的表达式
+				ans = append(ans, s)
+			}
+			return
+		}
+		for i := idx; i < n; i++{
+			if i != idx && num[idx] == '0'{
+				break
+			}
+			next, _ := strconv.Atoi(num[idx:i+1])
+			if idx == 0{
+				dfs(i+1, next, next, fmt.Sprintf("%d", next))
+			}else{
+				dfs(i+1, next, cur + next, fmt.Sprintf("%s+%d", s, next))
+				dfs(i+1, -next, cur - next, fmt.Sprintf("%s-%d", s, next))
+				x := prev * next // 运算符的优先级问题, 先➖ 再 ➕
+				dfs(i+1, x, cur - prev + x, fmt.Sprintf("%s*%d", s, next))
+			}
+		}
+	}
+	dfs(0, 0, 0, "")
+	return ans
+}
+// 官方题解：当前最优
+func AddOperators_backtrack(num string, target int) []string {
+	n := len(num)
+	ans := []string{}
+	var backtrack func(expr []byte, i, res, mul int)
+	// expr: 为当前构建出的表达式  res: 当前表达式的计算结果  mul: 表达式最后一个连乘串的计算结果
+	backtrack = func(expr []byte, i, res, mul int) {
+		if i == n {
+			if res == target {
+				ans = append(ans, string(expr))
+			}
+			return
+		}
+		signIndex := len(expr)
+		if i > 0 {
+			expr = append(expr, 0)// 占位，下面填充符号
+		}
+		// 枚举截取的数字长度（取多少位），注意数字可以是单个 0 但不能有前导零
+		for j, val := i, 0; j < n && (j == i || num[i] != 0); j++{
+			val = val * 10 + int(num[j] - '0') // 边递归 边计算
+			expr = append(expr, num[j])
+			if i == 0{// 表达式开头不能添加符号
+				backtrack(expr, j+1, val, val)
+			}else{// 枚举符号
+				expr[signIndex] = '+'; backtrack(expr, j+1, res + val, val) // val单独组成表达式最后一个连乘串；
+				expr[signIndex] = '-'; backtrack(expr, j+1, res - val, -val) // -val 单独组成表达式最后一个连乘串；
+				// 由于乘法运算优先级高于加法和减法运算，我们需要对res 撤销之前 mul 的计算结果，并添加新的连乘结果 mul∗val，
+				// 也就是将 res 减少 mul 并增加 mul∗val
+				expr[signIndex] = '*'; backtrack(expr, j+1, res - mul + mul * val, mul * val)
+			}
+		}
+	}
+	backtrack(make([]byte, 0, n*2-1), 0, 0, 0)
+	return ans
+}
 
-
+/* 面试题 16.26. Calculator LCCI
+** Given an arithmetic equation consisting of positive integers, +, -, * and / (no paren­theses), compute the result.
+** The expression string contains only non-negative integers, +, -, *, / operators and empty spaces .
+** The integer division should truncate toward zero.
+** 1. 哨兵来消除 最后尾巴num 的处理
+** 2. 运算符优先级的处理： 往前看一个运算符和数
+ */
+func calculate_lcci(s string) int {
+	ans, prenum, num := 0, 0, 0
+	var preop byte = '+'
+	sb := []byte(s)
+	sb = append(sb, 'x') // 哨兵，注意体会此方法 哨兵的用意
+	for _, c := range sb{
+		if c == ' '{ continue }
+		if c >= '0' && c <= '9'{
+			num = num * 10 + int(c-'0')
+		}else{ // 哨兵作用：处理最后一个数字
+			if preop == '+'{
+				ans += prenum
+				prenum = num
+			}
+			if preop == '-'{
+				ans += prenum
+				prenum = -num
+			}
+			if preop == '*'{
+				prenum = prenum * num
+			}
+			if preop == '/'{
+				prenum = prenum / num
+			}
+			num, preop = 0, c
+		}
+	}
+	return ans + prenum
+}
 
 
 

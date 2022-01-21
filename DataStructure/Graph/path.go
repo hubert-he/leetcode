@@ -7,9 +7,15 @@ import (
 
 /* 此部分 关注 最短路径问题
 * 1. 单源最短路径
+	1. Dijkstra
+	2. Bellman-Ford
 * 2. 多源最短路径
+	1. Floyd
 */
-
+/* 最短路径题目汇总：
+** leetcode-743
+** leetcode-1368
+*/
 /* 743. Network Delay Time
 ** You are given a network of n nodes, labeled from 1 to n.
 ** You are also given times, a list of travel times as directed edges times[i] = (ui, vi, wi),
@@ -274,11 +280,23 @@ func minCost(grid [][]int) int {
 		return true
 	}
 	dist[0] = 0
+	// 迭代 m*n 次
 	for i := range dist{
+		/*
 		if visited[i] {
 			continue
 		}
-		x, y := i/n, i%n
+		 */
+		// 找全网最小的
+		t := -1
+		for p := 0; p < m*n; p++{
+			if !visited[p] && (t == -1 || dist[t] > dist[p]){
+				t = p
+			}
+		}
+		visited[t] = true
+		//x, y := i/n, i%n
+		x, y := t / n, t % n
 		for j, d := range dirs{
 			xx, yy := x + d[0], y + d[1]
 			if valid(xx, yy){
@@ -295,7 +313,47 @@ func minCost(grid [][]int) int {
 	}
 	return dist[m*n-1]
 }
-
+// Dijkstra
+func minCost_Heap(grid [][]int) int {
+	dirs := [][]int{ []int{}, []int{0, 1}, []int{0, -1}, []int{1, 0}, []int{-1, 0} }
+	m, n := len(grid), len(grid[0])
+	total := m*n
+	dist := make([]int, total)
+	for i := range dist{
+		dist[i] = math.MaxInt32
+	}
+	valid := func(x, y int)bool{
+		if x < 0 || y < 0 || x >= m || y >= n{
+			return false
+		}
+		return true
+	}
+	dijkstra := func(){
+		dist[0] = 0 // 初始化起点
+		h := &hp{{0, 0}}
+		for h.Len() > 0{ // 默认是最小堆
+			p := heap.Pop(h).(pair) // p.x 即是全网未访问的到起点距离最小的节点
+			// 下面利用 p.x 更新其他点
+			x, y := p.x/n, p.x%n
+			for j, d := range dirs{
+				if j == 0{ continue }
+				xx, yy := x + d[0], y + d[1]
+				if valid(xx, yy){
+					newPos, newDist := xx*n+yy, dist[p.x]
+					if grid[x][y] != j{
+						newDist += 1
+					}
+					if dist[newPos] > newDist{
+						dist[newPos] = newDist
+						heap.Push(h, pair{newDist, newPos})
+					}
+				}
+			}
+		}
+	}
+	dijkstra()
+	return dist[total-1]
+}
 
 
 

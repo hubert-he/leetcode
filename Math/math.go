@@ -7,6 +7,10 @@ import (
 	"strconv"
 )
 
+/* 数学相关的题目：
+** 1.
+*/
+
 /* 66. Plus One
 Given a non-empty array of decimal digits representing a non-negative integer, increment one to the integer.
 The digits are stored such that the most significant digit is at the head of the list,
@@ -522,6 +526,72 @@ func minSteps(n int) int {
 	return ans
 }
 
+/* 372. Super Pow
+** Your task is to calculate ab mod 1337
+** where a is a positive integer and b is an extremely large positive integer given in the form of an array.
+Constraints:
+	1 <= a <= 2^31 - 1
+	1 <= b.length <= 2000
+	0 <= b[i] <= 9
+	b does not contain leading zeros.
+ */
+/** 前提数学知识
+** 1. 快速幂计算
+** 2. 模与乘法的关系：乘法在取模的意义下满足分配律 (a*b)mod m = [ ( a mod m) * (b mod m)] mod m
+ */
+/** 方法一： 倒序遍历
+** 设 a 的幂次为 n。根据题意，n 从最高位到最低位的所有数位构成了数组 b。记数组 b 的长度为 m
+** 公式-1： n = SUM( 10^m-1-i ) * bi  // i 从0 到 m-1  例如： n = 123 ==> n = 1 * 10^2 + 2 * 10^1 + 3 * 10^0
+** 公式-2： a^(x+y) = a^x * a^y  以及  a^(x*y) = (a^x)^y
+** 联合公式 1和2，得出 a^n = MUL( (a^(10^m-1-i))^bi  ) i 从 0 到 m-1
+** 例如 a^123 = a^(10^2)*a^1  * a^(10^1)*a^2 * a^(10^0)*a^3
+** a的10的k次方 = a 的 10的k-1次方 的 10次方
+ */
+func superPow(a int, b []int) int {
+	const mod = 1337
+	pow := func(x, n int) int{
+		res := 1
+		for ;n > 0; n >>= 1{
+			if n&1 == 1{
+				res = (res*x)%mod
+			}
+			x = x * x % mod
+		}
+		return res
+	}
+	ans := 1
+	for i := len(b)-1; i >= 0; i--{
+		ans = ans * pow(a, b[i]) % mod
+		a = pow(a, 10)
+	}
+	return ans
+}
+/* 方法二：秦九韶算法 正序遍历
+** 秦九韶算法是一种将一元n次多项式的求值问题转化为n个一次式的算法
+** 一般地，一元n次多项式的求值需要经过(n+1)*n/2次乘法和n次加法，而秦九韶算法只需要n次乘法和n次加法
+** 例如 a的123次方
+** 1234 = 123 * 10 + 4 = (12*10+3) * 10 + 4
+	    = ( (1*10+2) * 10 + 3 ) * 10 + 4
+		= ( ( (0*10 + 1) * 10 + 2) * 10 + 3 ) * 10 + 4
+*/
+func superPow_qinjiuzhao(a int, b []int) int {
+	const mod = 1337
+	pow := func(x, n int) int{
+		res := 1
+		for ;n > 0; n >>= 1{
+			if n&1 == 1{
+				res = (res*x)%mod
+			}
+			x = x * x % mod
+		}
+		return res
+	}
+	ans := 1
+	for _, e := range b{
+		ans = pow(ans, 10) * pow(a, e) % mod
+	}
+	return ans
+}
 /* 96. Unique Binary Search Trees
 ** Given an integer n, return the number of structurally unique BST's (binary search trees) which has exactly n nodes of unique values from 1 to n.
  */
@@ -532,3 +602,4 @@ func minSteps(n int) int {
 func numTrees(n int) int {
 
 }
+

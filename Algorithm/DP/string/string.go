@@ -1,5 +1,10 @@
 package string
 
+import (
+	"fmt"
+	"strings"
+)
+
 /* 392. Is Subsequence
 ** Given two strings s and t, return true if s is a subsequence of t, or false otherwise.
 ** A subsequence of a string is a new string
@@ -457,6 +462,101 @@ func longestPalindrome_Manacher(s string) string {
 		}
 	}
 	return string(ans[:i])
+}
+
+/* 471. Encode String with Shortest Length
+** Given a string s, encode the string such that its encoded length is the shortest.
+** The encoding rule is: k[encoded_string],
+** where the encoded_string inside the square brackets is being repeated exactly k times.
+** k should be a positive integer.
+** If an encoding process does not make the string shorter, then do not encode it.
+** If there are several solutions, return any of them.
+** 此题目也属于区间DP 问题
+** 459.重复的子字符串  --- 找到连续重复的子字符串，我们才能进行编码(压缩)。
+ */
+/* DP 部分：
+** 设s(i,j)表示子串s[i,…,j]。串的长度为len=j-i+1
+** 用d[i][j]表示s(i,j)的最短编码串。当s(i,j)有连续重复子串时，s(i,j)可编码为”k[重复子串]”的形式.d[i][j]= "k[重复子串]"
+** 当len < 5时，s(i,j)不用编码。d[i][j]=s(i,j)
+** 当len > 5时，s(i,j)的编码串有两种可能。
+** 现将s(i,j)分成两段s(i,k)和s(k+1,j)，(i <= k <j) 推导出状态方程
+** d[i][j] = d[i][k] + d[k+1][j]  当d[i][k].length + d[k+1][j].length < d[i][j].length时
+**
+** 题目难点部分：快速求出字符串中连续的重复子串
+** 枚举子串逐个查找，用上kmp，lcp类的算法，进行加速
+** 另有一个方法： 对字符串s，s与s拼接成t=s+s
+** 在 t 中 从索引位置 1 开始查找 s 如果查找到，即 在位置 p 处开始， t 中出现了 s
+** 注意： t 中肯定可以查找到 s （从索引位置1开始搜索的前提下）
+** 当 p >= len(s) 时，说明s中没有连续的重复子串, 不能压缩
+** 当 p < len(s) 时，说明s中有连续重复子串并且 连续重复子串是 s[0:p], 重复个数为 len(s) / p
+**
+ */
+func encode(s string) (ans string) {
+	n := len(s)
+	dp := make([][]string, n)
+	for i := range dp{
+		dp[i] = make([]string, n)
+	}
+	var dfs func(start, end int)string
+	dfs = func(start, end int) string{
+		if start > end { return ""}
+		if len(dp[start][end]) > 0{
+			return dp[start][end]
+		}
+		length := end - start + 1
+		ss := s[start:end+1]
+		if length < 5 { return ss }
+		ret := ss // 初始最大
+		p := strings.Index((ss+ss)[1:], ss) + 1 // 从索引1开始查找是否有重复子串
+		if p > 0 && p < length { // ss 存在重复子串
+			ret = fmt.Sprintf("%d[%s]", length/p, dfs(start, start+p-1))
+			dp[start][end] = ret
+			return ret
+		}
+		// 动态规划部分
+		for mid := start; mid < end; mid++{
+			s1 := dfs(start, mid)
+			s2 := dfs(mid+1, end)
+			if len(s1) + len(s2) < len(ret){
+				ret = s1+s2
+			}
+		}
+		dp[start][end] = ret
+		return ret
+	}
+	return dfs(0, n-1)
+}
+// 区间DP
+// dp[i][j] 来自 1. 存在连续的重复子串 2. 分成2段dp[i][k] 和 dp[k+1][j]
+func encodeDP(s string) (ans string) {
+	n := len(s)
+	dp := make([][]string, n)
+	for i := range dp{
+		dp[i] = make([]string, n)
+	}
+	for length := 1; length <= n; length++{ // 从长度开始枚举
+		for i := 0; i + length <= n; i++{
+			j := i + length - 1
+			ss := s[i:j+1]
+			dp[i][j] = ss
+			//if length > 5{
+			if length > 4{
+				p := strings.Index((ss+ss)[1:], ss) + 1
+				if p > 0 && p < len(ss){
+					//dp[i][j] = fmt.Sprintf("%d[%s]", len(ss)/p, ss[:p]) 不能直接ss[:p] 可能源串有压缩情况
+					dp[i][j] = fmt.Sprintf("%d[%s]", len(ss)/p, dp[i][i+p-1])
+				}else{
+					for k := i; k < j; k++{ // 注意不要与 切片操作搞混
+						//if len(dp[i][k+1]) + len(dp[k+1][j+1]) < len(dp[i][j]){
+						if len(dp[i][k]) + len(dp[k+1][j]) < len(dp[i][j]){
+							dp[i][j] = dp[i][k] + dp[k+1][j]
+						}
+					}
+				}
+			}
+		}
+	}
+	return dp[0][n-1]
 }
 
 
