@@ -266,12 +266,172 @@ func minDays(grid [][]int) int {
 	return 2
 }
 
+/* 1254. Number of Closed Islands
+** Given a 2D grid consists of 0s (land) and 1s (water). 
+** An island is a maximal 4-directionally connected group of 0s and a closed island is an island totally 
+** (all left, top, right, bottom) surrounded by 1s.
+** Return the number of closed islands.
+ */
+// 此方法 对 开放的边界的区域 也误计算进去了
+func closedIsland(grid [][]int) int {
+	g := map[int][]int{}
+	m, n := len(grid), len(grid[0])
+	dirs := [][]int{[]int{0,1}, []int{-1, 0}, []int{1, 0}, []int{0,-1}}
+	valid := func(x, y int)bool{
+		for _, d := range dirs{
+			nx, ny := x+d[0], y+d[1]
+			if nx < 0 || ny < 0 || nx >= m || ny >= n{
+				return false
+			}
+		}
+		return true
+	}
+	visited := map[int]bool{}
+	for i := range grid{
+		for j := range grid[i]{
+			idx := i*n+j
+			if grid[i][j] == 0 && g[idx] == nil{
+				if valid(i, j){
+					g[idx] = []int{}
+					visited[idx] = false
+				}
+			}
+		}
+	}
+	// 构造邻接表
+	for node := range g{
+		x, y := node/n, node%n
+		for _, d := range dirs{
+			nx, ny := x+d[0], y+d[1]
+			if grid[nx][ny] == 0{
+				g[node] = append(g[node], nx*n+ny)
+			}
+		}
+	}
+	var dfs func(node int)
+	dfs = func(node int){
+		visited[node] = true
+		for _, v := range g[node]{
+			if !visited[v]{
+				dfs(v)
+			}
+		}
+	}
+	// dfs 求 连通分量
+	ans := 0
+	for node := range g{
+		if !visited[node]{
+			ans++
+			dfs(node)
+		}
+	}
+	return ans
+}
 
+func closedIsland_DFS(grid [][]int) int {
+	g := map[int][]int{}
+	m, n := len(grid), len(grid[0])
+	dirs := [][]int{[]int{0,1}, []int{-1, 0}, []int{1, 0}, []int{0,-1}}
+	valid := func(x, y int)bool{
+		if x < 0 || y < 0 || x >= m || y >= n {
+			return false
+		}
+		return true
+	}
+	visited := map[int]bool{}
+	for i := range grid{
+		for j := range grid[i]{
+			idx := i*n+j
+			if grid[i][j] == 0 && g[idx] == nil{
+				g[idx] = []int{}
+				visited[idx] = false
+			}
+		}
+	}
+	// 构造邻接表
+	for node := range g{
+		x, y := node/n, node%n
+		for _, d := range dirs{
+			nx, ny := x+d[0], y+d[1]
+			if valid(nx, ny) && grid[nx][ny] == 0{
+				g[node] = append(g[node], nx*n+ny)
+			}
+		}
+	}
+	var dfs func(node int)bool
+	dfs = func(node int)bool{
+		ret := true
+		visited[node] = true
+		for _, d := range dirs{
+			x, y := node/n + d[0], node%n + d[1]
+			if !valid(x, y){ // 不能直接返回false, 还需把其他节点遍历完
+				ret = false
+			}
+		}
+		for _, v := range g[node]{
+			if !visited[v]{
+				if !dfs(v) && ret{// 不能直接返回false, 还需把其他节点遍历完
+					ret = false
+				}
+			}
+		}
+		return ret
+	}
+	// dfs 求 连通分量
+	ans := 0
+	for node := range g{
+		if !visited[node]{
+			if dfs(node){
+				ans++
+			}
+		}
+	}
+	return ans
+}
 
-
-
-
-
+func closedIsland_matrix_dfs(grid [][]int) int {
+	ans := 0
+	dirs := [][]int{[]int{0,1}, []int{-1, 0}, []int{1, 0}, []int{0,-1}}
+	m, n := len(grid), len(grid[0])
+	valid := func(x, y int)bool{
+		if x < 0 || y < 0 || x >= m || y >= n{
+			return false
+		}
+		return true
+	}
+	var dfs func(x, y int)bool
+	dfs = func(x, y int)bool{
+		ret := true // 增加状态
+		if !valid(x, y){
+			return false
+		}
+		if grid[x][y] == 1{
+			return true
+		}
+		grid[x][y] = 1 // 省了 visited
+		for _, d := range dirs{
+			/* 不能直接返回， 需要把 连通的 0 的字段 访问完毕
+			            题目是 从连通分量中选 闭合的 连通分量子集
+						if !dfs(x+d[0], y+d[1]){
+			                return false
+			            }*/
+			if !dfs(x+d[0], y+d[1]) && ret{
+				ret = false
+			}
+		}
+		return ret
+	}
+	for i := 0; i < m; i++{
+		for j := 0; j < n; j++{
+			if grid[i][j] == 0{
+				if dfs(i, j){
+					ans++
+				}
+			}
+		}
+	}
+	return ans
+}
 
 
 

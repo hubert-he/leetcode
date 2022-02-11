@@ -368,14 +368,111 @@ func solveNQueens(n int) [][]string {
 /* 基于集合的回溯
 ** 为了判断一个位置所在的列和两条斜线上是否已经有皇后，
 ** 使用三个集合columns, diagonals1, diagonals2 分别记录每一列以及两个方向的每条斜线上是否有Queen
-**
+** 行列对集合的映射关系就是 其下标
+** 反向对角线： 从左上到右下  同一条斜线上的每个位置满足「行下标与列下标之差相等」。可以用行下标与列下标之差 即可明确表示每一条方向上的对角线
+** 正向对角线： 从右上到左下  同一条斜线上的每个位置满足「行下标与列下标之和相等」。可以用行下标与列下标之和 即可明确表示每一条方向上的对角线
  */
 func solveNQueens_set(n int) [][]string {
-
+	ans := [][]string{}
+	queen := make([]int, n)// 记录
+	for i := range queen{
+		queen[i] = -1
+	}
+	columns, diagonals1, diagonals2 := map[int]bool{}, map[int]bool{}, map[int]bool{}
+	valid := func(x, y int)bool{
+		if columns[y] || diagonals1[x-y] || diagonals2[x+y] {
+			return false
+		}
+		return true
+	}
+	var dfs func(row int)
+	dfs = func(row int){
+		if row == n{
+			tmp := make([]byte, n)
+			board := []string{}
+			for i := range queen{
+				for j := range tmp{
+					if j == queen[i]{
+						tmp[j] = 'Q'
+					}else{
+						tmp[j] = '.'
+					}
+				}
+				board = append(board, string(tmp))
+			}
+			ans = append(ans, board)
+			return
+		}
+		for i := 0; i < n; i++{
+			// columns[i], diagonals1[row-i], diagonals2[row+i] = true, true, true  先判断再赋值
+			if valid(row, i){
+				columns[i], diagonals1[row-i], diagonals2[row+i] = true, true, true
+				queen[row] = i
+				dfs(row+1)
+				queen[row] = -1
+				columns[i], diagonals1[row-i], diagonals2[row+i] = false, false, false
+			}
+			//queen[row] = -1  状态正常的 才回溯，不正常 直接退掉
+			//columns[i], diagonals1[row-i], diagonals2[row+i] = false, false, false
+		}
+	}
+	dfs(0)
+	return ans
 }
-
+/* 位运算-bitset 状态压缩
+** 使用三个整数 columns, diagonals1, diagonals2 分别记录每一列以及两个方向的每条斜线上是否有Queen
+** 每个整数 n 个二进制位。棋盘的每一列对应每个整数的二进制表示中的一个数位，其中棋盘的最左列对应每个整数的最低二进制位，
+** 最右列对应每个整数的最高二进制位
+**  0 代表可以放置皇后的位置， 1 代表不能放置皇后的位置
+** 查询和更新这3个值的方法：
+** 1. 初始时，三个整数的值都等于 0，表示没有放置任何皇后
+** 2. 在当前行放置皇后, 如果皇后放置在第 i 列, 则将三个整数的第 i 个二进制位(指从低到高的第 i 个二进制位)的值设为 1
+** 3. 进入下一行时, columns 的值保持不变, diagonals1 左移一位, diagonals2 右移一位,
+**	  由于棋盘的最左列对应每个整数的最低二进制位,即每个整数的最右二进制位. 因此对整数的移位操作方向和对棋盘的移位操作方向相反
+**    对棋盘的移位操作方向是 diagonals1右移一位, diagonals2 左移一位
+ */
 func solveNQueens_bit(n int) [][]string {
-
+	ans := [][]string{}
+	queen := make([]int, n)// 记录
+	for i := range queen{
+		queen[i] = -1
+	}
+	columns, diagonals1, diagonals2 := 0, 0, 0
+	var dfs func(row int)
+	dfs = func(row int){
+		if row == n{
+			tmp := make([]byte, n)
+			board := []string{}
+			for i := range queen{
+				for j := range tmp{
+					if j == queen[i]{
+						tmp[j] = 'Q'
+					}else{
+						tmp[j] = '.'
+					}
+				}
+				board = append(board, string(tmp))
+			}
+			ans = append(ans, board)
+			return
+		}
+		availPositions := ((1 << n) - 1) & (^(columns | diagonals1 | diagonals2)) // 与上 2的n次方-1 转换为 1表示可选空格
+		for availPositions != 0{
+			position := availPositions &(-availPositions) // bit-1：x&(-x)==>获得 x 的二进制表示中的最低位的 1 的位置
+			availPositions = availPositions & (availPositions - 1)// bit-1：x&(x-1)==> 将 x 的二进制最低位的 1 置为 0
+			column := bits.OnesCount(uint(position-1))
+			queen[row] = column
+			columns_bak, diagonals1_bak, diagonals2_bak := columns, diagonals1, diagonals2
+			columns |= position
+			diagonals1 = (diagonals1 | position) >> 1
+			diagonals2 = (diagonals2 | position) << 1
+			dfs(row+1)
+			queen[row] = -1 //恢复
+			columns, diagonals1, diagonals2 = columns_bak, diagonals1_bak, diagonals2_bak
+		}
+	}
+	dfs(0)
+	return ans
 }
 
 

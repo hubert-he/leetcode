@@ -559,5 +559,272 @@ func encodeDP(s string) (ans string) {
 	return dp[0][n-1]
 }
 
+/* 10. Regular Expression Matching
+** Given an input string s and a pattern p, implement regular expression matching with support for '.' and '*' where:
+	'.' Matches any single character.​​​​
+	'*' Matches zero or more of the preceding element.
+** The matching should cover the entire input string (not partial).
+*/
+/* dp[i][j] 表示 s 前 i 个字符 与 p中前 j个字符是否匹配。根据 p 的第 j 个字符的匹配情况讨论
+** 分情况讨论：
+** 1. p的j 个字符是一个小写字母，那么我们必须在 s 中匹配一个相同的小写字母
+		dp[i][j] = dp[i-1][j-1]  s[i] == p[j]
+				 = false		 s[i] != p[j]
+** 2. p的第j个字符是 *，那么就表示可以对 p 的第 j-1 个字符匹配任意次数
+	2.1 匹配0次情况， dp[i][j] = dp[i][j-2] 即 我们「浪费」了一个字符 + 星号的组合，没有匹配任何 s 中的字符
+	2.2 匹配1次的情况， dp[i][j] = dp[i-1][j-2],  if s[i] = p[j-1]
+	2.3 匹配2次的情况， dp[i][j] = dp[i-2][j-2],  if s[i-1] = s[i] = p[j-1]
+	2.4 匹配x次的情况， dp[i][j] = dp[i-x][j-2],  if s[i-x-1] = s[i-1] = s[i] = p[j-1]
+	如果我们通过这种方法进行转移，那么我们就需要枚举这个组合到底匹配了 s 中的几个字符，会增导致时间复杂度增加，并且代码编写起来十分麻烦
+	换个角度考虑这个问题：字母 + 星号的组合在匹配的过程中，本质上只会有两种情况：
+		1. 匹配 s 末尾的一个字符，将该字符扔掉，而该组合还可以继续进行匹配；
+		2. 不匹配字符，将该组合扔掉，不再进行匹配。
+	dp[i][j] = dp[i-1][j] || dp[i][j-2]   if s[i] = p[j-1]
+			 = dp[i][j-2] 				  if s[i] != p[j-1]
+** 3. 在任意情况下，只要 p[j] 是 . ，那么 p[j] 一定成功匹配 s 中的任意一个小写字母
+	dp[i][j] = dp[i-1][j-1]
+** 总和3类情况得出状态转移方程：
+	dp[i][j] = dp[i-1][j] || dp[i][j-2]  matches(s[i], p[j-1]) p[j] = *
+			 = dp[i][j-2]  				 p[j] = *
+			 = dp[i-1][j-1] 			 matches(s[i], p[j]) p[j] != *
+			 = false					 p[j] != *
+** 动态规划的边界条件为 dp[0][0]=true，即两个空字符串是可以匹配的
+ */
+func IsMatch(s string, p string) bool {
+	sn, pn := len(s)+1, len(p)+1
+	dp := make([][]bool, sn)
+	for i := range dp{
+		dp[i] = make([]bool, pn)
+	}
+	match := func(i, j int)bool{
+		// 增加溢出判断
+		if i < 0 || j < 0 || i >= len(s) || j >= len(p){
+			return false
+		}
+		if s[i] == p[j] || p[j] == '.'{
+			return true
+		}
+		return false
+	}
+	// 初始化: 主循环是从1开始的，即有元素开始，所以要初始化 s 为空串时，状态计算
+	dp[0][0] = true
+	for i := 1; i < pn; i++{// 主要*号 会匹配0个
+		if p[i-1] == '*'{
+			if i < 2{// 首字符是 *
+				dp[0][i] = true
+			}else{
+				dp[0][i] = dp[0][i-2]
+			}
+		}
+	}
+	for i := 1; i < sn; i++{
+		for j := 1; j < pn; j++{
+			if p[j-1] == '*'{
+				//if match(i, j-2){
+				if match(i-1, j-2){
+					dp[i][j] = dp[i-1][j]
+					if j >= 2{
+						dp[i][j] = dp[i][j] || dp[i][j-2]
+					}
+				}else{
+					if j >= 2{
+						dp[i][j] = dp[i][j-2]
+					}
+				}
+			}else{ // 非 *
+				if match(i-1, j-1){
+					dp[i][j] = dp[i-1][j-1]
+				}else{
+					dp[i][j] = false
+				}
+			}
+		}
+	}
+	return dp[sn-1][pn-1]
+}
 
+/** 44. Wildcard Matching
+** Given an input string (s) and a pattern (p), implement wildcard pattern matching with support for '?' and '*' where:
+	'?' Matches any single character.
+	'*' Matches any sequence of characters (including the empty sequence).
+	The matching should cover the entire input string (not partial).
+Constraints:
+	0 <= s.length, p.length <= 2000
+	s contains only lowercase English letters.
+	p contains only lowercase English letters, '?' or '*'.
+ */
+//2022-01-26 刷出此题
+/* 模式 p 中的任意一个字符都是独立的，即不会和前后的字符互相关联，形成一个新的匹配模式。 情况会少
+** dp[i][j] 表示字符串s的前 i 个字符和模式 p 的前 j 个字符是否能匹配。
+** 考虑模式 p 的第 j 个字符pj, 与之对应的是字符串s 中的 第 i 个字符 si
+** 情况1： pj 是字母/问号, si 是字母
+		dp[i][j] = dp[i-1][j-1]   pj == si || pj == '?'
+				 = false          其他情况
+** 情况2：pj 是星号，星号可以匹配零或任意多个小写字母，分两种情况：
+	2.1 应用这个星号
+		dp[i][j] = dp[i-1][j]
+	2.2 不应用这个星号
+		dp[i][j] = dp[i][j-1]
 
+边界情况：dp[0][0] = true
+		dp[i][0] = false
+		dp[0][j] 分情况讨论：星号才能匹配空字符串
+		dp[0][j] = true p的前 j 个字符均为星号时
+ */
+func isWildMatch(s string, p string) bool {
+	ns, np := len(s), len(p)
+	dp := make([][]bool, ns+1)
+	for i := range dp{
+		dp[i] = make([]bool, np+1)
+	}
+	dp[0][0] = true
+	for i := 1; i <= np; i++{
+		if p[i-1] == '*'{
+			if i < 2{
+				dp[0][i] = true
+				continue
+			}
+			dp[0][i] = dp[0][i-1]
+		}
+	}
+	for i := 0; i <= ns; i++{
+		for j := 1; j <= np; j++{
+			if p[j-1] == '*'{
+				dp[i][j] = dp[i][j-1]
+				/*
+				if i > 0{
+					dp[i][j] = dp[i][j] || dp[i-1][j-1]
+				}*/
+				for k := 0; k < i; k++{ // 官方题解优化
+					dp[i][j] = dp[i][j] || dp[k][j-1]
+				}
+			}else{
+				if i == 0{
+					dp[i][j] = false
+					continue
+				}
+				if s[i-1] == p[j-1] || p[j-1] == '?'{
+					dp[i][j] = dp[i-1][j-1]
+				}else{
+					dp[i][j] = false
+				}
+			}
+		}
+	}
+	//fmt.Println(dp)
+	return dp[ns][np]
+}
+// 官方题解
+func isWildMatchDP(s string, p string) bool {
+	sn, pn := len(s), len(p)
+	dp := make([][]bool, sn+1)
+	for i := range dp{
+		dp[i] = make([]bool, pn+1)
+	}
+	dp[0][0] = true
+	for i := 1; i <= pn; i++{
+		if p[i-1] == '*'{
+			dp[0][i] = true
+			continue
+		}
+		break
+	}
+	for i := 1; i <= sn; i++{
+		for j := 1; j <= pn; j++{
+			if p[j-1] == '*'{
+				dp[i][j] = dp[i][j-1] || dp[i-1][j]
+			}else if p[j-1] == '?' || s[i-1] == p[j-1] {
+				dp[i][j] = dp[i-1][j-1]
+			}
+		}
+	}
+	return dp[sn][pn]
+}
+/* 针对 * 的处理 采用贪心枚举
+** 模式 p 的种类：
+** 1. 模式 p 是以 * 开头 和 以 * 结尾
+** 2. 模式 p 不是 以 * 开头
+** 3. 模式 p 不是 以 * 结尾
+** 将情况 2 和 情况 3 转换为 情况 1
+ */
+func isWildMatchGreedy(s string, p string) bool {
+	ns, np := len(s), len(p)
+	// 情况2： 模式p 不是以 * 开头
+	i, j := 0, 0
+	for ; i < np && j < ns && p[i] != '*'; i, j = i+1, j+1{
+		if p[i] == '?' || s[j] == p[i]{
+			continue
+		}else{
+			return false
+		}
+	}
+	s, p = s[j:], p[i:]
+	ns, np = len(s), len(p)
+	if np == 0{
+		return ns == 0
+	}
+	// 情况3： 模式p 不是以 * 结尾
+	i,j = np-1, ns-1
+	for ; i >= 0 && j >= 0 && p[i] != '*'; i,j = i-1,j-1{
+		if p[i] == '?' || s[j] == p[i]{
+			continue
+		}else{
+			return false
+		}
+	}
+	s, p = s[:j+1], p[:i+1]
+	if len(p) == 0{
+		return len(s) == 0
+	}
+	// 情况-1 的处理
+	/* 注释的代码存在忽略问号的问题， 必须使用原始的方式
+	subs := strings.FieldsFunc(p, func(c rune)bool{ return c == '*'})
+	str := s
+	for i := range subs{
+		pos := strings.Index(str, subs[i]) 忽略 问号
+		for pos < len(s){
+
+		}
+		if pos < 0{
+			return false
+		}
+		str = str[pos+len(subs[i]):]
+	}
+
+	// return p[len(p)-1] == '*' 忽略问号
+	 */
+	allstart := func(idx int)bool{ // 余下的都是 星号
+		for i := idx; i < len(p); i++{
+			if p[i] != '*'{
+				return false
+			}
+		}
+		return true
+	}
+	i, j = 0, 0 // i for p  j for s
+	for j < len(s) && i < len(p){
+		if p[i] == '*'{
+			i++
+		}else{// s中必须存在p的子串
+			k := j
+			for ; k < len(s); k++{
+				m := k
+				n := i
+				for ;m < len(s)&& n < len(p) &&p[n] != '*'; m, n = m+1, n+1{
+					if s[m] == p[n] || p[n] == '?'{
+						continue
+					}
+					break
+				}
+				if p[n] == '*'{
+					i, j = n, m
+					break
+				}
+			}
+			if k >= len(s){
+				return false
+			}
+		}
+	}
+	return allstart(i)
+}

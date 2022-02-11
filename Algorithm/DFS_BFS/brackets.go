@@ -1235,17 +1235,211 @@ func basicCalculatorIV(expression string, evalvars []string, evalints []int) []s
 	}
 	var dfs func(exp string) []string
 	dfs = func(exp string) []string{
-
+		return nil
 	}
+	return dfs(expression)
 }
 
+/* 1190. Reverse Substrings Between Each Pair of Parentheses
+** You are given a string s that consists of lower case English letters and brackets.
+** Reverse the strings in each pair of matching parentheses, starting from the innermost one.
+** Your result should not contain any brackets.
+ */
+// 错误方法： 遗漏了"t(x)x(y)" 并行有2个括号的情况
+func reverseParentheses(s string) string {
+	ans := []byte{}
+	if !strings.ContainsRune(s, '('){
+		return s
+	}else{
+		// 找最外层
+		fst, last := strings.Index(s, "("), strings.LastIndex(s, ")")
+		ans = append(ans, s[:fst]...)
+		sub := reverseParentheses(s[fst+1:last])
+		for i := len(sub)-1; i >= 0; i--{
+			ans = append(ans, sub[i])
+		}
+		ans = append(ans, s[last+1:]...)
+	}
+	return string(ans)
+}
+// 此方法会 递归死循环， 缺少跳出条件
+func reverseParentheses_DFS(s string) string {
+	sb := []byte{}
+	n, reverse := len(s), false
+	fmt.Println(s)
+	/* 还有有问题：(a)(b) 此时脱括号出现问题，还是需要一个方法解决：不在括号不反转的问题
+	if s[0] == '(' && s[n-1] == ')'{
+		s = s[1:n-1]
+		n -= 2
+		reverse = true
+	}	 */
+	for i := 0; i < n;{
+		if s[i] == '('{
+			reverse = true
+			cnt := 1
+			j := i+1
+			for ; j < n && cnt > 0; j++{
+				if s[j] == '('{  cnt++ }
+				if s[j] == ')'{ cnt-- }
+			}
+			if cnt != 0{
+				panic("Err: unmatch } ")
+			}
+			sx := reverseParentheses(string(s[i:j]))
+			/* 下面语句i = j 要用到 j， 不可更改j
+			for j = range sx{
+				sb = append([]byte{sx[j]}, sb...)
+			}*/
+			for k := range sx{
+				sb = append([]byte{sx[k]}, sb...)
+			}
+			i = j
+		}else if s[i] == ')' {
+			// 无法确认是否关闭 reverse
+		}else{
+			if reverse{
+				sb = append([]byte{s[i]}, sb...)
+			}else{
+				sb = append(sb, s[i])
+			}
+			i++
+		}
+	}
+	return string(sb)
+}
+// 2022-02-07 刷出此题
+// 此题难点： 1. dfs 需要脱前置括号， 递归死循环问题   2. 区别注意，如果没有括号 不需要反转
+func ReverseParentheses_DFS(s string) string {
+	var dfs func(str string)[]byte
+	dfs = func(str string)[]byte{// 前置() 已脱 必定要反转
+		n, sa := len(str), []byte{}
+		for i := 0; i < n; {
+		//for i := range str{
+			if str[i] == '('{
+				j, cnt := i + 1, 1
+				for j < len(str) && cnt > 0{
+					if str[j] == '('	{	cnt++ }
+					if str[j] == ')'	{	cnt-- }
+					j++
+				}
+				if cnt != 0{
+					panic("Err: unmatch ()")
+				}
+				sx := dfs(str[i+1:j-1])
+				for k := range sx{
+					sa = append([]byte{sx[k]}, sa...)
+				}
+				i = j
+			}else{
+				sa = append([]byte{str[i]}, sa...)
+				i++
+			}
+		}
+		return sa
+	}
+	n, sb := len(s), []byte{}
+	for i := 0; i < n;{
+		if s[i] == '('{
+			j, cnt := i + 1, 1
+			for j < len(s) && cnt > 0{
+				if s[j] == '('	{	cnt++ }
+				if s[j] == ')'	{	cnt-- }
+				j++
+			}
+			if cnt != 0{
+				panic("Err: unmatch ()")
+			}
+			sx := dfs(s[i+1:j-1])
+			sb = append(sb, sx...)
+			i = j
+		}else{
+			sb = append(sb, s[i])
+			i++
+		}
+	}
+	return string(sb)
+}
 
+func reverseParentheses_stack(s string) string {
+	st := []byte{}
+	i, n, ans := 0, len(s), []byte{}
+	for i := 0; i < n; i++{
+		if len(st) == 0{
+			if s[i] == '('{
+				st = append(st, '(')
+			}else{
+				ans = append(ans, s[i])
+			}
+		}else{
+			if s[i] == ')'{
 
-
-
-
-
-
+			}else{
+				st = append(st, s[i])
+			}
+		}
+	}
+	return string(ans)
+}
+// 官方题解-1
+/* 从左到右遍历该字符串, 使用字符串 str 记录当前层所遍历到的小写英文字母.
+** 对于当前遍历的字符：
+** 1. 左括号，将 str 插入栈中，并将 str 置空，进入下一层
+** 2. 右括号, 则说明遍历完了当前层, 反转 str, 返回给上一层.
+	  即将栈顶字符串弹出，然后将反转后的 str 拼接到 栈顶字符串末尾，然后将结果赋值给 str
+** 3. 如果是小写英文字母，将其加到 str 末尾
+ */
+func ReverseParentheses_stack(s string) string {
+	st := [][]byte{} // 二维栈
+	str := []byte{}
+	for i := range s {
+		if s[i] == '('{
+			st = append(st, str)
+			str = []byte{} // 易错点-1 清空
+		}else if s[i] == ')'{// 主处理
+			for j, n := 0, len(str); j < n/2; j++{ // 反转算法- 学习-1
+				str[j], str[n-1-j] = str[n-1-j], str[j]
+			}
+			str = append(st[len(st)-1], str...) // 合并
+			st = st[:len(st)-1]
+		}else{
+			str = append(str, s[i])
+		}
+	}
+	return string(str)
+}
+/* 官方最优题解：预处理括号
+** 可以将括号的反转理解为逆序地遍历括号
+** 沿着某个方向移动，此时遇到了括号, 那么我们只需要首先跳跃到该括号对应的另一个括号所在处，
+** 然后改变我们的移动方向即可.这个方案同时适用于遍历时进入更深一层，以及完成当前层的遍历后返回到上一层的方案
+** 实际代码中，我们需要预处理出每一个括号对应的另一个括号所在的位置，这一部分我们可以使用栈解决。
+** 当我们预处理完成后，即可在线性时间内完成遍历，遍历的字符串顺序即为反转后的字符串
+ */
+func ReverseParentheses(s string) string {
+	n := len(s)
+	pair := make([]int, n)
+	st := []int{}
+	// 预处理，记录括号位置
+	for i := range s{
+		if s[i] == '('{
+			st = append(st, i) // 记录位置
+		}else if s[i] == ')'{
+			j := st[len(st)-1]
+			st = st[:len(st)-1]
+			pair[i], pair[j] = j, i
+		}
+	}
+	// 反转操作：反转理解为逆序地遍历
+	ans := []byte{}
+	for i, step := 0, 1; i < n; i += step{
+		if s[i] == '(' || s[i] == ')'{
+			i = pair[i]
+			step = -step // 逆序遍历控制
+		}else{
+			ans = append(ans, s[i])
+		}
+	}
+	return string(ans)
+}
 
 
 

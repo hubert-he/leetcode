@@ -2,6 +2,7 @@ package BinarySearch
 
 import (
 	"math"
+	"strings"
 )
 
 /* 1060. Missing Element in Sorted Array
@@ -191,16 +192,6 @@ func sum(nums ...int)int{
 	return m
 }
 
-func max(nums ...int)int{
-	m := nums[0]
-	for _, c := range nums{
-		if m < c {
-			m = c
-		}
-	}
-	return m
-}
-
 func MaximizeSweetnessBS(sweetness []int, k int) int {
 	sum := 0
 	minVal := math.MaxInt32
@@ -292,6 +283,230 @@ func findDuplicate2(nums []int) int {
 	}
 	return r
 }
+
+/* 4. Median(中位数) of Two Sorted Arrays
+** Given two sorted arrays nums1 and nums2 of size m and n respectively, return the median of the two sorted arrays.
+** The overall run time complexity should be O(log (m+n)).
+ */
+/* 不需要合并两个有序数组，只要找到中位数的位置即可。
+** 不变量：由于两个数组的长度已知，因此中位数对应的两个数组的下标之和也是已知的
+** 维护两个指针，初始时分别指向两个数组的下标 0 的位置，每次将指向较小值的指针后移一位，直到到达中位数的位置
+** 如果一个指针已经到达数组末尾，则只需要移动另一个数组的指针
+** 当m + n 为奇数，median = 两个有序数组中的第(m+n)/2个元素，为偶数， median = (m+n)/2 与 (m+n)/2 + 1 的平均值
+** 这道题可以转化成寻找两个有序数组中的第 k 小的数， 其中 k 为 (m+n)/2 or (m+n)/2 + 1
+** 1. 如果A[k/2-1] < B[k/2-1] 则 比 A[k/2-1]小的数最多只有A的前 k/2-1个数和B的前k/2-1个数。
+	即 比 A[k/2-1] 小的数 最多只有 k-2个，因此 A[k/2-1] 不可能是第 k 个数，因此 A[0] 至 A[k/2-1] 都不可能是 第 k 个数，全部排除
+** 2. 如果 A[k/2-1] > B[k/2-1], 同 1 可排除 B[0] 至 B[k/2-1]
+** 3. 如果A[k/2-1] == B[k/2-1], 则可以归为第一种情况处理
+** 比较完 A[k/2-1] 和 B[k/2-1] 后，可以排除 k/2个不可能是第k小的数，同时继续对剩余的新数组进行二分，并根据排除的数的个数，减少k的值
+** 后续缩小范围，有3个特殊情况：
+** 1. 如果A[k/2-1] 或 B[k/2-1] 越界，那么我们可以选取对应数组中的最后一个元素。
+	在这种情况下，我们必须根据排除数的个数减少k的值，而非直接减去k/2
+** 2. 如果一个数组为空，说明该数组中的所有元素都被排除，我们可以直接返回另一个数组中第k小的数
+** 3. 如果 k=1，我们只要返回两个数组首元素的最小值即可
+*/
+func findMedianSortedArrays(nums1 []int, nums2 []int) float64 {
+	m, n := len(nums1), len(nums2)
+	median := (m+n)/2
+	p1, p2 := 0, 0
+	for p1 < m && p2 < n{
+		k := median / 2
+		if k < m && k < n{
+			if nums1[k] < nums2[k]{
+				p1 += k
+			}else{
+				p2 += k
+			}
+		}else if k < m{
+			if nums1[k] < nums2[n-1]{
+				p1 += k
+			}else{
+
+			}
+		}else if k < n{
+
+		}
+	}
+	return 0
+}
+
+func findMedianSortedArrays2(nums1 []int, nums2 []int) float64 {
+	total := len(nums1) + len(nums2)
+	getKthNum := func(k int)int{// k 为从 1 开始的序号 表示 个数
+		idx1, idx2 := 0, 0
+		for {
+			if idx1 == len(nums1){
+				return nums2[idx2 + k - 1]
+			}
+			if idx2 == len(nums2){
+				return nums1[idx1 + k -1]
+			}
+			if k == 1{
+				return min(nums1[idx1], nums2[idx2])
+			}
+			half := k/2
+			newIdx1 := min(idx1+half, len(nums1)) - 1
+			newIdx2 := min(idx2+half, len(nums2)) - 1
+			if nums1[newIdx1] < nums2[newIdx2]{
+				k -= newIdx1 - idx1 + 1
+				idx1 = newIdx1 + 1
+			}else  if nums1[newIdx1] > nums2[newIdx2]{
+				k -= newIdx2 - idx2 + 1 // 扣掉 k/2 个
+				idx2 = newIdx2 + 1
+			}else{ // equal
+				k -= newIdx1 - idx1 + 1
+				idx1 = newIdx1 + 1
+			}
+		}
+		return 0
+	}
+	median := total/2
+	if total & 0x1 == 0{
+		median0 := total/2 - 1
+		return float64(getKthNum(median0+1) + getKthNum(median+1)) / 2.0
+	}else{
+		return float64(getKthNum(median+1))
+	}
+}
+/* 方法2： 划分数组
+** 在统计中，中位数被用来： 将一个集合划分为两个长度相等的子集，其中一个子集中的元素总是大于另一个子集中的元素
+** 首先，在任意位置 i 将 A 划分成两个部分：left_A 和 right_A
+** 由于A中有 m 个元素， 所以有 m+1种 划分方法
+** 对于B， 同理
+** 将 left_A 和 left_B 放入一个集合，并将 right_A 和 right_B 放入另一个集合，构成新集合 left_part 和 right_part
+** 当 A 和 B 的总长度是偶数的时候，如果可以确认：
+	1. len(left_part) == len(right_part)
+	2. max(left_part) <= min(right_part)
+** 中位数就是前一部分的最大值和后一部分的最小值的平均值： median = ( max(left_part) + min(right_part) ) / 2
+** 当 A 和 B 的总长度是奇数的时候，如果可以确认：
+	1. len(left_part) == len(right_part) + 1
+	2. max(left_part) <= min(right_part)
+** 中位数就是前一部分的最大值： median = max(left_part)
+** 要确保满足2个条件，只需要保证：
+	1. i + j = m-i + n-j (m+n 为 偶数)  或 i + j = m-i + n-j + 1 （当 m+n 为奇数）
+	   将 i， j 全部移动到左侧，推导出  i + j = (m+n+1) / 2
+	2. 0 <= i <= m, 0 <= j <= n 若规定 len(A) <= len(B), 即 m <= n
+	  这样对于任意 i 属于 [0, m] 都有 j = (m+n+1)/2 - i 属于 [0, n]，
+	  那么在 [0, m] 的范围内枚举 i 并 得到 j
+	  特例： A 比较 大， 交换 A 和 B
+			m > n j 可能会出现负数
+	3. B[j-1] <= A[i] 以及 A[i-1] <= B[j] 即前一部分的最大值小于等于后一部分的最小值
+** 假设 B[j-1] A[i]  A[i-1]  B[j] 总存在， 对于 i = 0 = m  j = 0 = n 临界条件
+** 规定 A[-1] = B[-1] = 负无穷  A[m] = B[n] = 正无穷
+** 当一个数组不出现在前一部分时，对应的值为负无穷， 就不会对前一部分的最大值产生影响
+** 当一个数组不出现在后一部分时，对应的值为正无穷，就不会对后一部分的最小值产生影响
+** 在 [0, m] 中找到 i，使得
+	B[j-1] <= A[i] 且 A[i-1] <= B[j]， j = (m+n+1)/2 - i
+	等价于 A[i-1] <= B[j], j = (m+n+1)/2 - i
+	证明：
+	a. 当 i 从 0 - m 递增时， A[i-1] 递增， B[j] 递减， 所以一定存在一个最大的 i 满足 A[i-1] <= B[j]
+	b. 如果 i 是最大的，那么说明 i+1 不满足。 将 i+1 带入可以得到 A[i] > B[j-1] 也即 B[j-1] < A[i]
+** 因此， 在 i [0,m] 区间 二分查找，找到 最大满足 A[i-1] <= B[j] 的 i 值，就得到了划分方法
+** 此时，划分前一部分元素中的最大值，以及划分后一部分元素中的最小值，才可能作为就是这两个数组的中位数
+ */
+func findMedianSortedArrays3(nums1 []int, nums2 []int) float64 {
+	m, n := len(nums1), len(nums2)
+	if m > n { // 这个交换方法值得学习
+		return findMedianSortedArrays(nums2, nums1)
+	}
+	// nums1 数量少
+	left, right := 0, m
+	median1, median2 := 0, 0
+	for left <= right{
+		i := (left+right) / 2
+		j := (m+n+1) / 2 - i
+		nums_im1 := math.MinInt32
+		if i != 0{
+			nums_im1 = nums1[i-1]
+		}
+		nums_i := math.MaxInt32
+		if i != m{
+			nums_i = nums1[i]
+		}
+
+		nums_jm1 := math.MinInt32
+		if j != 0 {
+			nums_jm1 = nums2[j-1]
+		}
+		nums_j := math.MaxInt32
+		if j != n {
+			nums_j = nums2[j]
+		}
+		if nums_im1 <= nums_j { // A[i-1] <= B[j]
+			median1 = max(nums_im1, nums_jm1)
+			median2 = min(nums_i, nums_j)
+			left = i + 1
+		}else{ // A[i-1] > B[j] 减少 i 增大 j
+			right = i - 1 // 由于 i j 彼此关联， 所以减少 i 必然会导致 j 增加
+		}
+	}
+	if (m+n) % n == 0{
+		return float64(median1 + median2) / 2.0
+	}
+	return float64(median1)
+}
+// 好理解的代码
+func findMedianSortedArrays4(nums1 []int, nums2 []int) float64 {
+	m, n := len(nums1), len(nums2)
+	A, B := nums1, nums2
+	if m > n {
+		A, B = nums2, nums1
+		m, n = n, m
+	}
+	iMin, iMax := 0, m
+	for iMin <= iMax{
+		i := (iMax + iMin) / 2
+		j := (m+n+1)/2 - i
+		if j != 0 && i != m && B[j-1] > A[i]{ // i 需要增大
+			iMin = i + 1
+		}else if i != 0 && j != n && A[i-1] > B[j]{ // i 需要减少
+			iMax = i - 1
+		}else{// 达到要求，并且将边界条件列出来单独考虑 即 B[j-1] <= A[i] && A[i-1] <= B[j]
+			maxLeft := 0
+			if i == 0 {
+				maxLeft = B[j-1]
+			}else if j == 0{
+				maxLeft = A[i-1]
+			}else{
+				maxLeft = max(A[i-1], B[j-1])
+			}
+			if (m+n) & 0x1 == 1{ // 奇数
+				return float64(maxLeft)
+			}
+
+			minRight := 0
+			if i == m {
+				minRight = B[j]
+			}else if j == n {
+				minRight = A[i]
+			}else{
+				minRight = min(B[j], A[i])
+			}
+			return float64(maxLeft + minRight) / 2.0
+		}
+	}
+	strings.LastIndex()
+	return 0.0
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
