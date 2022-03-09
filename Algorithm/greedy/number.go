@@ -1,6 +1,9 @@
 package greedy
 
-import "math"
+import (
+	"math"
+	"sort"
+)
 
 /* 330. Patching Array
 ** Given a sorted integer array nums and an integer n,
@@ -137,3 +140,50 @@ func brokenCalc2(startValue int, target int) int {
 	}
 	return cnt1+cnt2
 }
+
+/* 976. Largest Perimeter Triangle
+** Given an integer array nums, return the largest perimeter of a triangle with a non-zero area,
+** formed from three of these lengths.
+** If it is impossible to form any triangle of a non-zero area, return 0.
+ */
+// 此方法超时，由下面公式可以发现 k 继续往下走已经没有意义,故继续优化
+func largestPerimeter(nums []int) int {
+	sort.Ints(nums)
+	for i := len(nums)-1; i >= 0; i--{
+		for j := i-1; j >= 0; j--{
+			for k := j-1; k >= 0; k--{
+				if nums[k] + nums[j] > nums[i]{
+					return nums[k] + nums[j] + nums[i]
+				}
+			}
+		}
+	}
+	return 0
+}
+
+func largestPerimeter2(nums []int) int {
+	sort.Ints(nums)
+	for i := len(nums)-1; i >= 2; i--{
+		if nums[i-1] + nums[i-2] > nums[i]{
+			return nums[i-2] + nums[i-1] + nums[i]
+		}
+	}
+	return 0
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

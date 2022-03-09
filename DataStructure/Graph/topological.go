@@ -587,10 +587,130 @@ func AlienOrder(words []string) string {
 	return string(ans)
 }
 
-
-
-
-
+/* 802. Find Eventual Safe States
+** There is a directed graph of n nodes with each node labeled from 0 to n - 1.
+** The graph is represented by a 0-indexed 2D integer array graph
+** where graph[i] is an integer array of nodes adjacent to node i,
+** meaning there is an edge from node i to each node in graph[i].
+** A node is a terminal node if there are no outgoing edges.
+** A node is a safe node if every possible path starting from that node leads to a terminal node.
+** Return an array containing all the safe nodes of the graph. The answer should be sorted in ascending order.
+ */
+// 2022-03-04 刷出此题
+func eventualSafeNodes(graph [][]int) []int {
+	n := len(graph)
+	term := make([]bool, n)
+	vis := make([]bool, n) // 阻止环
+	for i := range graph{
+		if len(graph[i]) == 0{
+			term[i] = true
+		}
+	}
+	var dfs func(x int)bool
+	dfs = func(x int)bool{
+		if term[x]{ return true }
+		if vis[x]{ return false }
+		vis[x] = true
+		for i := range graph[x]{
+			if !dfs(graph[x][i]){
+				return false
+			}
+		}
+		term[x] = true
+		return true
+	}
+	for i := range graph{
+		dfs(i)
+	}
+	ans :=[]int{}
+	for i := range term{
+		if term[i]{
+			ans = append(ans, i)
+		}
+	}
+	return ans
+}
+/* 官方题解：三色标记
+** 若起始节点位于一个环内，或者能到达一个环，则该节点不是安全的,否则，该节点是安全的
+** 使用深度优先搜索来找环,用三种颜色对节点进行标记, 标记：
+	1. 白色（用 0 表示）：该节点尚未被访问；
+	2. 灰色（用 1 表示）：该节点位于递归栈中，或者在某个环上；
+	3. 黑色（用 2 表示）：该节点搜索完毕，是一个安全节点。
+** 当我们首次访问一个节点时，将其标记为灰色，并继续搜索与其相连的节点，
+** 如果在搜索过程中遇到了一个灰色节点，则说明找到了一个环，此时退出搜索，栈中的节点仍保持为灰色，
+** 这一做法可以将「找到了环」这一信息传递到栈中的所有节点上。
+** 如果搜索过程中没有遇到灰色节点，则说明没有遇到环，那么递归返回前，我们将其标记由灰色改为黑色，即表示为安全的节点
+ */
+func eventualSafeNodes_dfs(graph [][]int) []int {
+	n := len(graph)
+	color := make([]int, n)
+	var dfs func(x int)bool
+	dfs = func(x int)bool{
+		if color[x] > 0{ // 可能到达安全节点 或者 在环
+			return color[x] == 2
+		}
+		color[x] = 1
+		for _, y := range graph[x]{
+			if !dfs(y){
+				return false
+			}
+		}
+		color[x] = 2
+		return true
+	}
+	ans := []int{}
+	for i := range graph{
+		if dfs(i){
+			ans = append(ans, i)
+		}
+	}
+	return ans
+}
+/* 方法二： 拓扑排序
+** 分析出总共有2种情况，满足之一就可
+** 1. 若一个节点没有出边，则该节点是安全的
+** 2. 若一个节点出边相连的点都是安全的，则该节点也是安全的
+** 我们可以将图中所有边反向，得到一个反图，然后在反图上运行拓扑排序
+** 具体：
+** 1. 首先得到反图 rg 和反图的入度数组 inDeg
+** 2.
+ */
+func eventualSafeNodes_topo(graph [][]int) []int {
+	n := len(graph)
+	rg := make([][]int, n)
+	inDeg := make([]int, n)
+	q := []int{}
+	for x := range graph{
+		for _, y := range graph[x]{
+			rg[y] = append(rg[y], x)
+		}
+		inDeg[x] = len(graph[x])
+		if inDeg[x] == 0{ // 反图 rg 入度为0 的节点就是 term 节点
+			q = append(q, x)
+		}
+	}
+	// 反图 rg 入度为0 的节点就是 term 节点
+	// 使用BFS 来完成 拓扑排序
+	for len(q) > 0{
+		queue := q
+		q = nil
+		for _, x := range queue{
+			for _, y := range rg[x]{
+				inDeg[y]--
+				if inDeg[y] == 0{
+					q = append(q, y)
+				}
+			}
+		}
+	}
+	ans := []int{}
+	for i := range inDeg{
+		if inDeg[i] == 0{
+			ans = append(ans, i)
+		}
+	}
+	return ans
+}
 
 
 

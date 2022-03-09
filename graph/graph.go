@@ -63,3 +63,36 @@ func makeConnected(n int, connections [][]int) (ans int) {
 	}
 	return ans - 1
 }
+
+/* 1557. Minimum Number of Vertices to Reach All Nodes
+** Given a directed acyclic graph（有向无环图）, with n vertices numbered from 0 to n-1, 
+** and an array edges where edges[i] = [fromi, toi] represents a directed edge from node fromi to node toi.
+** Find the smallest set of vertices from which all nodes in the graph are reachable.
+** It's guaranteed that a unique solution exists.
+** Notice that you can return the vertices in any order.
+ */
+// 2022-02-22 刷出此题
+/* 图思维的运用
+** 对于任意节点 x 如果其入度不为零，则一定存在节点 y 指向节点 x
+** 从节点 y 出发即可到达节点 y 和 x 因此如果从节点 y 出发， 节点 x 和 节点 y 都可以到达，
+** 且从节点 y 出发可以到达的节点比从节点 x 出发可以到达的节点更多。
+** 由于给定的图是有向无环图，基于上述分析可知，
+** 对于任意入度不为零的节点 x，一定存在另一个节点 z，使得从节点 z 出发可以到达节点 x。
+** 为了获得最小的点集，只有入度为零的节点才应该加入最小的点集。
+	由于入度为零的节点必须从其自身出发才能到达该节点，从别的节点出发都无法到达该节点，因此最小的点集必须包含所有入度为零的节点。
+	因为入度不为零的点总可以由某个入度为零的点到达，所以这些点不包括在最小的合法点集当中。
+	因此，我们得到「最小的点集使得从这些点出发能到达图中所有点」就是入度为零的所有点的集合。
+*/
+func findSmallestSetOfVertices(n int, edges [][]int) []int {
+	in := make([]bool, n)
+	for i := range edges{
+		in[edges[i][1]]=true
+	}
+	ans := []int{}
+	for i := range in{
+		if !in[i]{
+			ans = append(ans, i)
+		}
+	}
+	return ans
+}

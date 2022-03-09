@@ -116,3 +116,56 @@ func maxSlidingWindow(nums []int, k int) []int {
 	}
 	return ans
 }
+
+/* 325. Maximum Size Subarray Sum Equals k
+** Given an integer array nums and an integer k, return the maximum length of a subarray that sums to k.
+** If there is not one, return 0 instead.
+ */
+func maxSubArrayLen(nums []int, k int) int {
+	n := len(nums)
+	prefixsum := make([]int, n+1)
+	m := map[int]int{0: 0}
+	for i := range nums{
+		prefixsum[i+1] = prefixsum[i] + nums[i]
+		//m[prefixsum[i+1]] = i
+		if _, ok := m[prefixsum[i+1]]; !ok{
+			m[prefixsum[i+1]] = i+1 // 只记录最先开始的
+		}
+	}
+	ans := 0
+	/* 平方级，可以参考 2 sum 引入hash 优化
+	   for i := 1; i <= n; i++{
+	       for j := 0; j < i; j++{
+	           if prefixsum[i] - prefixsum[j] == k{
+	               if ans < i-j{
+	                   ans = i-j
+	               }
+	           }
+	       }
+	   }
+	*/
+	for i := 1; i <= n; i++{
+		diff := prefixsum[i] - k
+		if idx, ok := m[diff]; ok {
+			if ans < i-idx{
+				ans = i - idx
+			}
+		}
+	}
+	return ans
+}
+// 进一步优化
+func maxSubArrayLen_Best(nums []int, k int) int {
+	m := map[int]int{0: -1}
+	sum, ans := 0, 0
+	for i := range nums{
+		sum += nums[i]
+		if idx, ok := m[sum-k];ok && ans < i-idx{
+			ans = i-idx
+		}
+		if _, ok := m[sum]; !ok{// 记录最先出现的，保证最长
+			m[sum] = i
+		}
+	}
+	return ans
+}

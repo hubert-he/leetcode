@@ -198,7 +198,147 @@ func gridIllumination_3(n int, lamps [][]int, queries [][]int) []int {
 	return ans
 }
 
+/* 1905. Count Sub Islands
+** You are given two m x n binary matrices grid1 and grid2 containing only 0's (representing water) and 1's (representing land).
+** An island is a group of 1's connected 4-directionally (horizontal or vertical).
+** Any cells outside of the grid are considered water cells.
+** An island in grid2 is considered a sub-island if there is an island in grid1 that contains all the cells that make up this island in grid2.
+** Return the number of islands in grid2 that are considered sub-islands.
+ */
+// 2022-02-18 刷出此题，收录此题的目的是 有个坑点，就是 当发现此岛屿不是grid1的子岛屿后，不能直接放弃遍历，否则会影响总结果
+func countSubIslands(grid1 [][]int, grid2 [][]int) int {
+	m, n := len(grid1), len(grid1[0])
+	ans := 0
+	dirs := [][]int{ []int{1, 0},[]int{-1, 0},[]int{0, 1},[]int{0, -1} }
+	isValid := func(x, y int)bool{
+		if x < 0 || y < 0 || x >= m || y >= n{
+			return false
+		}
+		return true
+	}
+	var dfs func(x, y int)bool
+	dfs = func(x, y int)bool{
+		ret := true
+		if !isValid(x,y){ return true }
+		grid2[x][y] = 0
+		if grid1[x][y] == 0{
+			ret = false // 不能直接返回，需要把情况全部遍历完
+		}
+		for _, d := range dirs{
+			r, c := x+d[0], y+d[1]
+			if isValid(r, c) && grid2[r][c] == 1{
+				if !dfs(r,c ){
+					ret = false
+				}
+			}
+		}
+		return ret
+	}
+	for i := range grid2{
+		for j := range grid2[i]{
+			if grid2[i][j] == 1{
+				if dfs(i, j){
+					ans++
+				}
+			}
+		}
+	}
+	return ans
+}
 
+func countSubIslandsBFS(grid1 [][]int, grid2 [][]int) int {
+	m, n := len(grid1), len(grid1[0])
+	ans := 0
+	dirs := [][]int{ []int{1, 0},[]int{-1, 0},[]int{0, 1},[]int{0, -1} }
+	isValid := func(x, y int)bool{
+		if x < 0 || y < 0 || x >= m || y >= n{
+			return false
+		}
+		return true
+	}
+	bfs := func(x, y int)bool{
+		q := [][]int{[]int{x, y}}
+		grid2[x][y] = 0
+		ret := true
+		if grid1[x][y] == 0{
+			ret = false // 不能立即返回， 需要把此岛屿清空为已访问
+		}
+		for len(q) > 0{
+			t := [][]int{}
+			for _, pos := range q{
+				for _, d := range dirs{
+					r, c := pos[0] + d[0], pos[1] + d[1]
+					if isValid(r, c) && grid2[r][c] == 1{
+						t = append(t, []int{r,c})
+						grid2[r][c] = 0
+						if grid1[r][c] == 0{
+							ret = false
+						}
+					}
+				}
+			}
+			q = t
+		}
+		return ret
+	}
+	for i := range grid2{
+		for j := range grid2[i]{
+			if grid2[i][j] == 1{
+				if bfs(i, j){
+					ans++
+				}
+			}
+		}
+	}
+	return ans
+}
+// 方法三 并查集
+func countSubIslandsUFS(grid1 [][]int, grid2 [][]int) int {
+	m, n := len(grid2), len(grid2[0])
+	ufs := make([]int, m*n)
+	for i := range ufs{
+		ufs[i] = i
+	}
+	var find func(t int)int
+	find = func(t int)int{
+		if ufs[t] != t {
+			ufs[t] = find(ufs[t])
+		}
+		return ufs[t]
+	}
+	union := func(x, y int){
+		ufs[find(x)] = find(y)
+	}
+	dirs := [][]int{[]int{0, -1}, []int{-1, 0}} // 分2个方向，或右下，或左上, 这里选左上
+	for i := range grid2{
+		for j := range grid2[i]{
+			if grid2[i][j] == 0 { continue }
+			idx := i * n + j
+			for _, d := range dirs{
+				r, c := i+d[0], j+d[1]
+				if r > 0 && c > 0 {
+					rcIdx := r*n+c
+					if grid2[r][c] == 1 { union(rcIdx, idx) }
+					if grid2[r][c] == 0 { ufs[rcIdx] = -1   }
+				}
+			}
+		}
+	}
+	set := map[int]bool{}
+	for i := range ufs{
+		if ufs[i] != -1{
+			r, c := i/n, i%n
+			if grid1[r][c] == 0{
+				set[find(ufs[i])] = false
+			}
+		}
+	}
+	ans := 0
+	for i := range set{
+		if set[i]{ ans++ }
+	}
+	return ans
+}
 
 
 

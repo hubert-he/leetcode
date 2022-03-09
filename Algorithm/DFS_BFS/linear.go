@@ -904,8 +904,186 @@ func openLock_BiBFS_fine(deadends []string, target string) int {
 	return -1
 }
 
+/* 365. Water and Jug Problem
+** You are given two jugs with capacities jug1Capacity and jug2Capacity liters.
+** There is an infinite amount of water supply available.
+** Determine whether it is possible to measure exactly targetCapacity liters using these two jugs.
+** If targetCapacity liters of water are measurable,
+** you must have targetCapacity liters of water contained within one or both buckets by the end.
+** Operations allowed:
+	Fill any of the jugs with water.
+	Empty any of the jugs.
+	Pour water from one jug into another till the other jug is completely full, or the first jug itself is empty.
+ */
+// 2022-02-22 未成功刷出此题， 下面方式是 ❌ 的，测试案例： [34 5 6]
+func canMeasureWater(jug1Capacity int, jug2Capacity int, targetCapacity int) bool {
+	arg := map[int]bool{}
+	arg[jug1Capacity] = true
+	arg[jug2Capacity] = true
+	if jug1Capacity < jug2Capacity{
+		arg[jug2Capacity-jug1Capacity] = true
+	}else if jug1Capacity > jug2Capacity{
+		arg[jug1Capacity-jug2Capacity] = true
+	}
+	q := []int{targetCapacity}
+	for len(q) > 0{
+		t := []int{}
+		for i := range q{
+			if q[i] == 0{
+				return true
+			}
+			for k := range arg{
+				diff := q[i] - k
+				if diff >= 0{
+					t = append(t, diff)
+				}
+			}
+		}
+		q = t
+	}
+	return false
+}
 
+/* 1654. Minimum Jumps to Reach Home
+** A certain bug's home is on the x-axis at position x. Help them get there from position 0.
+** The bug jumps according to the following rules:
+	It can jump exactly a positions forward (to the right).
+	It can jump exactly b positions backward (to the left).
+	It cannot jump backward twice in a row.
+	It cannot jump to any forbidden positions.
+** The bug may jump forward beyond its home, but it cannot jump to positions numbered with negative integers.
+** Given an array of integers forbidden, where forbidden[i] means that the bug cannot jump to the position forbidden[i],
+** and integers a, b, and x, return the minimum number of jumps needed for the bug to reach its home.
+** If there is no possible sequence of jumps that lands the bug on position x, return -1.
+ */
+/* 2022-02-22 未能刷出此题，测试案例：
+[162,118,178,152,167,100,40,74,199,186,26,73,200,127,30,124,193,84,184,36,103,149,153,9,54,154,133,95,45,198,79,157,64,122,59,71,48,177,82,35,14,176,16,108,111,6,168,31,134,164,136,72,98]
+29
+98
+80
+*/
+// ❌ 错误的解答
+func minimumJumps_error(forbidden []int, a int, b int, x int) int {
+	m := map[int]bool{}
+	for _,c := range forbidden{
+		m[c] = true
+	}
+	ans := 0
+	q := [][]int{[]int{0,0}}
+	loop := map[int]bool{}
+	for len(q) > 0{
+		t := [][]int{}
+		for _, p := range q{
+			pos, dir := p[0], p[1]
+			if loop[pos] { continue }
+			loop[pos] = true
+			if pos == x{
+				return ans
+			}
+			if !m[pos+a]{
+				t = append(t, []int{pos+a, 0})
+			}
+			if pos-b >0 && !m[pos-b] && dir == 0{
+				t = append(t, []int{pos-b, 1})
+			}
+		}
+		//由于我们可以超出家的位置，最短路算法会超时，故我们需要减小搜索范围
+		if ans > 9000{ // 限制的不应该是次数，而应该是 跳跃的边界值 就卡在这个地方了！！！
+			fmt.Println(ans)
+			return -1
+		}
+		ans++
+		q = t
+	}
+	return -1
+}
+/* 可以证明，一定可以在 [0,max(f+a+b,x+b)] 的下标范围内找到最优解，其中 f 是最远的禁止点的坐标。
+** 因为 f,a,b,x≤2000，故搜索范围不会超过 6000。
+**
+ */
+func minimumJumps(forbidden []int, a int, b int, x int) int {
+	max := func(nums... int)int{
+		m := nums[0]
+		for _, c := range nums{
+			if m < c {
+				m = c
+			}
+		}
+		return m
+	}
+	// 最远距离 bound = max(F + a + b, x + b)
+	bound := max(max(forbidden...) + a + b+x, x + b)
+	ban := make([]bool, bound+1)
+	for _, v := range forbidden{
+		ban[v] = true
+	}
+	ans := 0
+	q := [][]int{[]int{0,0}}
+	for len(q) > 0{
+		t := [][]int{}
+		for i := range q{
+			pos, dir := q[i][0], q[i][1]
+			if pos == x{ return ans  }
+			if pos+a < bound && !ban[pos+a]{
+				t = append(t, []int{pos+a, 0})
+				ban[pos+a] = true // 前进去过的地方，后退就没必要再去了，因为前进去过的地方，既可以前进又可以后退
+			}
+			if  pos-b > 0 && !ban[pos-b] && dir == 0 {
+				t = append(t, []int{pos-b, 1})
+				// ban[pos-b] = true
+				// 这里不能forbidden，因为后退回pos-b处时，无法覆盖前进到pos-b再后退到pos-2b的情况
+				//前进去过的地方，后退就没必要再去了，因为前进去过的地方，既可以前进又可以后退
+				//但是后退去过的地方因为只能前进，所以前进还得再去搜索一下，看后退符不符合条件
+			}
+		}
+		ans++
+		q = t
+	}
+	return -1
+}
 
+func minimumJumps_exp(forbidden []int, a int, b int, x int) int {
+	max := func(nums... int)int{
+		m := nums[0]
+		for _, c := range nums{
+			if m < c {
+				m = c
+			}
+		}
+		return m
+	}
+	// 最远距离 bound = max(F + a + b, x + b)
+	bound := max(max(forbidden...) + a + b, x + b)
+	ban := make([]bool, bound+1)
+	for _, v := range forbidden{
+		ban[v] = true
+	}
+	dist := make([][2]int, bound+1) // dist[i][0] - 上一次前跳, dist[i][1] - 上一次后跳
+	for i := range dist{
+		dist[i][0], dist[i][1] = 0x3F3F, 0x3F3F
+	}
+	dist[0][0] = 0
+	q := [][2]int{[2]int{0, 0}}
+	for len(q) > 0{
+		t := [][2]int{}
+		for i := range q{
+			pos, dir := q[i][0], q[i][1]
+			if pos == x{ return dist[pos][dir] }
+			if dir == 0 && pos - b >= 0 && !ban[pos-b] &&
+				dist[pos][dir] + 1 < dist[pos-b][1] {
+				dist[pos-b][1] = dist[pos][dir] + 1
+				t = append(t, [2]int{pos-b, 1}) // 向后跳
+			}
+			if pos+a <= bound && // bound 未能思考出
+				!ban[pos+a] && dist[pos][dir] + 1 < dist[pos+a][0] {
+				dist[pos+a][0] = dist[pos][dir] + 1
+				t = append(t, [2]int{pos+a, 0})
+			}
+		}
+		q = t
+	}
+	return -1
+}
 
 
 

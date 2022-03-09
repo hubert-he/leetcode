@@ -2,6 +2,7 @@ package BinarySearch
 
 import (
 	"math"
+	"sort"
 	"strings"
 )
 
@@ -489,8 +490,70 @@ func findMedianSortedArrays4(nums1 []int, nums2 []int) float64 {
 	return 0.0
 }
 
+/* 2080. Range Frequency Queries
+** Design a data structure to find the frequency of a given value in a given subarray.
+** The frequency of a value in a subarray is the number of occurrences of that value in the subarray.
+** Implement the RangeFreqQuery class:
+	RangeFreqQuery(int[] arr) Constructs an instance of the class with the given 0-indexed integer array arr.
+	int query(int left, int right, int value) Returns the frequency of value in the subarray arr[left...right].
+** A subarray is a contiguous sequence of elements within an array.
+** arr[left...right] denotes the subarray that contains the elements of nums between indices left and right (inclusive).
+ */
+type RangeFreqQuery struct {
+	qf map[int][]int
+	//pos [1e4 + 1]sort.IntSlice 可使用hash  直接调用 sort.IntSlice 方法
+}
+/*
+func (q *RangeFreqQuery) Query(left, right, value int) int {
+	p := q.pos[value] // value 在 arr 中的所有下标位置
+	return p[p.Search(left):].Search(right + 1) // 在下标位置上二分，求 [left,right] 之间的下标个数，即为 value 的频率
+}
+*/
 
+func Constructor(arr []int) RangeFreqQuery {
+	ret := RangeFreqQuery{}
+	ret.qf = map[int][]int{}
+	for i, c := range arr{
+		ret.qf[c] = append(ret.qf[c], i)
+	}
+	return ret
+}
 
+func (this *RangeFreqQuery) Query(left int, right int, value int) int {
+	t := this.qf[value]
+	/* 线性查找 超时
+	   for _, c := range this.qf[value]{
+	       if c >= left && c <= right{
+	           ans++
+	       }
+	   }    */
+	/* 二分查找 left right 的下标位置 */
+	search := func(target int)int{
+		i, j, mid := 0, len(t)-1, 0
+		for i <= j{
+			mid = int(uint(i+j)>>1)
+			if t[mid] < target{
+				i = mid + 1
+			}else if t[mid] > target{
+				j = mid - 1
+			}else{
+				return mid
+			}
+		}
+		return i
+	}
+	l := search(left)
+	// r := search(right)
+	r := search(right+1) //关键的一步，在golang中  upper_bound 的实现
+	//fmt.Println(t)
+	//fmt.Println(l, r)
+	return r - l
+	/* 使用库函数
+	   l := sort.SearchInts(t, left)
+	   r := sort.SearchInts(t, right+1)//upper_bound  关键的一步，在golang中  upper_bound 的实现
+	   return r - l
+	*/
+}
 
 
 

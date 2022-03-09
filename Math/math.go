@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"sort"
 	"strconv"
 )
 
@@ -52,73 +53,65 @@ func PlusOne(digits []int) []int {
 /* 67. Add Binary
 Given two binary strings a and b, return their sum as a binary string.
  */
+// 2022-03-08 刷出此题方法，
+// 易错点：
+//	1. 逆序逆序
+//	2. carry 算好了
+//	3. 计算到最后一定要注意是否有进位
 func AddBinary(a string, b string) string {
+	na, nb := len(a), len(b)
 	ans := []byte{}
-	left := 0
-	for sa,sb := len(a) - 1, len(b) - 1; sa >= 0 || sb >= 0;{
-		if sa < 0 {
-			if b[sb] == '1'{
-				if left > 0{
-					ans = append([]byte{'0'}, ans...)
-					left = 1
-				}else{
-					ans = append([]byte{'1'}, ans...)
-					left = 0
-				}
+	i, j := na-1, nb-1
+	carry := '0'
+	for i >= 0 && j >= 0{
+		if carry == '0'{
+			if a[i] == '1' && b[j] == '1'{
+				carry = '1'
+				ans = append([]byte{'0'}, ans...)
+			}else if a[i] == '1' || b[j] == '1'{
+				ans = append([]byte{'1'}, ans...)
 			}else{
-				if left > 0{
-					ans = append([]byte{'1'}, ans...)
-				}else{
-					ans = append([]byte{'0'}, ans...)
-				}
-				left = 0
+				ans = append([]byte{'0'}, ans...)
 			}
-		}else if sb < 0{
-			if a[sa] == '1'{
-				if left > 0{
-					ans = append([]byte{'0'}, ans...)
-					left = 1
-				}else{
-					ans = append([]byte{'1'}, ans...)
-					left = 0
-				}
+		}else{
+			if a[i] == '1' && b[j] == '1'{
+				ans = append([]byte{'1'}, ans...)
+			}else if a[i] == '1' || b[j] == '1'{
+				ans = append([]byte{'0'}, ans...)
 			}else{
-				if left > 0{
-					ans = append([]byte{'1'}, ans...)
-				}else{
-					ans = append([]byte{'0'}, ans...)
-				}
-				left = 0
-			}
-		}else {
-			if a[sa] == '1' && b[sb] == '1'{
-				if left > 0{
-					ans = append([]byte{'1'}, ans...)
-				}else{
-					ans = append([]byte{'0'}, ans...)
-				}
-				left = 1
-			}else if a[sa] == '1' || b[sb] == '1'{
-				if left > 0{
-					ans = append([]byte{'0'}, ans...)
-					left = 1
-				}else{
-					ans = append([]byte{'1'}, ans...)
-					left = 0
-				}
-			}else{
-				if left > 0{
-					ans = append([]byte{'1'}, ans...)
-				}else{
-					ans = append([]byte{'0'}, ans...)
-				}
-				left = 0
+				ans = append([]byte{'1'}, ans...)
+				carry = '0'
 			}
 		}
-		sa--
-		sb--
+		i, j = i-1, j-1
 	}
-	if left > 0{
+	for i >= 0{
+		if carry == '0'{
+			ans = append([]byte{a[i]}, ans...)
+		}else{
+			if a[i] == '0'{
+				carry = '0'
+				ans = append([]byte{'1'}, ans...)
+			}else{
+				ans = append([]byte{'0'}, ans...)
+			}
+		}
+		i--
+	}
+	for j >= 0{
+		if carry == '0'{
+			ans = append([]byte{b[j]}, ans...)
+		}else{
+			if b[j] == '0'{
+				ans = append([]byte{'1'}, ans...)
+				carry = '0'
+			}else{
+				ans = append([]byte{'0'}, ans...)
+			}
+		}
+		j--
+	}
+	if carry == '1'{
 		ans = append([]byte{'1'}, ans...)
 	}
 	return string(ans)
@@ -161,6 +154,7 @@ func AddBinary2(a, b string) (ans string){
 	接着每一轮中，由于carry是由 x 和 y 按位 与 并且左移得到的，空位会有 0 来填补，所以下面的计算过程中后面的数位不受影响
     而每一轮都可以得到一个低 i 位的答案 和 它向低 i+1位的进位，也就模拟了加法过程
  */
+// 此方法仅供学习加法与位运算原理
 func AddBinaryBit(a, b string) string {
 	x, _ := strconv.ParseInt(a, 2, 64)
 	y, _ := strconv.ParseInt(b, 2, 64)
@@ -641,3 +635,109 @@ func lastRemainingDP(n int, m int) int {
 	}
 	return  ans
 }
+
+
+/* 812. Largest Triangle Area
+** Given an array of points on the X-Y plane points where points[i] = [xi, yi],
+** return the area of the largest triangle that can be formed by any three different points.
+** Answers within 10-5 of the actual answer will be accepted.
+ */
+// 不好处理的一个因素 是 计算三角形面积
+/* 根据三角形的三个顶点计算出面积的方法有很种
+** 1. 鞋带公式：
+	Shoelace公式，也叫高斯面积公式，是一种数学算法，可求确定区域的一个简单多边形的面积
+	该多边形是由它们顶点描述笛卡尔坐标中的平面.
+	用户交叉相乘相应的坐标以找到包围该多边形的区域,并从周围的多边形中减去该区域以找到其中的多边形的区域
+	之所以称为鞋带公式，是因为对构成多边形的坐标进行恒定的交叉乘积，就像系鞋带一样
+** 2. 海伦公式:
+	海伦公式又译作希伦公式、海龙公式、希罗公式、海伦－秦九韶公式。利用三角形的三条边的边长直接求三角形面积的公式
+	S = 对 p(p-a)(p-b)(p-c) 开根号  p = (a+b+c)/2
+** 3. 普通计算公式： S = 1/2 * a * b * sin(C)
+ */
+func largestTriangleArea(points [][]int) float64 {
+	n := len(points)
+	var ans float64
+	area := func(P, Q, R []int)float64{
+		return 0.5 * math.Abs(float64(P[0]*Q[1] + Q[0]*R[1] + R[0]*P[1] - P[1]*Q[0] - Q[1]*R[0] - R[1]*P[0]))
+	}
+	for i := 0; i < n; i++{
+		for j := i+1; j < n; j++{
+			for k := j+1; k < n; k++{
+				a := area(points[i], points[j], points[k])
+				if ans < a{
+					ans = a
+				}
+			}
+		}
+	}
+	return ans
+}
+
+/* 1502. Can Make Arithmetic Progression(等差数列) From Sequence
+** A sequence of numbers is called an arithmetic progression if the difference between any two consecutive elements is the same.
+** Given an array of numbers arr,
+** return true if the array can be rearranged to form an arithmetic progression. Otherwise, return false.
+ */
+// 2022--2-14 刷出此题， 学习等差数列高效的判别方法： 2*ai = (ai-1 + ai+1)
+func canMakeArithmeticProgression(arr []int) bool {
+	sort.Ints(arr)
+	for i := 1; i < len(arr)-1; i++{
+		if 2*arr[i] != (arr[i-1]+arr[i+1]){
+			return false
+		}
+	}
+	return true
+}
+
+/* 1232. Check If It Is a Straight Line
+** You are given an array coordinates, coordinates[i] = [x, y], where [x, y] represents the coordinate of a point.
+** Check if these points make a straight line in the XY plane.
+ */
+// 共线向量线性相关
+/* 在给定的点集中，以任意一点 P0 为基准，如果其他所有点的, deltaY / deltaX 是不变的，那么点集内所有的点在同一条直线上。
+** 但是这种做法会涉及到除数为 0的问题，即垂直于 x 轴的直线需要单独判断， 另外还会涉及浮点数运算。这是斜率方法
+** 我们可以把点集中除了 P0 之外的点 Pi 都看成以 P0 为起点，以 Pi 为终点的向量，记为 vi， 并选择 v1 作为基准。
+** 如果其他向量都与 v1 共线，那么点集合所有的点都共线
+** 线性代数：如果二维向量 A 与 B 共线，那么他们线性相关，且有   |A, B| = 0  即它们拼成的二阶矩阵的行列式为 0。
+ */
+// 官方题解：将第一个节点 平移到坐标原点，经过两点的直线有且仅有一条，可以 通过前2个节点来确定这条直线
+// 没有想到  平移策略
+func checkStraightLine(coordinates [][]int) bool {
+	deltaX, deltaY := coordinates[0][0], coordinates[0][1]
+	for _, p := range coordinates{// 将第一个节点 平移到坐标原点， 直线过原点，故方程 A * x + B * y = 0
+		p[0] -= deltaX
+		p[1] -= deltaY
+	}
+	// 本质上是斜率： 除法转乘法
+	A, B := coordinates[1][1], -coordinates[1][0]
+	for _, p := range coordinates[2:]{
+		x, y := p[0], p[1]
+		if A*x + B*y != 0{
+			return false
+		}
+	}
+	return true
+}
+
+func checkStraightLine2(coordinates [][]int) bool {
+	deltaX, deltaY := coordinates[0][0], coordinates[0][1]
+	for _, p := range coordinates{// 将第一个节点 平移到坐标原点， 直线过原点，故方程 A * x + B * y = 0
+		p[0] -= deltaX
+		p[1] -= deltaY
+	}
+	// 本质上是斜率： 除法转乘法
+	A, B := coordinates[1][1], coordinates[1][0]
+	for _, p := range coordinates[2:]{
+		x, y := p[0], p[1]
+		if A*x != B*y{
+			return false
+		}
+	}
+	return true
+}
+
+
+
+
+
+

@@ -158,6 +158,38 @@ func FindAnagrams2Pointer(s string, p string) []int {
 	return ans
 }
 
+func FindAnagramsCheck(s string, p string) []int {
+	ans := []int{}
+	ns, np := len(s), len(p)
+	cnt := [26]int{}
+	for i := range p{
+		cnt[p[i]-'a']++
+	}
+	a := 0
+	for i := range cnt{
+		if cnt[i] != 0{
+			a++
+		}
+	}
+	for l, r, b := 0, 0, 0; r < ns; r++{
+		// 往窗口增加字符，进行词频的抵消操作，
+		// 如果抵消后词频为 0，说明有一个新的字符词频与 p 完全相等
+		cnt[s[r]-'a']--
+		if cnt[s[r]-'a'] == 0 { b++  }
+		// 若窗口长度超过规定，将窗口左端点右移，执行词频恢复操作，
+		// 如果恢复后词频为 1（恢复前为 0），说明少了一个词频与 p 完全性相等的字符
+		if r - l + 1 > np{ // 这一段不好理解
+			cnt[s[l]-'a']++
+			if cnt[s[l]-'a'] == 1{ b-- }
+			l++
+		}
+		if b == a{
+			ans = append(ans, l)
+		}
+	}
+	return ans
+}
+
 
 
 

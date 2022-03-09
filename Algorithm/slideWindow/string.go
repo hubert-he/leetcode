@@ -74,6 +74,41 @@ func checkInclusion(s1 string, s2 string) bool {
 	}
 	return false
 }
+// 2022-03-01 刷出此题  但是代码方式仍然不如官方解答
+func checkInclusion2(s1 string, s2 string) bool {
+	n1, n := len(s1), len(s2)
+	if n1 > n{ return false }
+	m := [26]byte{}
+	cnt := 0
+	for _, c := range s1{
+		m[c-'a']++
+		cnt++
+	}
+	isPerm := func(x string)bool{
+		t := [26]byte{}
+		for _, c := range x {
+			t[c-'a']++
+		}
+		return t == m
+	}
+	i, j := 0, 0
+	for i < n{
+		if m[s2[i]-'a'] == 0{
+			i++
+			j = i
+			continue
+		}
+		i++
+		if i - j == cnt {
+			if isPerm(s2[j:i]){
+				return true
+			}else{
+				j++
+			}
+		}
+	}
+	return false
+}
 /*
 ** 通过方法一可以发现 可以使用固定滑动窗口来比较
  */
@@ -109,46 +144,30 @@ func CheckInclusion(s1 string, s2 string) bool {
 ** 可以只用 一个数组 cnt， 其中 cnt[x] = cnt2[x] - cnt1[x], 将 cnt1[x] 与 cnt2[x]的比较替换成 cnt[x] 与 0 的比较
 */
 func CheckInclusionOp(s1, s2 string) bool {
-	n1, n2 := len(s1), len(s2)
-	if n1 > n2{
-		return false
-	}
+	n1, n := len(s1), len(s2)
+	if n1 > n{ return false }
+	diff := 0
 	cnt := [26]int{}
-	for i, c := range s1{
-		cnt[c-'a']--
+	for i := 0; i < n1; i++{// 区分正负值
+		cnt[s1[i]-'a']--
 		cnt[s2[i]-'a']++
 	}
-	diff := 0
 	for _, c := range cnt{
 		if c != 0{
 			diff++
 		}
 	}
-	if diff == 0{
-		return true
-	}
-	for i := n1; i < n2; i++{
-		x, y := s2[i]-'a', s2[i-n1]-'a'
-		if x == y{
-			continue
-		}
-		if cnt[x] == 0{
-			diff++
-		}
-		cnt[x]++
-		if cnt[x] == 0{
-			diff--
-		}
-		if cnt[y] == 0{
-			diff++
-		}
-		cnt[y]--
-		if cnt[y] == 0{
-			diff--
-		}
-		if diff == 0{
-			return true
-		}
+	if diff == 0{ return true }
+	for i := n1; i < n; i++{
+		in, out := s2[i]-'a', s2[i-n1]-'a'
+		if in == out{ continue }
+		if cnt[in] == 0{ diff++ } //
+		cnt[in]++
+		if cnt[in] == 0{ diff-- } //
+		if cnt[out] == 0 { diff++ }
+		cnt[out]--
+		if cnt[out] == 0 { diff-- }
+		if diff == 0{ return true }
 	}
 	return false
 }
@@ -156,9 +175,10 @@ func CheckInclusionOp(s1, s2 string) bool {
 ** 方法二中 在保证区间长度为 n 的情况下，去考察是否存在一个区间使得 cnt 的值全为 0
 ** 反过来，还可以在保证 cnt 的值不为正的情况下，去考察是否存在一个区间，其长度恰好为 n
 ** 初始时，仅统计 s1 中的字符，则 cnt 的值均不为正，且元素值之和为 -n。
-** 然后用两个指针left 和 right 表示考察的区间 [left, right]。 right每向右移动一次，就统计一次进入区间的字符x
-** 为保证cnt的值不为正，若此时cnt[x] > 0, 则向右移动左指针，减少离开区间的字符的cnt值直到cnt[x] <= 0
-**  难理解！！
+** 然后用两个指针 out 和 in 表示考察的区间 [out, in]。 in 每向右移动一次，就统计一次进入区间的字符x
+** 为保证cnt的值不为正，若此时cnt[x] > 0, 则向右移动 out， 即减少离开区间的字符的cnt值直到cnt[x] <= 0
+** [out, in] 的长度每增加 1， cnt的元素值之和 就会增加 1， 当[out, in] 恰好为 n 时候， 就意味着 cnt 元素全为 0
+** 注意 cnt 的元素 保证 不为正，如果 元素之和 为 0 就只有一种可能，即 cnt 全为 0，这就找到了一个目标子串。
 */
 func CheckInclusion2Pointer(s1, s2 string) bool {
 	n1, n2 := len(s1), len(s2)
@@ -169,15 +189,14 @@ func CheckInclusion2Pointer(s1, s2 string) bool {
 	for _, c := range s1{
 		cnt[c-'a']--
 	}
-	left := 0
-	for right := range s2{
-		ch := s2[right] - 'a'
-		cnt[ch]++
-		for cnt[ch] > 0{
-			cnt[s2[left]-'a']--
-			left++
+	out := 0
+	for in := range s2{
+		cnt[s2[in]-'a']++
+		for cnt[s2[in]-'a'] > 0{
+			cnt[s2[out]-'a']--
+			out++
 		}
-		if right-left+1 == n1{
+		if in-out+1 == n1{
 			return true
 		}
 	}

@@ -851,162 +851,6 @@ func TrulyMostPopularIII(names []string, synonyms []string) []string {
 	}
 	return ans
 }
-// 200. Number of islands
-/*
-知识点：1. golang 中 数组是可以比较的 2. 数组可以作为map的key
- */
-func NumIslands(grid [][]byte) int {
-	index2map := map[[2]int][2]int{}
-	for i, row := range grid{
-		for j,elem := range row{
-			if elem == '1'{
-				loc := [2]int{i,j}
-				index2map[loc] = loc
-			}
-		}
-	}
-	var find func(m [2]int) [2]int
-	find = func(m [2]int) [2]int {
-		if m != index2map[m]{
-			return find(index2map[m])
-		}
-		return m
-	}
-	var union func(x, y [2]int)
-	union = func(x, y [2]int){
-		px, py := find(x), find(y)
-		// if px != px 错误点-1： 低级错误
-		if px != py {
-			//index2map[x] = py  错误点-2： 是类 低级错误
-			index2map[px] = py
-		}
-	}
-	rowLen := len(grid)
-	for i := 0; i < rowLen; i++ {
-		colLen := len(grid[i])
-		for j := 0; j < colLen; j++{
-			if j+1 < colLen && grid[i][j] == '1' && grid[i][j+1] == '1'{
-				union([2]int{i,j}, [2]int{i, j+1})
-			}
-			if i+1 < rowLen && grid[i][j] == '1' && grid[i+1][j] == '1'{
-				union([2]int{i,j}, [2]int{i+1, j})
-			}
-		}
-	}
-	islandSet := map[[2]int]bool{}
-	//for _,elem := range index2map{ 统计的是key， value可能重复的 低级错误
-	for elem,_ := range index2map{
-		island := find(elem)
-		if !islandSet[island]{
-			islandSet[island] = true
-		}
-	}
-	return len(islandSet)
-}
-
-func NumIslandsDFS(grid [][]byte) int {
-	total, rowLen, colLen := 0, len(grid), len(grid[0])
-	var dfs func(int, int)
-	dfs = func(r, c int){
-		grid[r][c] = 0 // 置0
-		if c+1 < colLen && grid[r][c+1] == '1'{
-			dfs(r, c+1)
-		}
-		if r+1 < rowLen && grid[r+1][c] == '1'{
-			dfs(r+1, c)
-		}
-		// dfs 与并差集不同，需要4个方向来判定
-		if c - 1 >= 0 && grid[r][c-1] == '1'{
-			dfs(r, c-1)
-		}
-		if r - 1 >= 0 && grid[r-1][c] == '1'{
-			dfs(r-1, c)
-		}
-	}
-	for i, row := range grid{
-		for j, elem := range row{
-			if elem == '1'{
-				total++ // 岛屿的数量就是我们进行dfs搜索的次数
-				dfs(i, j)
-			}
-		}
-	}
-	return total
-}
-// 利用按秩压缩
-type UnionFind struct {
-	count		int
-	parent		[]int
-	rank		[]int
-}
-
-func ConstructUnionFindByNumIslands(grid [][]byte)*UnionFind{
-	// 初始化
-	m, n, cnt := len(grid),len(grid[0]), 0
-	rank, parent := make([]int, m*n), make([]int, m*n)
-	for i := 0; i < m; i++{
-		for j := 0; j < n; j++{
-			if grid[i][j] == '1'{
-				parent[i * n + j] = i * n + j // 2. 类
-				cnt++ // 1. 计数
-			}
-			rank[i * n + j] = 0 // 3. 秩
-		}
-	}
-	return &UnionFind{count: cnt, parent: parent, rank: rank}
-
-}
-
-func (ufs *UnionFind) find(i int)int{
-	if ufs.parent[i] != i {
-		ufs.parent[i] = ufs.find(ufs.parent[i]) // 1. 路径压缩
-	}
-	return ufs.parent[i]
-}
-
-func(ufs *UnionFind) union(x, y int){
-	rootx, rooty := ufs.find(x), ufs.find(y)
-	if rootx != rooty{ // 4. 按秩压缩： 查询高度小的 插入到 查询高度大的
-		if ufs.rank[rootx] > ufs.rank[rooty]{
-			ufs.parent[rooty] = rootx
-		}else if ufs.rank[rootx] < ufs.rank[rooty]{
-			ufs.parent[rootx] = rooty
-		}else{
-			ufs.parent[rooty] = rootx
-			ufs.rank[rootx] += 1 // 2. 按秩压缩，查询高度记录
-		}
-		ufs.count-- // 3. union 后 计数递减
-	}
-}
-
-func NumIslandsUFSImprove(grid [][]byte) int {
-	if len(grid) <= 0{
-		return 0
-	}
-	nr, nc := len(grid), len(grid[0])
-	pUfs := ConstructUnionFindByNumIslands(grid)
-	for r := 0; r < nr; r++{
-		for c := 0; c < nc; c++{
-			if grid[r][c] == '1' {
-				grid[r][c] = '0'
-				cur := r * nc + c
-				if r - 1 >= 0 && grid[r-1][c] == '1'{
-					pUfs.union(cur, (r-1) * nc + c)
-				}
-				if r + 1 < nr && grid[r+1][c] == '1'{
-					pUfs.union(cur, (r+1) * nc + c)
-				}
-				if c - 1 >= 0 && grid[r][c-1] == '1'{
-					pUfs.union(cur, r * nc + c - 1)
-				}
-				if c + 1 < nc && grid[r][c+1] == '1'{
-					pUfs.union(cur, r * nc + c + 1)
-				}
-			}
-		}
-	}
-	return pUfs.count
-}
 
 /* 327. Count of Range Sum（区间和的个数）
 ** Given an integer array nums and two integers lower and upper,
@@ -2406,3 +2250,57 @@ func convert3(s string, numRows int) string {
 	return string(ans)
 }
 
+/* 1790. Check if One String Swap Can Make Strings Equal
+** You are given two strings s1 and s2 of equal length.
+** A string swap is an operation where you choose two indices in a string (not necessarily different) and
+** swap the characters at these indices.
+** Return true if it is possible to make both strings equal by performing at most one string swap on exactly one of the strings.
+** Otherwise, return false.
+ */
+// 2022-02-14 刷出此题
+// 注意 测试用例：
+//1.  "banb"  "kanb"
+//2.  "abcd"  "dcba"
+//3.  "caa"   "aaz"
+func areAlmostEqual(s1 string, s2 string) bool {
+	c1, c2 := make([]int, 26), make([]int, 26)
+	n1, n2 := len(s1), len(s2)
+	if n1 != n2 {
+		return false
+	}
+	cnt := 0
+	for i := range s1{
+		if s1[i] != s2[i]{
+			cnt++
+		}
+		if cnt > 2{
+			return false
+		}
+		c1[s1[i]-'a']++
+		c2[s2[i]-'a']++
+	}
+	for i := 0; i < 26; i++{
+		if c1[i] != c2[i]{
+			return false
+		}
+	}
+	return true
+}
+// 方法二
+func areAlmostEqual2(s1 string, s2 string) bool {
+	cnt := []int{}
+	for i := range s1 {
+		if s1[i] != s2[i]{
+			cnt = append(cnt, i)
+		}
+		if len(cnt) > 2{
+			return false
+		}
+	}
+	n := len(cnt)
+	if n == 1 {  return false   }
+	if n == 0 || s1[cnt[0]] == s2[cnt[1]] && s1[cnt[1]] == s2[cnt[0]]{
+		return true
+	}
+	return false
+}
