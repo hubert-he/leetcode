@@ -174,7 +174,7 @@ func networkDelayTime_bellmanFord(times [][]int, n int, k int) int {
 	}
 	dist := make([]int, n+1)
 	es := []edge{}
-	m := len(times) // 边的个数
+	//m := len(times) // 边的个数
 	// 构建图
 	for _, t := range times{
 		u, v, w := t[0], t[1], t[2]
@@ -355,10 +355,151 @@ func minCost_Heap(grid [][]int) int {
 	return dist[total-1]
 }
 
+/* 1129. Shortest Path with Alternating Colors
+** You are given an integer n, the number of nodes in a directed graph where the nodes are labeled from 0 to n - 1.
+** Each edge is red or blue in this graph, and there could be self-edges and parallel edges.
+** You are given two arrays redEdges and blueEdges where:
+	redEdges[i] = [ai, bi] indicates that there is a directed red edge from node ai to node bi in the graph, and
+	blueEdges[j] = [uj, vj] indicates that there is a directed blue edge from node uj to node vj in the graph.
+** Return an array answer of length n,
+** where each answer[x] is the length of the shortest path from node 0 to node x such that
+** the edge colors alternate along the path, or -1 if such a path does not exist.
+ */
+func shortestAlternatingPaths(n int, redEdges [][]int, blueEdges [][]int) []int {
+	g := make([][][]int, n)
+	for i := range g{
+		g[i] = make([][]int, 2)
+	}
+	// red:0, blue: 1
+	for i := range redEdges{
+		src, dst := redEdges[i][0], redEdges[i][1]
+		g[src][0] = append(g[src][0], dst)
+	}
+	for i := range blueEdges{
+		src, dst := blueEdges[i][0], blueEdges[i][1]
+		g[src][1] = append(g[src][1], dst)
+	}
+	ans := make([]int, n)
+	for i := range ans{
+		ans[i] = -1
+	}
+	ans[0] = 0
+	q := []int{0}
+	red := true
+	cnt := 0
+	for len(q) > 0{
+		t := q
+		q = nil
+		cnt++
+		for i := range t{
+			nodes := g[t[i]][0]
+			if !red{
+				nodes = g[t[i]][1]
+			}
+			for _, node := range nodes{
+				if ans[node] == -1{
+					ans[node] = cnt
+					q = append(q, node)
+				}
+			}
+		}
+		red = !red
+	}
+	return ans
+}
+/* 在使用dfs 解决的时候，dfs 退出条件犯迷糊
+** dfs 退出的2种思维：
+** 1. visited 矩阵的使用，但是如果环存在合理的情况下，即节点可多次访问，因此无法使用visited，如此题情况
+** 2. 根据距离的计算，如果距离大于已知的，证明兜圈子了，可退出
+此题 想到用第 2 种情况，但是局限在一维，导致思维 dead road
+此题有 2种边， 也即有2种距离，如果计算两种距离来判断是否已经兜圈子了，可完美解决
+ */
+func shortestAlternatingPaths_DFS_error(n int, redEdges [][]int, blueEdges [][]int) []int {
+	const Red, Blue = 0, 1
+	g := make([][][]int, n)
+	for i := range g{
+		g[i] = make([][]int, 2)
+	}
+	// red:0, blue: 1
+	for i := range redEdges{
+		src, dst := redEdges[i][0], redEdges[i][1]
+		g[src][Red] = append(g[src][0], dst)
+	}
+	for i := range blueEdges{
+		src, dst := blueEdges[i][0], blueEdges[i][1]
+		g[src][Blue] = append(g[src][1], dst)
+	}
+	ans := make([]int, n)
+	for i := range ans{
+		ans[i] = -1
+	}
+	var dfs func(node, dist, color int)
+	dfs = func(node, dist, color int){
+		if ans[node] == -1 || ans[node] > dist{
+			ans[node] = dist
+		}
+		// visited[node] = true
+		for _, neigh := range g[node][color]{
+			// 不能直接设置vis，因为环的存在是合理的，case-2 就会有节点无法到达的通路
+			//if vis[neigh] { continue } // 针对case-1 图存在环
+			if color == Red{
+				dfs(neigh, dist+1, Blue)
+			}else{
+				dfs(neigh, dist+1, Red)
+			}
+			//visited[neigh] = false
+		}
+	}
+	dfs(0, 0, Red)
+	dfs(0, 0, Blue)
+	return ans
+}
 
-
-
-
+func shortestAlternatingPaths_DFS(n int, redEdges [][]int, blueEdges [][]int) []int {
+	const Red, Blue = 0, 1
+	g := make([][2][]int, n)
+	for _, path := range redEdges{
+		g[path[0]][Red] = append(g[path[0]][Red], path[1])
+	}
+	for _, path := range blueEdges{
+		g[path[0]][Blue] = append(g[path[0]][Blue], path[1])
+	}
+	distance := make([][2]int, n)
+	for i := range distance{
+		distance[i][0], distance[i][1] = math.MaxInt32, math.MaxInt32
+	}
+	var dfs func(node, dist, color int)
+	dfs = func(node, dist, color int){
+		if distance[node][color] < dist{
+			return
+		}
+		if distance[node][color] > dist{
+			distance[node][color] = dist
+		}
+		for _, neigh := range g[node][color]{
+			// 不能直接设置vis，因为环的存在是合理的，case-2 就会有节点无法到达的通路
+			//if vis[neigh] { continue } // 针对case-1 图存在环
+			/*
+			if color == Red{
+				dfs(neigh, dist+1, Blue)
+			}else{
+				dfs(neigh, dist+1, Red)
+			}*/
+			// 异或应用
+			dfs(neigh, dist+1, color ^ 1)
+		}
+	}
+	dfs(0, 0, Red)
+	dfs(0, 0, Blue)
+	ans := make([]int, n)
+	for i := range ans{
+		ans[i] = min(distance[i][Red], distance[i][Blue])
+		if ans[i] == math.MaxInt32{
+			ans[i] = -1
+		}
+	}
+	return ans
+}
 
 
 
