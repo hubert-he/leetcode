@@ -137,6 +137,126 @@ func nextGreaterElement(n int) int {
 	dfs([]int{})
 	return ans
 }
+
+// 2022-03-16 重新刷出此题  dfs 方式枚举全排列，采用flag数组 填空方法
+// 依然出现重复
+func nextGreaterElement_DFS_crap(n int) int {
+	less := func(a, b []int)bool{
+		for i := range a{
+			if a[i] < b[i]{
+				return true
+			}
+			if a[i] > b[i]{
+				return false
+			}
+		}
+		return false // 相等返回false
+	}
+	m := []int{}
+	for n > 0{
+		m = append([]int{n%10}, m...)
+		n /= 10
+	}
+	size := len(m)
+	ans := make([]int, size)
+	for i := range ans{
+		ans[i] = 9
+	}
+	nums := make([]int, size)
+	flag := make([]bool, size)// 控制是否被填充
+	found := false
+	var dfs func(idx int)
+	dfs = func(idx int){
+		if idx == size{
+			// 计算值，比较
+			if less(m, nums) && less(nums, ans){
+				found = true
+				copy(ans, nums)
+			}
+			return
+		}
+		for i := 0; i < size; i++{
+			if !flag[i]{
+				nums[idx] = m[i]
+				flag[i] = true
+				dfs(idx+1)
+				flag[i] = false
+			}
+		}
+	}
+	dfs(0)
+	ret := 0
+	for _, c := range ans{
+		ret = ret*10+c
+	}
+	if !found || ret > math.MaxInt32{ ret = -1}
+	return ret
+}
+
+// 新解法见 Math/math.go 中的全排列
+func nextGreaterElement_DFS(n int) int {
+	less := func(a, b []int)bool{
+		for i := range a{
+			if a[i] < b[i]{
+				return true
+			}
+			if a[i] > b[i]{
+				return false
+			}
+		}
+		return false // 相等返回false
+	}
+	m := []int{}
+	for n > 0{
+		m = append([]int{n%10}, m...)
+		n /= 10
+	}
+	size := len(m)
+	ans := make([]int, size)
+	for i := range ans{
+		ans[i] = 9
+	}
+	nums := make([]int, size)
+	copy(nums, m)
+	found := false
+	// 求全排列
+	// 易错点：repeat 判断不能从 0 开始查找，因为递归的是子数组
+	// 查找范围 [start, end)
+	isRepeat := func(start, end, value int)bool{
+		//for i := 0; i < end; i++{
+		for i := start; i < end; i++{
+			if nums[i] == value{
+				return true
+			}
+		}
+		return false
+	}
+	var dfs func(start int)
+	dfs = func(start int){
+		if start == size{
+			// 计算值，比较
+			//fmt.Println(nums)
+			if less(m, nums) && less(nums, ans){
+				found = true
+				copy(ans, nums)
+			}
+			return
+		}
+		for i := start; i < size; i++{
+			if isRepeat(start, i, nums[i]){ continue }
+			nums[start], nums[i] = nums[i], nums[start]
+			dfs(start+1)
+			nums[start], nums[i] = nums[i], nums[start]
+		}
+	}
+	dfs(0)
+	ret := 0
+	for _, c := range ans{
+		ret = ret*10+c
+	}
+	if !found || ret > math.MaxInt32{ ret = -1}
+	return ret
+}
 /* 双指针
 ** 首先我们观察到任意降序的序列，不会有更大的排列出现。例如 9 5 4 3 1
 ** 我们需要从右往左找到第一对连续的数字 a[i] 和 a[i-1] 满足 a[i-1] < a[i]，此时 a[i-1]右边的数字无法产生一个更大的排列
@@ -200,4 +320,44 @@ func nextGreaterElement2(n int) int {
 	nums[i], nums[j] = nums[j], nums[i]
 	reverse(nums[i+1:])
 	return toInt(nums)
+}
+// 字典序 全排列非递归实现
+func nextGreaterElement_Iter(n int) int {
+	nums := []int{}
+	for n > 0{
+		nums = append([]int{n%10}, nums...)
+		n /= 10
+	}
+	size := len(nums)
+	next_permutation := func()bool{
+		j := -1
+		for i := size-2; i >= 0; i--{
+			if nums[i] < nums[i+1]{
+				j = i
+				break
+			}
+		}
+		if j == -1 { return false }
+		k := -1
+		//2. 在pj的右边的数字中，找出所有比pj大的数中最小的数字pk 注意：pk > pj
+		for i := j+1; i < size; i++{
+			if nums[i] <= nums[j] { break }
+			k = i
+		}
+		if k < 0 { return false }
+		//3. 交换 pj 与 pk
+		nums[j], nums[k] = nums[k], nums[j]
+		//4. [j+1, size) 翻转
+		for o, p := j+1, size-1; o < p; o,p = o+1, p-1{
+			nums[o], nums[p] = nums[p], nums[o]
+		}
+		return true
+	}
+	if !next_permutation(){ return -1 }
+	ans := 0
+	for _, c := range nums{
+		ans = ans*10+c
+	}
+	if ans > math.MaxInt32{ return -1 }
+	return ans
 }

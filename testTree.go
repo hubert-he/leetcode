@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./Tree"
+	"./DataStructure/Tree"
 	"fmt"
 	"runtime"
 )

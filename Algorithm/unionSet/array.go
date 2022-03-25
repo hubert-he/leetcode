@@ -1,5 +1,6 @@
 package unionSet
 
+import "fmt"
 
 /* Union Find 并查集
 	0. 设定相距为1的值，为一个集合
@@ -8,7 +9,10 @@ package unionSet
     3. 连通数字和索引对应关系
     4. 遍历并查集数组，集合最大即为最长连续子序列
 */
-// 128. Longest Consecutive Sequence
+/* 128. Longest Consecutive Sequence
+** Given an unsorted array of integers nums, return the length of the longest consecutive elements sequence.
+** You must write an algorithm that runs in O(n) time.
+ */
 type UnionFindSet struct {
 	id		[]int // 记录指向
 	sz		[]int // 记录并查集某一子集大小
@@ -188,6 +192,58 @@ func LongestConsecutiveUFSHash(nums []int) (count int) {
 		}
 	}
 	return
+}
+
+// 2022-03-25 重刷此题，并查集 错误,
+// 将下标作为集合元素，无法处理重复元素， 应该选用 nums 元素的值
+func longestConsecutive_error(nums []int) int {
+	n := len(nums)
+	ufs,cnt := make([]int, n), make([]int, n)
+	ans := 0
+	m, vis := map[int]int{}, map[int]bool{}
+	for i := range ufs{
+		ufs[i] = i
+		m[nums[i]] = i
+		cnt[i] = 1
+	}
+	/*
+	   find := func(x int)int{
+	       px := ufs[x]
+	       for px != x{
+	           ufs[x] = ufs[px]
+	           x = px
+	           px = ufs[x]
+	       }
+	       return px
+	   }*/
+	find := func(x int)int{
+		for x != ufs[x]{
+			ufs[x] = ufs[ufs[x]]
+			x = ufs[x]
+		}
+		return x
+	}
+	union := func(x, y int){
+		px, py := find(x), find(y)
+		ufs[px] = py
+		if px != py {
+			cnt[py] += cnt[px]
+			if ans < cnt[py]{
+				ans = cnt[py]
+			}
+		}
+	}
+	for i := range nums{
+		if vis[i] { continue }
+		vis[i] = true
+		for _, r := range []int{1,-1}{
+			if idx, ok := m[nums[i]+r]; ok {
+				union(i, idx)
+			}
+		}
+	}
+	fmt.Println(ufs)
+	return ans
 }
 
 /*  leetcode官方解法

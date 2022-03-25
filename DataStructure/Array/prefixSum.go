@@ -1,5 +1,7 @@
 package Array
 
+import "math"
+
 /* 1588. Sum of All Odd Length Subarrays
 ** Given an array of positive integers arr, calculate the sum of all possible odd-length subarrays.
 ** A subarray is a contiguous subsequence of the array.
@@ -51,6 +53,7 @@ func sumOddLengthSubarrays_prefixsum(arr []int) int {
 ** 数字后面共有 right 个选择，其中偶数个数字的选择方案有 right_even = (right+1) / 2 个， 奇数个数字的选择方案有 right_odd = right / 2个
 ** 所以，每个数字一共在 left_even * right_even + left_odd * right_odd 个奇数长度的数组中国出现过
 */
+/* 2022-03-24 重刷此题，发现一个 潜在的思维问题 */
 func sumOddLengthSubarrays_math(arr []int) int {
 	ans, n := 0, len(arr)
 	for i := range arr{
@@ -60,4 +63,30 @@ func sumOddLengthSubarrays_math(arr []int) int {
 		ans += (left_even * right_even + left_odd * right_odd) * arr[i]
 	}
 	return ans
+}
+
+func sumOddLendthSubarray_error(arr []int) int{
+	ans, n := 0, len(arr)
+	for i := range arr{
+		left := i+1 // 注意不是 i-1，也不是 i， 因为 i 是从 0 开始计数，并且 0个的情况也算一种可能
+		right := n-i
+		times := (left+1)/2 * (right+1)/2 + left/2*right/2 // 此行问题
+		// 如果直接运算，(left+1)/2 * (right+1)/2 误差的问题 会导致结果偏大。left/2*right/2 也会导致
+		// 首先思路是 可能的情况数，left+1 也是考虑的情况数，floor
+		ans += times * arr[i]
+	}
+	return ans
+}
+// 去数字的Floor值
+func sumOddLengthSubarrays_error_fixed(arr []int) int {
+	n := len(arr)
+	sum := 0
+	for i := range arr{
+		//left, right := i-1, n-i
+		left, right := i+1, n-i // 0 也算一种选择， i 是从 0 开始计数
+		even_times := math.Floor(float64(left+1)/2) * math.Floor(float64((right+1)/2))
+		odd_times := math.Floor(float64(left/2))*math.Floor(float64(right/2))
+		sum += arr[i] * int(even_times + odd_times)
+	}
+	return sum
 }

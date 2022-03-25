@@ -593,7 +593,7 @@ func superPow_qinjiuzhao(a int, b []int) int {
 ** 这里来学习 Catalan number 即卡特兰数 或者 明安图数（蒙古族数学家明安图）是组合数学中一种常出现于各种计数问题中的数列
 */
 func numTrees(n int) int {
-
+	return 0
 }
 
 /* 剑指 Offer 62. 圆圈中最后剩下的数字
@@ -736,8 +736,109 @@ func checkStraightLine2(coordinates [][]int) bool {
 	return true
 }
 
-
-
-
+/** 增补知识 全排列
+** 剔除重复元素
+ */
+// DFS回溯
+func permutation_DFS(nums []int) [][]int{
+	n := len(nums)
+	ans := [][]int{}
+	// 易错点：repeat 判断不能从 0 开始查找，因为递归的是子数组
+	// 查找范围 [start, end)
+	isRepeat := func(start, end, value int)bool{
+		//for i := 0; i < end; i++{
+		for i := start; i < end; i++{
+			if nums[i] == value{
+				return true
+			}
+		}
+		return false
+	}
+	var dfs func(start int)
+	dfs = func(start int){
+		if start == n{
+			t := make([]int, n)
+			copy(t, nums)
+			ans = append(ans, t)
+		}
+		// 方法一：使用map来去重
+		repeated := map[int]bool{}
+		for i := start; i < n; i++{
+			// 方法二：遍历前面元素来去重
+			if isRepeat(start, i, nums[i]){
+				continue
+			}
+			if repeated[nums[i]]{
+			//	continue  // 方法一：使用map来去重
+			}
+			repeated[nums[i]] = true
+			nums[start], nums[i] = nums[i], nums[start]
+			dfs(start+1)
+			nums[start], nums[i] = nums[i], nums[start]
+		}
+	}
+	dfs(0)
+	return ans
+}
+/* 全排列的非递归实现
+** 非递归实现，也就是通常所说的字典序全排列算法
+** 如何求某一个排列紧邻着的后一个字典序
+** 设P是1～n的一个全排列: P=p1p2......pn = p1p2......pj−1 pj pj+1......pk−1 pk pk+1......pn，
+** 求该排列的紧邻着的后一个字典序的步骤如下：
+	1. 从排列的右端开始，找出第一个比右边数字小的数字的序号j，即 j=max(i|pi<pi+1)
+	2. 在pj的右边的数字中，找出所有比pj大的数中最小的数字pk
+	3. 交换 pj 与 pk
+	4. 再将pj+1......pk−1pkpk+1...pnpj+1......pk−1pkpk+1...pn倒转得到排列
+		p’=p1.....pjpn.....pk+1pkpk−1.....pj+1p1.....pjpn.....pk+1pkpk−1.....pj+1，这就是排列p的下一个排列
+** 例如：p=839647521是数字1～9的一个排列。下面生成下一个排列的步骤如下：
+	1. 自右至左找出排列中第一个比右边数字小的数字4
+	2. 在该数字后的数字中找出比4大的数中最小的一个5
+	3. 将5与4交换，得到839657421
+	4. 将7421反转，得到839651247。这就是排列p的下一个排列。
+** 以上这4步，可以归纳为：一找、二找、三交换、四翻转。
+** 和C++的 STL库中的next_permutation()函数（#include<algorithm>）原理相同。
+*/
+func permutation(nums []int) [][]int{
+	// 首先全序列排序，找到最小的字典序，然后依次遍历查找
+	n := len(nums)
+	sort.Ints(nums)
+	next_permutation := func()bool{
+		//1. 从排列的右端开始，找出第一个比右边数字小的数字的序号j
+		j := -1
+		for i := n-2; i >= 0; i--{
+			if nums[i] < nums[i+1]{
+				j = i
+				break
+			}
+		}
+		if j == -1{ return false }  // 未找到，不存在下一个
+		//2. 在pj的右边的数字中，找出所有比pj大的数中最小的数字pk 注意：pk > pj
+		k := -1
+		for i := j+1; i < n; i++{
+			// if nums[i] < nums[j]{ break } 易错点：必须<=, 考虑重复元素
+			if nums[i] <= nums[j]{ break }
+			k = i
+		}
+		if k < 0{ return false }
+		//3. 交换 pj 与 pk
+		nums[j], nums[k] = nums[k], nums[j]
+		//4. 将[j+1,n]反转
+		for o, p := j+1, n-1; o < p; o,p = o+1, p-1{
+			nums[o], nums[p] = nums[p], nums[o]
+		}
+		return true
+	}
+	ans := [][]int{}
+	for {
+		t := make([]int, n)
+		copy(t, nums)
+		ans = append(ans, t)
+		fmt.Println(t)
+		if !next_permutation(){
+			break
+		}
+	}
+	return ans
+}
 
 

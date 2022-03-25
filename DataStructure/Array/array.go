@@ -2304,3 +2304,130 @@ func areAlmostEqual2(s1 string, s2 string) bool {
 	}
 	return false
 }
+
+/* 1630. Arithmetic Subarrays
+** A sequence of numbers is called arithmetic if it consists of at least two elements,
+** and the difference between every two consecutive elements is the same.
+** More formally, a sequence s is arithmetic if and only if s[i+1] - s[i] == s[1] - s[0] for all valid i.
+** You are given an array of n integers, nums, and two arrays of m integers each, l and r,
+** representing the m range queries, where the ith query is the range [l[i], r[i]]. All the arrays are 0-indexed.
+** Return a list of boolean elements answer, where answer[i] is true
+** if the subarray nums[l[i]], nums[l[i]+1], ... , nums[r[i]] can be rearranged to form an arithmetic sequence,
+** and false otherwise.
+ */
+// 2022-03-14 刷出此题，但是这里有个很不错的思路题解收录
+/* 判断是否是等差数列的方法
+** 1. 排序，然后逐个比对相邻的diff 是否相同
+** 2. 根据公差的倍数， 枚举所有可能
+**  3	5	7	9    d = 5 - 3 = 2
+**  X	2	4	6
+** 发现减掉最小值的每个元素 均是 d 的公倍数， 这起始是 等差数列特性表现，实际是 公差的倍数
+ */
+func checkArithmeticSubarrays(nums []int, l []int, r []int) []bool {
+	check := func(a []int)bool{
+		n := len(a)
+		if n < 3{ return  true }
+		// 求出 第一小 和 第二小的 数
+		fst, snd := math.MaxInt32, math.MaxInt32
+		for _, c := range a {
+			if fst > c{
+				snd = fst
+				fst = c
+			}else if snd > c {
+				snd = c
+			}
+		}
+		d := snd - fst // 可能的公差
+		vis := make([]bool, n)
+		for _, e := range a{
+			tmp := e - fst
+			if d != 0 {// 可能的公差 d 不为 0
+				if tmp % d != 0 ||  // 剩余元素不是公差的倍数
+				   tmp / d >= n || 	// 剩余元素倍数超过了限制，正常的等差数列 倍数额是随数列长度逐步递增的
+				   vis[tmp/d]{ // 可能公差不为0的情况下，剩余元素出现了重复，公差不为0情况下，数列所有元素均不相同
+					return false
+				}
+				vis[tmp/d] = true
+			}else{ // 可能的公差 d 为 0， 此时所有元素必须相同
+				if tmp != 0{
+					return false
+				}
+			}
+			//vis[tmp/d] = true
+		}
+		return true
+	}
+	n := len(l)
+	ans := make([]bool, n)
+	for i := range l{
+		if check(nums[l[i]:r[i]+1]){
+			ans[i] = true
+		}
+	}
+	return ans
+}
+
+/* 448. Find All Numbers Disappeared in an Array
+** Given an array nums of n integers where nums[i] is in the range [1, n],
+** return an array of all the integers in the range [1, n] that do not appear in nums.
+** Follow up: Could you do it without extra space and in O(n) runtime? You may assume the returned list does not count as extra space.
+ */
+// 2022-03-25 采用交换策略，每个数字放到最终位置，然后再遍历一次查看不能放置的数字
+func findDisappearedNumbers(nums []int) []int {
+	for i := range nums{
+		if nums[i] == i+1{ continue }
+		for nums[i] != i+1 && nums[nums[i]-1] != nums[i]{
+			nums[i], nums[nums[i]-1] = nums[nums[i]-1], nums[i]
+		}
+	}
+	//fmt.Println(nums)
+	ans := []int{}
+	for i := range nums{
+		if nums[i]-1 != i{
+			ans = append(ans, i+1)
+		}
+	}
+	return ans
+}
+/* 官方解答
+** 思路：可以用一个哈希表记录数组 nums 中的数字，由于数字范围均在 [1,n] 中，记录数字后我们再利用哈希表检查 [1,n] 中的每一个数是否出现，从而找到缺失的数字。
+** 由于数字范围均在 [1,n] 中，我们也可以用一个长度为 n 的数组来代替哈希表。
+** 由于 nums 的数字范围均在 [1,n] 中，我们可以利用这一范围之外的数字，来表达「是否存在」的含义。 《===== 核心思路
+** 具体来说，遍历 nums，每遇到一个数 x，就让 nums[x−1] 增加 n。由于 nums 中所有数均在 [1,n] 中，增加以后，这些数必然大于 n。
+** 最后我们遍历 nums，若 nums[i] 未大于 nn，就说明没有遇到过数 i+1。这样我们就找到了缺失的数字。
+** 注意，当我们遍历到某个位置时，其中的数可能已经被增加过，因此需要对 nn 取模来还原出它本来的值。
+** 例如：[1,1]
+** ==> [1+2, 1] ==> [1+2+2, 1] 未出现的数字 不会增加
+ */
+func findDisappearedNumbers_hash(nums []int) (ans []int) {
+	n := len(nums)
+	for _, c := range nums{
+		c = (c - 1)%n
+		nums[c] += n
+	}
+	for i, c := range nums{
+		if c <= n{
+			ans = append(ans, i+1)
+		}
+	}
+	return
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

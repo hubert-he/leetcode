@@ -3,6 +3,7 @@ package greedy
 import (
 	"math"
 	"sort"
+	"../../utils"
 )
 
 /* 330. Patching Array
@@ -171,8 +172,91 @@ func largestPerimeter2(nums []int) int {
 	return 0
 }
 
+/* 908. Smallest Range I
+** You are given an integer array nums and an integer k.
+** In one operation, you can choose any index i where 0 <= i < nums.length and change nums[i] to nums[i] + x
+** where x is an integer from the range [-k, k]. You can apply this operation at most once for each index i.
+** The score of nums is the difference between the maximum and minimum elements in nums.
+** Return the minimum score of nums after applying the mentioned operation at most once for each index in it.
+ */
+/*
+** 假设 A 是原始数组，B 是修改后的数组，我们需要最小化 max(B) - min(B)，也就是分别最小化 max(B) 和最大化 min(B)。
+** max(B) 最小可能为 max(A) - K， 因为 max(A) 不可能再变得更小。
+** min(B) 最大可能为 min(A) + K，
+** 所以结果 max(B) - min(B) 至少为 ans = (max(A) - K) - (min(A) + K)
+** 我们可以用一下修改方式获得结果（如果 ans >= 0）：
+	如果 A[i] <= min(A) + k, 那么 B[i] = min(A)+k
+	如果 A[i] >= max(A) - k, 那么 B[i] = max(A)-k
+	否则 A[i] = B[i]
+** 如果 ans < 0，最终结果会有 ans = 0，同样利用上面的修改方式。
+*/
+func smallestRangeI(nums []int, k int) int {
+	small, big := math.MaxInt32, math.MinInt32
+	for _, c := range nums{
+		if small > c {
+			small = c
+		}
+		if big < c {
+			big = c
+		}
+	}
+	ans := (big - k) - (small + k)
+	if ans < 0{
+		ans = 0
+	}
+	return ans
+}
 
+/* 910. Smallest Range II
+** You are given an integer array nums and an integer k.
+** For each index i where 0 <= i < nums.length, change nums[i] to be either nums[i] + k or nums[i] - k.
+** The score of nums is the difference between the maximum and minimum elements in nums.
+** Return the minimum score of nums after changing the values at each index.
+ */
+/* 思路： 如最小差值-1 较小的 A[i] 将增加，较大的 A[i] 将变小。
+** 题目要求每个元素要么向上移动 K 的距离，要么向下移动 K 的距离，然后要求这个新数组的“最大最小值的距离尽可能地小”。
+** 此时最优的策略是把这个数组拆成左右两半，把左边那一半上移K，把右边那一半下移K。 题解中画出了一个坐标图
+** 当我们选择在 i 这一点“切一刀”的时候，也就是 A[0] ~ A[i] 的元素都上移，A[i + 1] ~ A[A.length - 1] 的元素都下移。
+** 此时 B 点的值是 A[i] + K，D 点的值是 A[A.length - 1] - K。
+** 新数组的最大值要么是 B 点要么是 D 点，也就是说新数组的最大值是 Max(A[i] + K, A[A.length - 1] - K)。
+** 同样道理，此时 A 点的值是 A[0] + K，C 点的值是 A[i + 1] - K。
+** 新数组的最小值要么是 A 点要么是 C 点，也就是说新数组的最小值是 Min(A[0] + K, A[i + 1] - K)。
+** 因此，题目需要的“新数组的最大值和最小值的差值”，就是 Max(A[i] + K, A[A.length - 1] - K) - Min(A[0] + K, A[i + 1] - K)。
+** 挨个遍历一下所有可能的 i 的值，然后取上面算式的最小值即可
+ */
 
+// 忽视了 d1 d2 有可能负数的情况
+func smallestRangeII_error(nums []int, k int) int {
+	n := len(nums)
+	sort.Ints(nums)
+	ans := nums[n-1] - nums[0]
+	//在分割为2部分的 两个端点出计算
+	// 左边是+k， 而 右边是 -k 以使得最大 最下 差值最小
+	for i := 1; i < n-1; i++{
+		// 情况1： k 很小的时候
+		d1 := (nums[n-1] - k) - (nums[0] + k)
+		//if d1 < 0 { d1 = -d1 }
+		// 情况2： k 很大的时候
+		d2 := (nums[i-1] + k) - (nums[i] - k)
+		//if d2 < 0 { d2 = -d2 }
+		ans = utils.Min(ans, d1, d2)
+	}
+	return ans
+}
+
+func smallestRangeII(nums []int, k int) int {
+	n := len(nums)
+	sort.Ints(nums)
+	ans := nums[n-1] - nums[0]
+	// 不断的分割为 2 部分，然后分情况计算最大值，最小值
+	// 整体排序后，前部分+k， 后部分-k，尽量缩小最大最小的差额
+	for i := 1; i < n; i++{
+		maxium := utils.Max(nums[i-1]+k, nums[n-1]-k)
+		minium := utils.Min(nums[0]+k, nums[i]-k)
+		ans = utils.Min(ans, maxium-minium)
+	}
+	return ans
+}
 
 
 

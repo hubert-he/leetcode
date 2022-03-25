@@ -1,6 +1,7 @@
 package DFS_BFS
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -1235,8 +1236,209 @@ func shortestBridge(grid [][]int) int {
 	return -1
 }
 
+/* 317. Shortest Distance from All Buildings
+** You are given an m x n grid grid of values 0, 1, or 2, where:
+	each 0 marks an empty land that you can pass by freely,
+	each 1 marks a building that you cannot pass through, and
+	each 2 marks an obstacle that you cannot pass through.
+** You want to build a house on an empty land that reaches all buildings in the shortest total travel distance.
+** You can only move up, down, left, and right.
+** Return the shortest travel distance for such a house.
+** If it is not possible to build such a house according to the above rules, return -1.
+** The total travel distance is the sum of the distances between the houses of the friends and the meeting point.
+ */
+// 使用多源BFS夹逼错误， compute 错误计算距离❌
+// 在启用多源BFS 夹逼的时候，计算路径不一定是当前计算的 pathSum 因为可能多条路径交错， 交错的时候可能会产生 一条线 多个临界节点
+// 这与 双向BFS 夹逼 还是 有根本区别的
+func shortestDistance_error(grid [][]int) int {
+	dirs := [][]int{ []int{0,1}, []int{1,0}, []int{0,-1}, []int{-1,0} }
+	m, n := len(grid), len(grid[0])
+	qlist :=[][][2]int{}
+	dist := make([][]int, m)
+	buildingList := [][2]int{}
+	for i := range dist {
+		dist[i] = make([]int, n)
+	}
+	for i := 0; i < m; i++{
+		for j := 0; j < n; j++{
+			switch grid[i][j] {
+			case 1:
+				dist[i][j] = -1
+				buildingList = append(buildingList, [2]int{i,j})
+				qlist = append(qlist, [][2]int{[2]int{i,j}})
+			case 2:
+				dist[i][j] = -1
+			}
+		}
+	}
+	mask := 1 << len(qlist) - 1
+	checkTarget := func(x, y int)bool{
+		return dist[x][y] == mask
+	}
+	pathSum := make([]int, len(qlist))
+	valid := func(x, y int)bool{
+		if x < 0 || y < 0 || x >= m || y >= n || grid[x][y] == 2 || grid[x][y] == 1{
+			return false
+		}
+		return true
+	}
+	checkQueueList := func()bool{
+		for i := range qlist{
+			if qlist[i] != nil{
+				return true
+			}
+		}
+		return false
+	}
+	for checkQueueList(){
+		for i := range qlist{
+			q := qlist[i]
+			qlist[i] = nil
+			if q != nil{
+				pathSum[i]++
+			}
+			for _, src := range q{
+				x, y := src[0], src[1]
+				for _, d := range dirs{
+					xx, yy := x+d[0], y+d[1]
+					if valid(xx, yy){
+						if dist[xx][yy] & (1 << i) == 0{
+							dist[xx][yy] |= (1<<i)
+							qlist[i] = append(qlist[i], [2]int{xx,yy})
+						}
+						if checkTarget(xx, yy){
+							sum := 0
+							fmt.Println(xx, yy, pathSum)
+							for i := range pathSum{
+								sum += pathSum[i]
+							}
+							return sum
+						}
+					}
+				}
+			}
+		}
+	}
+	fmt.Println(dist)
+	return -1
+}
+// 更正后的多源BFS方法，但是提交会 OOM
+// 测试用例中 1的个数为 67 超过了 64 bit位，所以多源BFS失效
+func shortestDistance(grid [][]int) int {
+	dirs := [][]int{ []int{0,1}, []int{1,0}, []int{0,-1}, []int{-1,0} }
+	m, n := len(grid), len(grid[0])
+	qlist :=[][][2]int{}
+	dist, visited := make([][]int, m), make([][]int, m)
+	for i := range dist {
+		visited[i] = make([]int, n)
+		dist[i] = make([]int, n)
+	}
+	for i := 0; i < m; i++{
+		for j := 0; j < n; j++{
+			switch grid[i][j] {
+			case 1:
+				qlist = append(qlist, [][2]int{[2]int{i,j}})
+			}
+		}
+	}
+	mask := 1 << len(qlist) - 1
+	checkTarget := func(x, y int)bool{
+		return visited[x][y] == mask
+	}
+	pathSum := make([]int, len(qlist))
+	valid := func(x, y int)bool{
+		if x < 0 || y < 0 || x >= m || y >= n || grid[x][y] == 2 || grid[x][y] == 1{
+			return false
+		}
+		return true
+	}
+	checkQueueList := func()bool{
+		for i := range qlist{
+			if qlist[i] != nil{
+				fmt.Println(len(qlist))
+				return true
+			}
+		}
+		return false
+	}
+	ans := math.MaxInt32
+	for checkQueueList(){
+		for i := range qlist{
+			q := qlist[i]
+			qlist[i] = nil
+			if q != nil{
+				pathSum[i]++
+			}
+			for _, src := range q{
+				x, y := src[0], src[1]
+				for _, d := range dirs{
+					xx, yy := x+d[0], y+d[1]
+					if valid(xx, yy){
+						if visited[xx][yy] & (1 << i) == 0{
+							dist[xx][yy] += pathSum[i]
+							visited[xx][yy] |= (1<<i)
+							qlist[i] = append(qlist[i], [2]int{xx,yy})
+						}
+						if checkTarget(xx, yy){
+							if ans > dist[xx][yy]{
+								ans = dist[xx][yy]
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	if ans == math.MaxInt32{ return -1 }
+	return ans
+}
 
-
+// 采用BFS 记录路径长度的方法
+// 与上面方法不同， visited 数组的避免使用
+func shortestDistance_BFS(grid [][]int) int {
+	dirs := [][]int{ []int{0,1}, []int{1,0}, []int{0,-1}, []int{-1,0} }
+	m, n := len(grid), len(grid[0])
+	valid := func(x, y int)bool{
+		if x < 0 || y < 0 || x >= m || y >= n {
+			return false
+		}
+		return true
+	}
+	dist,sum := make([][]int, m), make([][]int, m)
+	for i := range dist{
+		dist[i] = make([]int, n)
+		sum[i] = make([]int, n)
+	}
+	val := 0
+	ans := math.MaxInt32
+	for i := range grid{
+		for j := range grid[i]{
+			if grid[i][j] == 1{
+				ans = math.MaxInt32
+				q := [][2]int{[2]int{i,j}}
+				for len(q) > 0{
+					x, y := q[0][0], q[0][1]
+					q = q[1:]
+					for _, d := range dirs{
+						xx, yy := x+d[0], y+d[1]
+						if valid(xx, yy) && grid[xx][yy] == val{
+							grid[xx][yy]-- // 传递给下一个可访问，不断的按顺序刷新一遍
+							dist[xx][yy] = dist[x][y] + 1
+							sum[xx][yy] += dist[xx][yy]
+							q = append(q, [2]int{xx, yy})
+							if sum[xx][yy] < ans{
+								ans = sum[xx][yy]
+							}
+						}
+					}
+				}
+				val--
+			}
+		}
+	}
+	if ans == math.MaxInt32{ return -1 }
+	return ans
+}
 
 
 

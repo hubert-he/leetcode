@@ -1,7 +1,7 @@
 package linear
 
 import (
-	"../../../Tree"
+	"../../../DataStructure/Tree"
 	"fmt"
 	"math"
 )

@@ -76,3 +76,30 @@ func TestCountPrimes(t *testing.T){
 		}
 	}
 }
+
+func TestPermutation(t *testing.T){
+	for caseId, testCase := range []struct{
+		nums	[]int
+		want 	[][]int
+	}{
+		{[]int{1,2,3}, [][]int{
+			[]int{1,2,3}, []int{1,3,2},
+			[]int{2,1,3}, []int{2,3,1},
+			[]int{3,1,2}, []int{3,2,1},
+		}},
+		{[]int{1,1,3}, [][]int{
+			[]int{1,1,3}, []int{1,3,1},	[]int{3,1,1},
+		}},
+		{[]int{3,2,2,3}, [][]int{
+			[]int{3,2,2,3}, []int{3,2,3,2},
+			[]int{3,3,2,2}, []int{2,3,2,3},
+			[]int{2,3,3,2}, []int{2,2,3,3},
+		}},
+	}{
+		result := permutation(testCase.nums)
+		if !assert.ElementsMatchf(t, testCase.want, result, "case-%d: faild, result=%#v, \n want=%#v",
+			caseId, result, testCase.want){
+			break
+		}
+	}
+}

@@ -365,45 +365,55 @@ func minCost_Heap(grid [][]int) int {
 ** where each answer[x] is the length of the shortest path from node 0 to node x such that
 ** the edge colors alternate along the path, or -1 if such a path does not exist.
  */
-func shortestAlternatingPaths(n int, redEdges [][]int, blueEdges [][]int) []int {
+func shortestAlternatingPaths_BFS(n int, redEdges [][]int, blueEdges [][]int) []int {
+	const Red, Blue = 0, 1
 	g := make([][][]int, n)
 	for i := range g{
 		g[i] = make([][]int, 2)
 	}
-	// red:0, blue: 1
 	for i := range redEdges{
 		src, dst := redEdges[i][0], redEdges[i][1]
-		g[src][0] = append(g[src][0], dst)
+		g[src][Red] = append(g[src][Red], dst)
 	}
 	for i := range blueEdges{
 		src, dst := blueEdges[i][0], blueEdges[i][1]
-		g[src][1] = append(g[src][1], dst)
+		g[src][Blue] = append(g[src][Blue], dst)
 	}
-	ans := make([]int, n)
-	for i := range ans{
-		ans[i] = -1
+	distance := make([][]int, n)
+	for i := range distance{
+		distance[i] = make([]int, 2)
+		distance[i][0], distance[i][1] = math.MaxInt32, math.MaxInt32
 	}
-	ans[0] = 0
-	q := []int{0}
-	red := true
-	cnt := 0
-	for len(q) > 0{
-		t := q
-		q = nil
-		cnt++
-		for i := range t{
-			nodes := g[t[i]][0]
-			if !red{
-				nodes = g[t[i]][1]
-			}
-			for _, node := range nodes{
-				if ans[node] == -1{
-					ans[node] = cnt
-					q = append(q, node)
+	distance[0][0], distance[0][1] = 0, 0
+	qr, qb := []int{0}, []int{0}
+	step := 0
+	for len(qr) > 0 || len(qb) > 0{
+		step++
+		tr, tb := qr, qb
+		qr, qb = nil, nil
+		for i := range tr{
+			for _, node := range g[tr[i]][Red]{
+				if distance[node][Red] > step{
+					distance[node][Red] = step
+					qb = append(qb, node)
 				}
 			}
 		}
-		red = !red
+		for i := range tb{
+			for _, node := range g[tb[i]][Blue]{
+				if distance[node][Blue] > step{
+					distance[node][Blue] = step
+					qr = append(qr, node)
+				}
+			}
+		}
+	}
+	ans := make([]int, n)
+	for i, d := range distance{
+		ans[i] = min(d...)
+		if ans[i] == math.MaxInt32{
+			ans[i] = -1
+		}
 	}
 	return ans
 }

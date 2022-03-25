@@ -1,7 +1,7 @@
 package unclassified
 
 import (
-	"../Tree"
+	"../DataStructure/Tree"
 	"fmt"
 	"math"
 )

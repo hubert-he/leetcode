@@ -1,7 +1,7 @@
 package linear
 
 import "testing"
-import "../../../Tree"
+import "../../../DataStructure/Tree"
 
 func TestRobDP(t *testing.T){
 	for caseId, testCase := range []struct{

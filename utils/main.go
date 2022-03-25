@@ -13,7 +13,7 @@ func Max(nums ...int)int{
 }
 
 func Min(nums ...int) int {
-	m := math.MaxInt32
+	m := nums[0]
 	for _, n := range nums{
 		if m > n{
 			m = n

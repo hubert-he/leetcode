@@ -817,3 +817,50 @@ func NumTrees2(n int) int {
 	}
 	return dp[n]
 }
+
+/* 285. Inorder Successor in BST
+** Given the root of a binary search tree and a node p in it, return the in-order successor of that node in the BST.
+** If the given node has no in-order successor in the tree, return null.
+** The successor of a node p is the node with the smallest key greater than p.val.
+ */
+/* 二叉搜索树的中序遍历结果是一个递增的数组，顺序后继是中序遍历中当前节点 之后 最小的节点。
+** 可以分成两种情况来讨论：
+	1. 如果当前节点有右孩子，顺序后继在当前节点之下
+		先找到当前节点的右孩子，然后再持续往左直到左孩子为空
+	2. 如果当前节点无右孩子，顺序后继在当前节点之上
+		由于无法访问父亲节点，只能从根节点开始中序遍历，直接在中序遍历过程保存前一个访问的节点，判断前一个节点是否为p
+		如果前一个节点是 p 如果是，则当前节点就是 p 节点顺序后继节点。
+** 算法
+	如果当前节点有右孩子，找到右孩子，再持续往左走直到节点左孩子为空，直接返回该节点。
+	如果没有的话，就需要用到非递归的中序遍历。维持一个栈，当栈中有节点时：
+		往左走直到节点的左孩子为空，并将每个访问过的节点压入栈中。
+		弹出栈中节点，判断当前的前继节点是否为 p，如果是则直接返回当前节点。如果不是，将当前节点赋值给前继节点。
+		往右走一步。
+	如果走到这一步，说明不存在顺序后继，返回空。
+ */
+// 2022-03-23 刷出此题
+// 注意BST 中 两种情况的分析
+func inorderSuccessor(root *BiTreeNode, t *BiTreeNode) *BiTreeNode {
+	found := false
+	st := []*BiTreeNode{}
+	p := root
+	for p != nil || len(st) > 0{
+		if p == t && p.Right != nil{ // 情况-1：连续往左
+			p = p.Right
+			for p.Left != nil{
+				p = p.Left
+			}
+			return p
+		}
+		for p != nil{
+			st = append(st, p)
+			p = p.Left
+		}
+		top := st[len(st)-1]
+		st = st[:len(st)-1]
+		if found{  return top }
+		if top == t{ found = true }
+		p = top.Right
+	}
+	return nil
+}

@@ -1,5 +1,11 @@
 package slideWindow
 
+import (
+	"fmt"
+	"math"
+	"sort"
+)
+
 /* 76. Minimum Window Substring
 ** Given two strings s and t of lengths m and n respectively,
 ** return the minimum window substring of s such that every character in t (including duplicates) is included in the window.
@@ -154,6 +160,29 @@ func maxSubArrayLen(nums []int, k int) int {
 	}
 	return ans
 }
+// 通过前缀和计算，利用two sum hash表的使用，可降低复杂度，
+// 但是仔细看上面解法程序的主 for 循环，发现prefixsum 只跟当前计算值，和先前计算值有关，
+// 因此可以不必事先计算前缀和和
+func maxSubArrayLen_imporve(nums []int, k int) int {
+	n := len(nums)
+	m := map[int]int{0: 0}
+	ans := 0
+	prefixSum := 0 // 不必事先计算
+	for i := 1; i <= n; i++{
+		prefixSum += nums[i-1]
+		if _, ok := m[prefixSum]; !ok{
+			m[prefixSum] = i
+		}
+		d := prefixSum - k
+		if idx, ok := m[d]; ok {
+			if ans < i - idx{
+				ans = i-idx
+			}
+		}
+	}
+	return ans
+}
+
 // 进一步优化
 func maxSubArrayLen_Best(nums []int, k int) int {
 	m := map[int]int{0: -1}
@@ -169,3 +198,229 @@ func maxSubArrayLen_Best(nums []int, k int) int {
 	}
 	return ans
 }
+/* 2022-03-24 脑子忽然想用二分
+** 这是因为数组中有负数，导致和不一定是单调的情况。
+** 忘记了 2分的 特性
+** 1. 目标函数单调性（单调递增或者递减） 此问题不满足这条， 不是单调的
+** 2. 存在上下界，0 或 n
+** 3. 能够通过索引访问， 满足因为从 0 到 n 查找
+*/
+func maxSubArrayLen_error(nums []int, k int) int {
+	n := len(nums)
+	check := func(step int)bool{
+		sum := 0
+		for i := 0; i < step; i++{
+			sum += nums[i]
+		}
+		if sum == k { return true}
+		for i := step; i < n; i++{
+			sum += nums[i] - nums[i-step]
+			if sum == k { return true }
+		}
+		return false
+	}
+	i, j := 0, n
+	ans := 0
+	for i < j {
+		mid := int(uint(i+j) >> 1)
+		//fmt.Println(mid, check(mid))
+		if check(mid){
+			ans = mid
+			i = mid+1
+		}else{
+			j = mid-1
+		}
+	}
+	return ans
+}
+
+/* 713. Subarray Product Less Than K
+** Given an array of integers nums and an integer k,
+** return the number of contiguous subarrays where the product of all the elements in the subarray is strictly less than k.
+ */
+// 题意未理解清楚：不能排序，计算原序列上
+func numSubarrayProductLessThanK_error(nums []int, k int) int {
+	m := map[int]map[int][][]int{}
+	equal := func(a, b []int)bool{
+		fmt.Println("-->", a, b)
+		if len(a) != len(b){ return false }
+		for i := range a{
+			if a[i] != b[i]{
+				return false
+			}
+		}
+		return true
+	}
+	less := func(a []int)bool{
+		n := len(a)
+		prod := 1
+		for _, c := range a{
+			prod *= c
+		}
+		if prod >= k{
+			return false
+		}
+		if m[prod] == nil{
+			m[prod] = map[int][][]int{n: [][]int{a}}
+		}else{
+			for _, list := range m[prod][n]{
+				if equal(a, list){
+					fmt.Println("equal=>", a, list)
+					return false
+				}
+			}
+			m[prod][n] = append(m[prod][n], a)
+			fmt.Println(a, m[prod][n])
+		}
+		return true
+	}
+	n := len(nums)
+	ans := 0
+	sort.Ints(nums)
+	for i := 0; i < n; i++{
+		for step := 1; step <= n; step++{
+			if i+step > n{
+				continue
+			}
+			if less(nums[i:i+step]){
+				fmt.Println(nums[i:i+step])
+				ans++
+			}else{ // 排序后，发现大于直接退
+				break
+			}
+		}
+	}
+	fmt.Println(m)
+	return ans
+}
+
+// 2022-03-15 刷出此题 暴力累积
+func numSubarrayProductLessThanK(nums []int, k int) int {
+	ans, n := 0, len(nums)
+	for i := 0; i < n; i++{
+		prod := 1
+		for j := i; j < n; j++{
+			prod *= nums[j]
+			if prod < k{
+				ans++
+			}else{ // 此处必须加break，否则数值溢出，导致 <k 统计值ans 偏大
+				break
+			}
+		}
+	}
+	return ans
+}
+/* 滑动窗口思路分析
+** 对于每个right，需要找到最小的left, 是的 nums[i] i从left到right 的累积 < k。
+** 由于当 left 增加时，这个乘积是单调不增的，因此可以使用双指针控制窗口。
+ */
+
+func numSubarrayProductLessThanK_slide(nums []int, k int) int {
+	if k <= 1{ return 0 } // 特殊情况
+	prod,ans, left := 1, 0, 0
+	for right, val := range nums{
+		prod *= val
+		for prod >= k{// 收缩left
+			prod /= nums[left]
+			left++
+		}
+		ans += right - left + 1
+	}
+	return ans
+}
+
+/* 正向思路： 二分查找的思路，取对数 乘积转和
+** 即对于固定的 left, 二分查找出 最大的 right 满足 nums[left] 到 nums[right] 的乘积 小于 k
+** 但由于乘积可能会非常大（在最坏情况下会达到1000^50000） 会导致溢出
+** 因此我们需要对 nums 数组取对数，将乘法转换为加法，这样就不会出现数值溢出的问题了
+ */
+func numSubarrayProductLessThanK_BinarySearch(nums []int, k int) int {
+	ans := 0
+	if k <= 1{ return ans } // 特殊情况
+	n := len(nums)
+	logk := math.Log(float64(k))
+	// 对 nums 中的每个数取对数后，我们存储它的前缀和 prefix
+	prefix := make([]float64, n+1)
+	for i,c := range nums{
+		prefix[i+1] = prefix[i] + math.Log(float64(c))
+	}
+	// 对于 i 和 j 我们可以用 prefix[j+1] - prefix[i] 得到nums[i] 到 nums[j]的乘积的对数
+	// 对于固定的 i 当找到最大的满足条件的 j 后，它会包含 j−i+1 个乘积小于 k 的连续子数组。
+	for i := 0; i <= n; i++{
+		lo, hi := i+1, n+1
+		for lo < hi{
+			mid := int(uint(lo+hi)>>1)
+			if prefix[mid] < prefix[i] + logk - 1e-9{ // 浮点数的运算精度有限存在误差，因此必须使用误差小于某个预先给定值的方法来做。
+				lo = mid + 1
+			}else{
+				hi = mid
+			}
+		}
+		ans += lo - i - 1
+	}
+	return ans
+}
+
+/* 1151. Minimum Swaps to Group All 1's Together
+** Given a binary array data,
+** return the minimum number of swaps required to group all 1’s present in the array together in any place in the array.
+ */
+func minSwaps(data []int) int {
+	n := len(data)
+	oneCnt := 0
+	for i := range data{
+		if data[i] == 1{
+			oneCnt++
+		}
+	}
+	// 窗口大小设定为 oneCnt
+	ones := 0
+	for i := 0; i < oneCnt; i++{
+		if data[i] == 1{ ones++ }
+	}
+	ans := oneCnt - ones
+	for i := 1; i <= n-oneCnt; i++{
+		if data[i-1] == 1{
+			ones--
+		}
+		if data[i+oneCnt-1] == 1{
+			ones++
+		}
+		t := oneCnt - ones
+		if ans > t{ ans = t }
+	}
+	return ans
+}
+
+// 官方代码： 例如 只有 0 和 1 两种值 来优化代码, 学习coding方式 特别是滑动窗口的
+func minSwaps_official(data []int) int {
+	n := len(data)
+	oneCnt := 0
+	for i := range data{
+		oneCnt += data[i]
+	}
+	ones := 0
+	for i := 0; i < oneCnt; i++{
+		ones += data[i]
+	}
+	max := ones
+	for i := oneCnt; i < n; i++{
+		ones += data[i] - data[i-oneCnt]
+		if max < ones{
+			max = ones
+		}
+	}
+	return oneCnt - max
+}
+
+
+
+
+
+
+
+
+
+
+
+

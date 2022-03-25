@@ -2,7 +2,6 @@ package Array
 
 import (
 	"../../utils"
-	"sort"
 )
 
 /* 1001. Grid Illumination 网格照明
@@ -633,8 +632,35 @@ func OrchestraLayout(num int, xPos int, yPos int) int {
 ** Eventually, we reach all rows * cols spaces of the grid.
 ** Return an array of coordinates representing the positions of the grid in the order you visited them.
  */
+/* 螺旋形行走: 找规律
+** 检查我们在每个方向的行走长度，我们发现如下模式：1, 1, 2, 2, 3, 3, 4, 4, ....
+** 即我们先向东走 1 单位，然后向南走 1 单位，再向西走 2 单位，再向北走 2 单位，再向东走 3 单位，等等
+** 按照我们访问的顺序执行遍历并记录网格的位置
+ */
 func SpiralMatrixIII(rows int, cols int, rStart int, cStart int) [][]int {
-
-	return nil
+	dirs := [][]int{[]int{0, 1}, []int{1, 0}, []int{0, -1}, []int{-1, 0}}
+	valid := func(x, y int)bool{
+		if x < 0 || y < 0 || x >= rows || y >= cols{
+			return false
+		}
+		return true
+	}
+	ans := [][]int{[]int{rStart, cStart}}
+	n := rows * cols
+	if n == 1{ return ans }
+	// 1, 1, 2, 2 规律
+	for k := 1; k < 2*(rows+cols); k += 2{
+		for i, d := range dirs{
+			dk := k + (i/2) // 此方向的步数
+			for j := 0; j < dk; j++{
+				rStart += d[0]
+				cStart += d[1]
+				if valid(rStart, cStart){
+					ans = append(ans, []int{rStart, cStart})
+				}
+			}
+		}
+	}
+	return ans
 }
 
