@@ -276,3 +276,101 @@ func maxAreaOfIsland(grid [][]int) int {
 	}
 	return ans
 }
+
+/* 1579. Remove Max Number of Edges to Keep Graph Fully Traversable
+** Alice and Bob have an undirected graph of n nodes and 3 types of edges:
+	Type 1: Can be traversed by Alice only.
+	Type 2: Can be traversed by Bob only.
+	Type 3: Can by traversed by both Alice and Bob.
+** Given an array edges where edges[i] = [typei, ui, vi] represents a bidirectional edge of type typei between nodes ui and vi,
+** find the maximum number of edges you can remove so that after removing the edges,
+** the graph can still be fully traversed by both Alice and Bob.
+** The graph is fully traversed by Alice and Bob if starting from any node, they can reach all other nodes.
+** Return the maximum number of edges you can remove, or return -1 if it's impossible for the graph to be fully traversed by Alice and Bob.
+ */
+/* 2022-04-15 未刷出此题
+** 已经想到的：由于题目描述中希望我们删除最多数目的边，这等价于保留最少数目的边。
+   我们可以从一个仅包含 n 个节点（而没有边）的无向图开始，逐步添加边，使得满足上述的要求。
+  「公共边」的重要性大于「Alice 独占边」以及「Bob 独占边」，因为「公共边」是 Alice 和 Bob 都可以使用的，而他们各自的独占边却不能给对方使用。
+  「公共边」的重要性也是可以证明的：
+	对于一条连接了两个不同的连通分量的「公共边」而言，如果我们不保留这条公共边，那么 Alice 和 Bob 就无法往返这两个连通分量，
+	即他们分别需要使用各自的独占边。因此，Alice 需要一条连接这两个连通分量的独占边，Bob 同样也需要一条连接这两个连通分量的独占边，
+	那么一共需要两条边，这就严格不优于直接使用一条连接这两个连通分量的「公共边」了。
+   因此，我们可以遵从优先添加「公共边」的策略
+   具体地，我们遍历每一条「公共边」，对于其连接的的两个节点：
+		如果这两个节点在同一个连通分量中，那么添加这条「公共边」是无意义的；
+		如果这两个节点不在同一个连通分量中，我们就可以（并且一定）添加这条「公共边」，然后合并这两个节点所在的连通分量。
+** 公共边的思考是充分的，但是对于独占边处理不够理想，
+** 之前思路是 把公共边的节点合并为一个节点，然后 重新构建一张图来处理，但是 独占边连接两个连通分量的边数无法确定
+** 以下是题解的思路，也是未能想到的：
+	在处理完了所有的「公共边」之后，我们需要处理他们各自的独占边，而方法也与添加「公共边」类似。
+	我们将当前的并查集复制一份，一份交给 Alice，一份交给 Bob，
+	随后 Alice 不断地向并查集中添加「Alice 独占边」，Bob 不断地向并查集中添加「Bob 独占边」
+	在处理完了所有的独占边之后，如果这两个并查集都只包含一个连通分量，那么就说明 Alice 和 Bob 都可以遍历整个无向图。
+ */
+/* 官方题解代码
+**
+ */
+type unionFind struct {
+	parent, size 	[]int
+	setCount		int // 记录当前连通分量的个数
+}
+func newUnionFind(n int) *unionFind{
+	parent, size := make([]int, n), make([]int, n)
+	for i := range parent{
+		parent[i] = i
+		size[i] = 1
+	}
+	//return &unionFind{parent: parent, size: size, setCount: n}
+	return &unionFind{parent, size, n}
+}
+func (uf *unionFind)find(x int)int{
+	px := uf.parent[x]
+	for px != x{
+		uf.parent[x] = uf.parent[px]
+		x = px
+		px = uf.parent[x]
+	}
+	return px
+}
+func (uf *unionFind)union(x, y int)bool{
+	px, py := uf.find(x), uf.find(y)
+	if px == py{ return false } // 同类不需要合并, 删掉这条边
+	// 保证px 的高度size 最大
+	if uf.size[px] < uf.size[py]{
+		px, py = py, px
+	}
+	uf.size[px] += uf.size[py]
+	uf.parent[py] = px
+	uf.setCount--
+	return true
+}
+func (uf *unionFind) isSameSet(x, y int)bool{
+	return uf.find(x) == uf.find(y)
+}
+func maxNumEdgesToRemove2(n int, edges [][]int) int {
+	const Type, Src, Dst = 0, 1, 2
+	ans := len(edges)
+	alice, bob := newUnionFind(n), newUnionFind(n)
+	for _, e := range edges{
+		x, y := e[Src]-1, e[Dst]-1
+		if e[Type] == 3 &&
+			(!alice.isSameSet(x, y) || !bob.isSameSet(x, y)){// 保留这条公共边
+			alice.union(x, y)
+			bob.union(x, y)
+			ans--
+		}
+	}
+	uf := [2]*unionFind{alice, bob}
+	for _, e := range edges{
+		x, y := e[Src]-1, e[Dst]-1
+		if tp := e[Type]; tp < 3 && uf[tp-1].union(x, y){
+			// 保留这填独占边
+			ans--
+		}
+	}
+	if alice.setCount > 1 || bob.setCount > 1{
+		return -1
+	}
+	return ans
+}

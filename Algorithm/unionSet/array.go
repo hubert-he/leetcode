@@ -1,6 +1,9 @@
 package unionSet
 
-import "fmt"
+import (
+	"fmt"
+	"../../utils"
+)
 
 /* Union Find 并查集
 	0. 设定相距为1的值，为一个集合
@@ -245,12 +248,63 @@ func longestConsecutive_error(nums []int) int {
 	fmt.Println(ufs)
 	return ans
 }
+// 2022-03-28 并查集 重刷此题, 利用数组+map方式， map 主要是去重
+// ufs 解决此类问题的时候，务必注意 union 无法执行的特殊case
+// 比如 [0,0] [0], 设置ans默认值为 1
+// 设置 ans 从 1 开始，但是又要注意 nums 空的情况
+func longestConsecutive_ufs(nums []int) int {
+	if len(nums) == 0 { return 0 }
+	ans := 1
+	const Class, Size, Height = 0, 1, 2
+	ufs := map[int]*[3]int{} //对map 值使用指针，否则无法修改map值的部分片段
+	for _, c := range nums{
+		ufs[c] = &[3]int{c, 1, 0}
+	}
+	find := func(x int)int{
+		px := ufs[x][Class]
+		for px != x{
+			ufs[x] = ufs[px]
+			x = px
+			px = ufs[x][Class]
+		}
+		return px
+	}
+	union := func(x, y int){
+		px, py := find(x), find(y)
+		if px != py{
+			if ufs[px][Height] < ufs[py][Height]{
+				ufs[px][Class] = py
+				ufs[py][Size] += ufs[px][Size]
+				ufs[py][Height] = utils.Max(ufs[py][Height], ufs[px][Height]+1)
+				if ans < ufs[py][Size]{
+					ans = ufs[py][Size]
+				}
+			}else{
+				ufs[py][Class] = px
+				ufs[px][Size] += ufs[py][Size]
+				ufs[px][Height] = utils.Max(ufs[px][Height], ufs[py][Height]+1)
+				if ans < ufs[px][Size]{
+					ans = ufs[px][Size]
+				}
+			}
+		}
+	}
+	for _, c := range nums{
+		// ufs 解决此类问题的时候，务必注意 union 无法执行的特殊case
+		// 比如 [0,0] [0], 设置ans默认值为 1
+		// 设置 ans 从 1 开始，但是又要注意 nums 空的情况
+		if _, ok := ufs[c-1]; ok {
+			union(c, c-1)
+		}
+	}
+	return ans
+}
 
 /*  leetcode官方解法
-** 考虑数组中每个数x,考虑以其为起点，不断尝试匹配 x+1 x+2 ... 是否存在，假设匹配到了x+y，那么以x起点的最长连续序列即为 x x+1 ... x+y 长度为
-y+1，然后不断的枚举并更新答案即可。
-	对于匹配的过程，暴力的方法是 O(n) 遍历数组去看是否存在这个数，但其实更高效的方法是用一个哈希表存储数组中的数，
-这样查看一个数是否存在即能优化至 O(1)的时间复杂度
+** 考虑数组中每个数x,考虑以其为起点，不断尝试匹配 x+1 x+2 ... 是否存在，假设匹配到了x+y，
+** 那么以x起点的最长连续序列即为 x x+1 ... x+y 长度为 y+1，然后不断的枚举并更新答案即可。
+** 对于匹配的过程，暴力的方法是 O(n) 遍历数组去看是否存在这个数，但其实更高效的方法是用一个哈希表存储数组中的数，
+** 这样查看一个数是否存在即能优化至 O(1)的时间复杂度
 */
 func LongestConsecutiveHash(nums []int) int {
 	if len(nums) == 0{
@@ -276,39 +330,34 @@ func LongestConsecutiveHash(nums []int) int {
 	}
 	return length
 }
-// 优化法
-/*
- 我们会发现其中执行了很多不必要的枚举，如果已知有一个x,x+1,x+2,⋯,x+y 的连续序列，而我们却重新从x+1 x+2 或者是 x+y 处开始尝试匹配
- 那么得到的结果肯定不会优于枚举 x 为起点的答案，因此我们在外层循环的时候碰到这种情况跳过即可。
 
-那么怎么判断是否跳过呢？由于我们要枚举的数 x 一定是在数组中不存在前驱数x−1 的，
-不然按照上面的分析我们会从 x−1 开始尝试匹配，因此我们每次在哈希表中检查是否存在 x−1 即能判断是否需要跳过了。
-
+/* 优化法
+** 我们会发现其中执行了很多不必要的枚举，如果已知有一个x,x+1,x+2,⋯,x+y 的连续序列，而我们却重新从x+1 x+2 或者是 x+y 处开始尝试匹配
+** 那么得到的结果肯定不会优于枚举 x 为起点的答案，因此我们在外层循环的时候碰到这种情况跳过即可。
+** 那么怎么判断是否跳过呢？由于我们要枚举的数 x 一定是在数组中不存在前驱数 x−1 的，
+** 不然按照上面的分析我们会从 x−1 开始尝试匹配，因此我们每次在哈希表中检查是否存在 x−1 即能判断是否需要跳过了。
 */
 func LongestConsecutiveHashImprove(nums []int) int {
-	if len(nums) == 0{
-		return 0
-	}
-	length := 1
-	uniqueNums := map[int]bool{}
+	ans := 0
+	uniqueNums := map[int]struct{}{}
 	for _,elem := range nums{
-		uniqueNums[elem] = true
+		uniqueNums[elem] = struct{}{}
 	}
 	for elem := range uniqueNums{
-		//检查 elem - 1
-		if _,ok := uniqueNums[elem - 1]; ok {
+		// 检查 x - 1 前驱数是否存在
+		if _,ok := uniqueNums[elem - 1]; ok {// 存在前驱数，证明已经循环过了
 			continue
 		}
-		cnt := 1
-		for uniqueNums[elem+1] {
+		cnt := 0
+		_, ok := uniqueNums[elem]
+		for ok {
 			elem++
+			_, ok = uniqueNums[elem]
 			cnt++
 		}
-		if cnt > length{
-			length = cnt
-		}
+		if cnt > ans{	ans = cnt	}
 	}
-	return length
+	return ans
 }
 func LongestConsecutive(nums []int) int {
 	if len(nums) <= 0{

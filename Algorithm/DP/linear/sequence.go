@@ -107,6 +107,7 @@ func longestPalindrome(s string) string{
 	}
 	return string(ans)
 }
+
 /* 把原来的字符串倒置了，然后找他们俩的最长的公共子串就可以
 ** 题目转换为 求最长公共子串问题
 ** 定义dp[i][j]为公共子串的长度
@@ -116,6 +117,7 @@ func longestPalindromeDP(s string) string{
 
 }
 
+// 官方的DP 解答
 func longestPalindromeDP2(s string) string{
 	n := len(s)
 	if n < 2{
@@ -157,6 +159,37 @@ func longestPalindromeDP2(s string) string{
 		}
 	}
 	return s[begin:begin+maxLen]
+}
+
+// 2022-03-28 重刷此题
+// 状态方程：
+//      P(i,i)    = true
+//		P(i, i+1) = (S[i] == S[i+1]
+//		p(i, j)   = P(i+1, j-1) ^ (S[i] == S[j])
+// 但是DP 的分析思路还是不够清晰，开始之前，一直把true和个数纠缠在一起，并且没有意思到时 二维DP，一直以一维DP思考
+func longestPalindrome_DP(s string) string {
+	n := len(s)
+	if n < 2{ return s }
+	dp := make([][]bool, n)
+	for i := range dp{
+		dp[i] = make([]bool, n)
+		dp[i][i] = true
+	}
+	start, end := 0, 0 // 均是闭集合
+	for j := 1; j < n; j++{ // 固定右边界
+		for i := j-1; i >= 0; i--{ // 遍历左边界
+			if s[i] == s[j]{
+				if j - i < 2 || // 特例：2个字符情况  		<== DP状态方程 情况1
+				   dp[i+1][j-1] { // 大于2个字符的情况		<== 状态方程， 情况2
+					dp[i][j] = true
+					if j - i > end - start{
+						start, end = i, j
+					}
+				}
+			}
+		}
+	}
+	return s[start:end+1]
 }
 
 /* 516. Longest Palindromic Subsequence

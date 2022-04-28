@@ -203,9 +203,74 @@ func CheckInclusion2Pointer(s1, s2 string) bool {
 	return false
 }
 
-
-
-
+/* 187. Repeated DNA Sequences
+** The DNA sequence is composed of a series of nucleotides abbreviated as 'A', 'C', 'G', and 'T'.
+	For example, "ACGAATTCCG" is a DNA sequence.
+** When studying DNA, it is useful to identify repeated sequences within the DNA.
+** Given a string s that represents a DNA sequence,
+** return all the 10-letter-long sequences (substrings) that occur more than once in a DNA molecule.
+** You may return the answer in any order.
+ */
+// 2022-03-28 刷出此题，但不是最优
+// 如果按照一般的字符串，这可能是最优解，但是 这里规定了字符串只有 4 种字符的特例，因此还有更优解法
+func findRepeatedDnaSequences(s string) []string {
+	n := len(s)
+	const partial = 10
+	ans := []string{}
+	m := map[string]int{}
+	for i := 0; i + partial <= n; i++{
+		m[s[i:i+partial]]++
+		// 为了不重复记录答案，只统计出现次数为 2 的子串！！
+		if m[s[i:i+partial]] == 2{
+			ans = append(ans, s[i:i+partial])
+		}
+	}
+	// 这个for 循环可归并到前一个for 循环
+	// 为了不重复记录答案，只统计出现次数为 2 的子串！！
+	/*
+	for k, v := range m{
+		if v > 1{
+			ans = append(ans, k)
+		}
+	}*/
+	return ans
+}
+/* 方法二：哈希表 + 滑动窗口 + 位运算
+** 由于 ss 中只含有 44 种字符，我们可以将每个字符用 22 个比特表示，即：
+** A: 00	C: 01	G: 10	T: 11
+** 一个长为 10 的字符串就可以用 20 个比特表示，而一个 int 整数有 32 个比特，足够容纳该字符串，
+** 因此我们可以将 s 的每个长为 10 的子串用一个 int 整数表示（只使用20位）
+** 如果我们对每个长为 1010 的子串都单独计算其整数表示，那么时间复杂度仍然和方法一一样为 O(NL)。
+** 为了优化时间复杂度，我们可以用一个大小固定为 10 的滑动窗口来计算子串的整数表示。
+** 设当前滑动窗口对应的整数表示为 x，当我们要计算下一个子串时，就将滑动窗口向右移动一位，
+** 此时会有一个新的字符进入窗口，以及窗口最左边的字符离开窗口，这些操作对应的位运算，按计算顺序表示如下：
+	滑动窗口向右移动一位：x = x << 2, 由于每个字符用 2 个比特表示，所以要左移 2 位
+	一个新的字符 ch 进入窗口: x = x | bin[ch]，这里 bin[ch] 为字符 ch 的对应二进制
+	窗口最左边的字符离开窗口: x = x & ((1 << 20) - 1), 由于我们只考虑 x 的低 20位比特，需要将其余位 置0，即与上 (1 << 20)-1
+** 将这三步合并，就可以用 O(1) 的时间计算出下一个子串的整数表示: x = ( (x << 2) | bin[ch]) & (( 1 << 20 )-1)
+ */
+func findRepeatedDnaSequences_best(s string) []string {
+	const partial = 10
+	n := len(s)
+	ans := []string{}
+	if n < partial{
+		return ans
+	}
+	bin := map[byte]int{'A':0, 'C': 1, 'G': 2, 'T': 3}
+	x := 0
+	for _, c := range s[:partial-1]{
+		x = x << 2 | bin[byte(c)]
+	}
+	cnt := map[int]int{}
+	for i := 0; i + partial < n; i++{
+		x = (x << 2 | bin[s[i+partial-1]]) & (1 << (partial*2) - 1)
+		cnt[x]++
+		if cnt[x] == 2{
+			ans = append(ans, s[i:i+partial])
+		}
+	}
+	return ans
+}
 
 
 

@@ -1,5 +1,15 @@
 package Tree
 
+func max(nums ...int)int{
+	ans := nums[0]
+	for i := 1; i < len(nums); i++{
+		if nums[i] > ans {
+			ans = nums[i]
+		}
+	}
+	return ans
+}
+
 type Interface interface {
 	Equal(target interface{}) bool
 	Less(target interface{}) bool
@@ -111,16 +121,6 @@ func rightRotation(root *avlTreeNode) *avlTreeNode{
 	root.Height = 1 + max(getHeight(root.Left), getHeight(root.Right)) // 必须先更新root，后更新newroot
 	newRoot.Height = 1 + max(getHeight(newRoot.Left), getHeight(newRoot.Right))
 	return newRoot
-}
-
-func max(nums ...int)int{
-	ans := nums[0]
-	for i := 1; i < len(nums); i++{
-		if nums[i] > ans {
-			ans = nums[i]
-		}
-	}
-	return ans
 }
 
 func(tree *AVLTree) Remove(key Interface) (target *avlTreeNode) {

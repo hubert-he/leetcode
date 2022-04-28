@@ -1,6 +1,9 @@
 package TwoPointer
 
-import "math"
+import (
+	"math"
+	"sort"
+)
 
 /* 31. Next Permutation
 ** Implement next permutation, which rearranges numbers into the lexicographically next greater permutation of numbers.
@@ -361,3 +364,58 @@ func nextGreaterElement_Iter(n int) int {
 	if ans > math.MaxInt32{ return -1 }
 	return ans
 }
+
+/* 1855. Maximum Distance Between a Pair of Values
+** You are given two non-increasing 0-indexed integer arrays nums1​​​​​​ and nums2​​​​​​.
+** A pair of indices (i, j), where 0 <= i < nums1.length and 0 <= j < nums2.length,
+** is valid if both i <= j and nums1[i] <= nums2[j].
+** The distance of the pair is j - i​​​​.
+** Return the maximum distance of any valid pair (i, j). If there are no valid pairs, return 0.
+** An array arr is non-increasing if arr[i-1] >= arr[i] for every 1 <= i < arr.length.
+ */
+// 2022-04-28 刷出此题，二分
+func maxDistance_bs(nums1 []int, nums2 []int) int {
+	n := len(nums2)
+	ans := 0
+	for i := range nums1{
+		if i >= n{ break }  // 遗漏点-1
+		arr := nums2[i:]
+		x := sort.Search(len(arr), func(p int)bool{ // 找最右边
+			return arr[p] <= nums1[i]-1
+		})
+		j := i+x-1
+		//fmt.Println(nums1[i], j, j-i)
+		if ans < j-i{
+			ans = j-i
+		}
+	}
+	return ans
+}
+// 双指针
+func maxDistance(nums1 []int, nums2 []int) int {
+	n := len(nums1)
+	i, ans := 0, 0
+	for j := range nums2{
+		for i < n && nums1[i] > nums2[j]{
+			i++
+		}
+		if i < n && ans < j-i{
+			ans = j-i
+		}
+	}
+	return ans
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

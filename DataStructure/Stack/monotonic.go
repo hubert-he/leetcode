@@ -1,6 +1,9 @@
 package Stack
 
-import "math"
+import (
+	"math"
+	"math/rand"
+)
 
 /* 496. Next Greater Element I
 ** The next greater element of some element x in an array is the first greater element
@@ -187,4 +190,285 @@ func dailyTemperatures2(temperatures []int) []int {
 		st = st[:len(st)-1]
 	}
 	return temperatures
+}
+
+/* 84. Largest Rectangle in Histogram
+** Given an array of integers heights representing the histogram's bar height where the width of each bar is 1,
+** return the area of the largest rectangle in the histogram.
+ */
+// 这个是枚举宽的方式
+func largestRectangleArea_burst_width(heights []int) int {
+	n := len(heights)
+	ans := math.MinInt32
+	for i := 0; i < n; i++{
+		h := math.MaxInt32
+		for j := i; j < n; j++{
+			if h > heights[j]{
+				h = heights[j]
+			}
+			if ans < (j-i+1)*h {
+				ans = (j-i+1)*h
+			}
+		}
+	}
+	return ans
+}
+/* 枚举高的思路
+** 使用一重循环枚举某一根柱子， 将其固定为矩形的高度 h
+** 随后我们从这跟柱子开始向两侧延伸，直到遇到高度小于h的柱子，就确定了矩形的左右边界
+** 从而得出答案
+ */
+func largestRectangleArea_burst_height(heights []int) int {
+	n := len(heights)
+	ans := 0
+	for i, h := range heights{
+		left, right := i, i
+		for left > 0 && heights[left-1] >= h{
+			left--
+		}
+		for right < n-1 && heights[right+1] >= h{
+			right++
+		}
+		t := (right-left+1) * h
+		if ans < t {
+			ans = t
+		}
+	}
+	return ans
+}
+// 由枚举高开始思路优化， 就可以发现 可借用单调栈 来快速返回 left  right， 达到 O(n) 思路
+func largestRectangleArea(heights []int) int {
+	const Left, Right = 0, 1
+	n := len(heights)
+	location := make([][2]int, n)
+	st := []int{} // 存索引
+	for i, h := range heights{
+		for len(st) > 0 && heights[len(st)-1] >= h{
+			st = st[:len(st)-1]
+		}
+		if len(st) == 0{
+			location[i][Left] = -1
+		}else{
+			location[i][Left] = st[len(st)-1]
+		}
+		st = append(st, i)
+	}
+	for i := n-1; i >= 0; i--{
+		for len(st) > 0 && heights[len(st)-1] >= heights[i]{
+			st = st[:len(st)-1]
+		}
+		if len(st) == 0{
+			location[i][Right] = n
+		}else{
+			location[i][Right] = st[len(st)-1]
+		}
+		st = append(st, i)
+	}
+	ans := 0
+	for i, h := range heights{
+		left, right := location[i][Left], location[i][Right]
+		t := h * (right-left)
+		if ans < t {
+			ans = t
+		}
+	}
+	return ans
+}
+
+/* 456. 132 Pattern
+** Given an array of n integers nums,
+** a 132 pattern is a subsequence of three integers nums[i], nums[j] and nums[k]
+** such that i < j < k and nums[i] < nums[k] < nums[j].
+** Return true if there is a 132 pattern in nums, otherwise, return false.
+ */
+
+/* 此题的最优解释 单调栈
+** 枚举 3 是容易想到并且也是最容易实现的，太辣鸡，竟然没想到
+** 注意下面的 2 点优化
+** 由于3是模式中的最大值，并且其出现在 1 和 2 之间，因此只需从左到右枚举 3 的下标 j ：
+	1. 由于 1 是模式中的最小值，因此我们在枚举 j 的同时，维护数组 a 中左侧元素 a[0:j-1]的最小值 <== 这个最小值没想到，题目实际上是找是否true
+		即为 1 对应的元素 a[i]。只有 a[i] < a[j]时，a[i] 才能作为 1 对应的元素
+	2. 由于 2 是 模式中的次小值，因此我们可以使用一个有序集合(平衡树)维护数组 a 中 右侧元素 a[j+1:] 中所有值
+		当我们确定了 a[i] 与 a[j] 关系后，只要在有序集合中查询严格比 a[i] 大的 那个最小的元素，即为 a[k]
+		需要注意的是，只有 a[k] < a[j] 时， a[k] 才能作为 3 对应的元素。
+ */
+// 立方级别
+func find132pattern_tle(nums []int) bool {
+	n := len(nums)
+	for i := range nums{
+		left, right := []int{}, []int{}
+		for j := 0; j < i; j++{
+			if nums[j] < nums[i]{
+				left = append(left, nums[j])
+			}
+		}
+		for j := i+1; j < n; j++{
+			if nums[j] < nums[i]{
+				right = append(right, nums[j])
+			}
+		}
+		if len(left) == 0 || len(right) == 0{
+			continue
+		}
+		for _, l := range left{
+			for _, r := range right{
+				if l < r{ return true }
+			}
+		}
+	}
+	return false
+}
+// 平方级别
+func find132pattern_improve_tle(nums []int) bool {
+	n := len(nums)
+	left := math.MaxInt32
+	for i := range nums{
+		// 因为只需要查找是否存在，因此left 不需要保留那么多，只需要保证最下的元素下标即可
+		/*left, right := []int{}, []int{}
+		for j := 0; j < i; j++{
+			if nums[j] < nums[i]{
+				left = append(left, nums[j])
+			}
+		}
+		 */
+		if i > 0 && nums[i-1] < left{
+			left = nums[i-1]
+		}
+
+		for j := i+1; j < n; j++{
+			/*
+			if nums[j] < nums[i]{
+				right = append(right, nums[j])
+			}*/
+			if nums[j] < nums[i] && nums[j] > left {
+				return true
+			}
+		}
+		/*
+		if len(left) == 0 || len(right) == 0{
+			continue
+		}
+		for _, l := range left{
+			for _, r := range right{
+				if l < r{ return true }
+			}
+		}
+		 */
+	}
+	return false
+}
+// 上面是 平方级别，必须要优化内循环 由O(n) 变为 O(logn) 才行，
+// 因此使用 平衡树来存储 right
+func find132pattern_improve_treap(nums []int) bool {
+	n := len(nums)
+	if n < 3 {  return false }
+	left := nums[0]
+	// 构造 treap
+	rights := &treap{}
+	for _, v := range nums[2:] {
+		rights.put(v)
+	}
+	for j := 1; j < n-1; j++ {
+		if nums[j] > left{
+			ub := rights.upperBound(left)
+			if ub != nil && ub.val < nums[j]{
+				return true
+			}
+		}else{// 维护left 最小
+			left = nums[j]
+		}
+		rights.delete(nums[j+1])// 删掉马上要访问的
+	}
+	return false
+}
+const Left, Right = 0, 1
+
+type  node struct{
+	ch 			[2]*node
+	priority	int // 要满足堆性质
+	val 		int // 要满足二叉搜索树的性质
+	cnt 		int
+}
+
+func(o *node) cmp(b int)int{
+	switch {
+	case b < o.val:
+		return Left
+	case b > o.val:
+		return Right
+	default: // 不能相等
+		return -1
+	}
+}
+
+func(o *node)rotate(d int)*node{ // 左右旋合并到一起了
+	x := o.ch[d^1]
+	o.ch[d^1] = x.ch[d]
+	x.ch[d] = o
+	return x
+}
+
+type treap struct {
+	root	*node
+}
+
+func (t *treap) _put(o *node, val int) *node{
+	if o == nil {
+		return &node{priority: rand.Int(), val: val, cnt: 1}
+	}
+	if d := o.cmp(val); d >= 0{
+		o.ch[d] = t._put(o.ch[d], val)
+		if o.ch[d].priority > o.priority{
+			o = o.rotate(d ^ 1)
+		}
+	}else{ // 重复的key
+		o.cnt++
+	}
+	return o
+}
+
+func(t *treap) put(val int){
+	t.root = t._put(t.root, val) // 从根节点开始查询插入
+}
+// BST 的删除操作
+func(t *treap)_delete(o *node, val int)*node{
+	if o == nil{ return nil }
+	if d := o.cmp(val); d >= 0 {
+		o.ch[d] = t._delete(o.ch[d], val)
+		return o
+	}
+	// d == -1 相等的
+	if o.cnt > 1{
+		o.cnt--
+		return o
+	}
+	if o.ch[Right] == nil{
+		return o.ch[Left]
+	}
+	if o.ch[Left] == nil{
+		return o.ch[Right]
+	}
+	d := Left
+	if o.ch[Left].priority > o.ch[Right].priority{
+		d = Right
+	}
+	o = o.rotate(d)
+	o.ch[d] = t._delete(o.ch[d], val)
+	return o
+}
+
+func (t *treap) delete(val int){
+	t.root = t._delete(t.root, val)
+}
+
+func(t *treap) upperBound(val int)(ub *node){
+	for o := t.root; o != nil;{
+		if o.cmp(val) == 0{ // o.val > val
+			ub = o
+			o = o.ch[0]
+		}else{
+			o = o.ch[1]
+		}
+	}
+	return
 }

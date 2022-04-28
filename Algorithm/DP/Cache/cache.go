@@ -1,4 +1,7 @@
 package Cache
+
+import "math"
+
 /* DFS 缓存
 ** 254. Factor Combinations
 ** Numbers can be regarded as the product of their factors.
@@ -130,5 +133,165 @@ func WordBreak_DFS2(s string, wordDict []string) bool {
 	return dfs(0)
 }
 
+/* 787. Cheapest Flights Within K Stops
+** There are n cities connected by some number of flights.
+** You are given an array flights where
+	flights[i] = [fromi, toi, pricei] indicates that there is a flight from city fromi to city toi with cost pricei.
+** You are also given three integers src, dst, and k, return the cheapest price from src to dst with at most k stops.
+** If there is no such route, return -1.
+ */
+// 2022-04-13 使用DFS 重刷此题，特殊例子会 TLE
+// 特殊情况即 K 很大，但是 图中 src dst 是无法连通的情况，此时TLE
+// 所以改进：加入了 提前判断图的两点是否会 连通的检查
+func findCheapestPrice_DFS(n int, flights [][]int, src int, dst int, k int) int {
+	ans := math.MaxInt32
+	vis := make([]bool, n)
+	g := make([][]int, n)
+	for i := range g{
+		g[i] = make([]int, n)
+	}
+	for i := range flights{
+		s, d, w := flights[i][0], flights[i][1], flights[i][2]
+		g[s][d] = w
+	}
+	//TLE改成策略 —— 连通性检查：排除不能连通的情况
+	var connected func(node int)bool
+	connected = func(node int)bool{
+		if node == dst{ return true }
+		vis[node] = true
+		for d, w := range g[node]{
+			if w != 0 && !vis[d]{
+				if connected(d) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	if !connected(src) {
+		return -1
+	}
+	var dfs func(int, int, int)
+	dfs = func(node, cost, stop int){
+		if node == dst{
+			if cost < ans{
+				ans = cost
+			}
+			return
+		}
+		if stop > k { return }
+		if cost >= ans{// 剪枝
+			return
+		}
+		for d, w := range g[node]{
+			if w != 0 && d != node{
+				//fmt.Println(node, d, w, stop)
+				dfs(d, cost+w, stop+1)
+			}
+		}
+	}
+	dfs(src, 0, 0)
+	if ans == math.MaxInt32{ return -1 }
+	return ans
+}
 
+/* DP：这里有2种维度的DP
+** 一维：
+** 二维：
+ */
+// 一维DP
+func findCheapestPrice_DP_1(n int, flights [][]int, src int, dst int, k int) int {
+	ans := math.MaxInt32
+	g := make([][]int, n)
+	for i := range g{
+		g[i] = make([]int, n)
+	}
+	for i := range flights{
+		s, d, w := flights[i][0], flights[i][1], flights[i][2]
+		g[s][d] = w
+	}
 
+	if ans == math.MaxInt32{ return -1 }
+	return ans
+}
+/* 2维DP: 这个 DP 思维方式很有代表性！
+** 状态定义： dp[t][i] 表示 通过恰好 t 次航班，从出发成熟src 到 城市 i 需要的最小花费。
+** 状态方程：枚举最后一次航班的起点 j
+			dp[t][i] = min( dp[t-1][j] + cost(j,i)  )  (j, i 在给定的航班数组flights 中存在从城市 j 出发到达城市 i 的航班)
+** 该状态转移方程的意义在于，枚举最后一次航班的起点 j ，
+** 那么前 t - 1 次航班的最小花费为 dp[t-1][j] 加上最后一次航班的花费cost(j,i)中的最小值，即为 dp[t][i]
+** 由于我们最多只能中转 k 次，也就是最多搭乘 k+1 次航班，最终的答案即为
+				min( dp[1][dst], dp[2][dst], ..., dp[k+1][dst] )
+** 初始值：t = 0时候，dp[t][i]表示不搭乘航班到达城市 i 的最小花费，因此有  dp[t][src] = 0, 非src 为 无穷大
+ */
+func findCheapestPrice_DP_2(n int, flights [][]int, src int, dst int, k int) int {
+	ans := math.MaxInt32
+	g := make([][]int, n)
+	for i := range g{
+		g[i] = make([]int, n)
+	}
+	for i := range flights{
+		s, d, w := flights[i][0], flights[i][1], flights[i][2]
+		g[s][d] = w
+	}
+	dp := make([][]int, k+2)
+	for i := range dp{
+		dp[i] = make([]int, n)
+		for j := range dp[i]{
+			dp[i][j] = math.MaxInt32
+		}
+	}
+	// dp[0][0] = 0  低级错误
+	dp[0][src] = 0
+	for t := 1; t <= k+1; t++{
+		for _, flight := range flights{
+			j, i, cost := flight[0], flight[1], flight[2]
+			if dp[t][i] > dp[t-1][j] + cost{
+				dp[t][i] = dp[t-1][j] + cost
+			}
+		}
+	}
+	for t := 1; t <= k+1; t++{
+		if ans > dp[t][dst]{
+			ans = dp[t][dst]
+		}
+	}
+	if ans == math.MaxInt32{ return -1 }
+	return ans
+}
+
+func findCheapestPrice_DFS_DP_2(n int, flights [][]int, src int, dst int, k int) int {
+	ans := math.MaxInt32
+	g := make([][]int, n)
+	for i := range g{
+		g[i] = make([]int, n)
+	}
+	for i := range flights{
+		s, d, w := flights[i][0], flights[i][1], flights[i][2]
+		g[s][d] = w
+	}
+	dp := make([][]int, k+1)
+	for i := range dp{
+		dp[i] = make([]int, n)
+	}
+	for i := range dp[0]{
+		dp[0][i] = math.MaxInt32
+	}
+	dp[0][0] = 0
+	var dfs func(city, stop int)int
+	dfs = func(city, stop int)(cost int){
+		if city == dst { return 0 }
+		if stop > k { return math.MaxInt32 }
+		stop += 1
+		if dp[city][stop] != 0{
+			return dp[city][stop]
+		}
+		ret := math.MaxInt32
+
+		dp[city][stop] = ret
+		return ret
+	}
+	ans = dfs(src, 0)
+	if ans == math.MaxInt32{ return -1 }
+	return ans
+}

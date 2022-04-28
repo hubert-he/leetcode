@@ -1,6 +1,7 @@
 package BinarySearch
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -555,23 +556,480 @@ func (this *RangeFreqQuery) Query(left int, right int, value int) int {
 	*/
 }
 
+/* 1385. Find the Distance Value Between Two Arrays
+** Given two integer arrays arr1 and arr2, and the integer d, return the distance value between the two arrays.
+** The distance value is defined as the number of elements arr1[i] such that
+** there is not any element arr2[j] where |arr1[i]-arr2[j]| <= d.
+ */
+//二分查找的本质是对可行区间的压缩。所以我们正好可以使用二分查找来确定arr2中是否有元素落在上述区间内
+// 二分写法一：右边界起始为 数组最右侧下标
+func findTheDistanceValue(arr1 []int, arr2 []int, d int) int {
+	n := len(arr2)
+	sort.Ints(arr2)
+	fmt.Println(arr2)
+	ans := 0
+	for i := range arr1{
+		// 对arr1中的每一个元素进行检索，判断arr2中是否有元素落在[arr1[i] - d, arr1[i] + d]区间内
+		// 转化为求 arr1[i] - d <= arr2[j] <= arr1[i] + d
+		j, k := 0, n-1
+		for j <= k{
+			mid := int(uint(j+k)>>1)
+			if arr2[mid] >= arr1[i] - d && arr2[mid] <= arr1[i] + d{
+				break
+			}
+			if arr2[mid] > arr1[i] + d {
+				k = mid - 1
+			}
+			if arr2[mid] < arr1[i] - d{
+				j = mid + 1
+			}
+		}
+		if j > k{
+			fmt.Println(arr1[i])
+			ans++
+		}
+	}
+	return ans
+}
+// 第二种写法： 右边界起始为 数组长度
+func findTheDistanceValue2(arr1 []int, arr2 []int, d int) int {
+	n := len(arr2)
+	sort.Ints(arr2)
+	//fmt.Println(arr2)
+	ans := 0
+	for i := range arr1{
+		// 对arr1中的每一个元素进行检索，判断arr2中是否有元素落在[arr1[i] - d, arr1[i] + d]区间内
+		// 转化为求 arr1[i] - d <= arr2[j] <= arr1[i] + d
+		j, k := 0, n
+		for j < k{
+			mid := int(uint(j+k)>>1)
+			if arr2[mid] >= arr1[i] - d && arr2[mid] <= arr1[i] + d{
+				break
+			}
+			if arr2[mid] > arr1[i] + d {
+				k = mid // 这里要能访问到
+			}
+			if arr2[mid] < arr1[i] - d{
+				j = mid + 1
+			}
+		}
+		if j >= k{ // 无法查找的界定
+			ans++
+		}
+	}
+	return ans
+}
 
+// 写法三
+func findTheDistanceValue3(arr1 []int, arr2 []int, d int) int {
+	n := len(arr2)
+	sort.Ints(arr2)
+	//fmt.Println(arr2)
+	ans := 0
+	for i := range arr1{
+		// 对arr1中的每一个元素进行检索，判断arr2中是否有元素落在[arr1[i] - d, arr1[i] + d]区间内
+		// 转化为求 arr1[i] - d <= arr2[j] <= arr1[i] + d
+		j, k := 0, n
+		for j <= k && j < n{ // 要加 = 包含 j == k 的边界情况，同时又不能允许越界
+			mid := int(uint(j+k)>>1)
+			if arr2[mid] >= arr1[i] - d && arr2[mid] <= arr1[i] + d{
+				break
+			}
+			if arr2[mid] > arr1[i] + d {
+				k = mid - 1
+			}
+			if arr2[mid] < arr1[i] - d{
+				j = mid + 1
+			}
+		}
+		if j > k || j == n{ // 越界情况也属于找不到情况
+			ans++
+		}
+	}
+	return ans
+}
 
+/* 34. Find First and Last Position of Element in Sorted Array
+** Given an array of integers nums sorted in non-decreasing order,
+** find the starting and ending position of a given target value.
+** If target is not found in the array, return [-1, -1].
+** You must write an algorithm with O(log n) runtime complexity.
+ */
+/* 此题可以借助 查询查找位置来定位左右边界：
+** 1. search(target)   返回 左边界
+** 2. search(target+1) 返回 右边界
+*/
+func searchRange(nums []int, target int) []int {
+	n := len(nums)
+	search := func(t int)int{ // 实际上是找左边界
+		i, j := 0, n
+		for i < j {
+			mid := int(uint(i+j)>>1)
+			if nums[mid] > target{
+				j = mid - 1
+			}else if nums[mid] < target {
+				i = mid + 1
+			}else{
+				j = mid
+			}
+		}
+		return i
+	}
+	return []int{search(target), search(target+1)-1}
+}
+/* 此题引出了 类似C++ lower  upper 2分查询上下边界的问题
+** 1. 查找左边界的情况中，当中间元素命中要查找的元素时，将右边界固定为mid，这样循环便能在 [left, mid)范围内查找。
+ 		如果目标数在数组中只有一个，这样把这个元素跳过了吗？
+ 		答案是不会，在之后的迭代中，left 位置会逐步更新，最终和right位置一直保持在目标元素上。
+** 2. 查找右边界的情况中，当中间元素命中要查找的数时，让左边界left等于中间元素的下标加1，事实上跳过了这个元素。
+		因此，循环可以在 [mid + 1, right)的区间中迭代查找。最终，右指针会和和左指针汇合在最右一个目标元素的下标+1的位置。
+		因而最终返回的是左指针（右指针）减一的的结果
+ */
+func searchRange_lower_upper(nums []int, target int) []int {
+	n := len(nums)
+	if n == 0{ return []int{-1, -1}}
+	ans := []int{}
+	i, j := 0, n
+	// 查询左边界
+	for i < j {
+		mid := int(uint(i+j)>>1)
+		if nums[mid] < target{
+			i = mid + 1 // [left, mid)
+		}else{
+			j = mid
+		}
+	}
+	if i >= n || nums[i] != target{
+		ans = append(ans, -1)
+	}else{
+		ans = append(ans, i)
+	}
+	i, j = 0, n
+	// 查询右边界
+	for i < j {
+		mid := int(uint(i+j)>>1)
+		if nums[mid] <= target{
+			i = mid + 1
+		}else{
+			j = mid
+		}
+	}
+	if j > 0 && nums[j-1] == target{
+		ans = append(ans, j)
+	}else{
+		ans = append(ans, -1)
+	}
+	return ans
+}
 
+/* 852. Peak Index in a Mountain Array
+** Let's call an array arr a mountain if the following properties hold:
+	arr.length >= 3
+** There exists some i with 0 < i < arr.length - 1 such that:
+	arr[0] < arr[1] < ... arr[i-1] < arr[i]
+	arr[i] > arr[i+1] > ... > arr[arr.length - 1]
+** Given an integer array arr that is guaranteed to be a mountain,
+** return any i such that arr[0] < arr[1] < ... arr[i - 1] < arr[i] > arr[i + 1] > ... > arr[arr.length - 1].
+ */
+/* 由于 arr 数值各不相同, 因此峰顶元素左侧必然满足严格单调递增, 峰顶元素右侧必然不满足
+** 因此 以峰顶元素为分割点的 arr 数组, 根据与 前一元素/后一元素 的大小关系，具有二段性
+** 峰顶元素左侧满足 arr[i-1] < arr[i]
+** 峰顶元素右侧满足 arr[i] < arr[i+1]
+ */
+func peakIndexInMountainArray(arr []int) int {
+	i, j := 0, len(arr)-1 // len(arr)-1 无需访问， 因为肯定不在两端
+	for i < j {
+		mid := int(uint(i+j)>>1)
+		if arr[mid] < arr[mid+1]{ // 左侧
+			i = mid + 1
+		}else if arr[mid] > arr[mid+1]{
+			j = mid
+		}
+	}
+	return i
+}
 
+/* 441. Arranging Coins
+** You have n coins and you want to build a staircase with these coins.
+** The staircase consists of k rows where the ith row has exactly i coins.
+** The last row of the staircase may be incomplete.
+** Given the integer n, return the number of complete rows of the staircase you will build.
+ */
+// 2022-04-22 调不出结果，mid 原因
+func arrangeCoins(n int) int {
+	sum := 0
+	i, j := 0, n
+	for i < j{
+		//mid := int(uint(i+j)>>1)
+		mid := int(uint(i+j)>>1) + 1 // 注意mid 情况
+		//sum = (i+mid)*(mid-i+1)/2
+		sum = mid*(mid+1)/2
+		//fmt.Println(mid, sum)
+		if sum > n{
+			j = mid-1
+		}else if sum <= n{
+			i = mid
+		}
+	}
+	return i
+}
+// 官方解答
+func arrangeCoins2(n int) int {
+	left, right := 1, n
+	for left < right{
+		mid := int(uint(left+right+1)>>1)
+		if mid * (mid+1) <= 2*n{
+			left = mid
+		}else{
+			right = mid-1
+		}
+	}
+	return left
+}
 
+/* 33. Search in Rotated Sorted Array
+** There is an integer array nums sorted in ascending order (with distinct values).
+** Prior to being passed to your function, nums is possibly rotated at an unknown pivot index k (1 <= k < nums.length)
+** such that the resulting array is [nums[k], nums[k+1], ..., nums[n-1], nums[0], nums[1], ..., nums[k-1]] (0-indexed).
+** For example, [0,1,2,4,5,6,7] might be rotated at pivot index 3 and become [4,5,6,7,0,1,2].
+** Given the array nums after the possible rotation and an integer target, return the index of target if it is in nums,
+** or -1 if it is not in nums.
+** You must write an algorithm with O(log n) runtime complexity.
+ */
+// 2022-04-28 刷出此题
+// 1. 分情况讨论
+// 2. 由于 j 指向的是 数组长度， 因此缩 j 的时候  注意for 退出条件 i < j ， j = mid  否则会漏掉 i == j 情况下的值
+func search(nums []int, target int) int {
+	n := len(nums)
+	i, j := 0, n
+	if target >= nums[0]{
+		for i < j {
+			mid := int(uint(i+j)>>1)
+			if nums[mid] > target{
+				j = mid
+			}else if nums[mid] < target {
+				if nums[mid] < nums[0]{
+					j = mid
+				}else{
+					i = mid+1
+				}
+			}else{
+				return mid
+			}
+		}
+	}else{
+		for i < j{
+			mid := int(uint(i+j)>>1)
+			if nums[mid] > target{
+				if nums[mid] >= nums[0]{
+					i = mid+1
+				}else{
+					//j = mid-1
+					j = mid
+				}
+			}else if nums[mid] < target {
+				i = mid+1
+			}else{
+				return mid
+			}
+		}
+	}
+	return -1
+}
 
+/* 81. Search in Rotated Sorted Array II
+** There is an integer array nums sorted in non-decreasing order (not necessarily with distinct values).
+** Before being passed to your function, nums is rotated at an unknown pivot index k (0 <= k < nums.length)
+** such that the resulting array is [nums[k], nums[k+1], ..., nums[n-1], nums[0], nums[1], ..., nums[k-1]] (0-indexed).
+** For example, [0,1,2,4,4,4,5,6,6,7] might be rotated at pivot index 5 and become [4,5,6,6,7,0,1,2,4,4].
+** Given the array nums after the rotation and an integer target, return true if target is in nums, or false if it is not in nums.
+** You must decrease the overall operation steps as much as possible.
+ */
+// 2022-04-28 未能刷出此题
+// 参考case 输入
+//  [1,1,1,2,1]
+//  2
+// 思维卡点在：
+//	对于数组中有重复元素的情况，二分查找时可能会有 a[l]=a[mid]=a[r]，此时无法判断区间 [l,mid] 和区间 [mid+1,r] 哪个是有序的。
+// [0,2] 和 区间 [3,4] 哪个是有序的
+// 这种功情况的处理方式：
+//		只能将当前二分区间的左边界加一, 右边界减一，然后在新区间上继续二分查找
+func search_Error(nums []int, target int) bool {
+	n := len(nums)
+	i, j := 0, n
+	if target >= nums[0]{
+		for i < j {
+			mid := int(uint(i+j)>>1)
+			if nums[mid] > target{
+				j = mid
+			}else if nums[mid] < target {
+				if nums[mid] < nums[0]{
+					j = mid
+				}else{
+					i = mid+1
+				}
+			}else{
+				return true
+			}
+		}
+	}else{
+		for i < j{
+			mid := int(uint(i+j)>>1)
+			if nums[mid] > target{
+				//if nums[mid] >= nums[0]{
+				if nums[mid] > nums[0]{
+					i = mid+1
+				}else{
+					//j = mid-1
+					j = mid
+				}
+			}else if nums[mid] < target {
+				i = mid+1
+			}else{
+				return true
+			}
+		}
+	}
+	return false
+}
 
+func search2(nums []int, target int) bool {
+	n := len(nums)
+	if n == 0 { return false }
+	if n == 1{ return nums[0] == target }
+	l, r := 0, n-1
+	for l <= r{
+		mid := int(uint(l+r)>>1)
+		if nums[mid] == target{
+			return true
+		}
+		// 特殊的情况: 因为mid 不等于target 所以在 3 个值相等情况下，直接两边全部缩小
+		if nums[l] == nums[mid] && nums[mid] == nums[r]{
+			l++
+			r--
+		}else if nums[l] <= nums[mid]{
+			if nums[l] <= target && target < nums[mid]{
+				r = mid - 1
+			}else{
+				l = mid + 1
+			}
+		}else{
+			if nums[mid] < target && target <= nums[n-1]{
+				l = mid+1
+			}else{
+				r = mid -1
+			}
+		}
+	}
+	return false
+}
 
+/* 153. Find Minimum in Rotated Sorted Array[寻找旋转排序数组中的最小值]
+** Suppose an array of length n sorted in ascending order is rotated between 1 and n times.
+** For example, the array nums = [0,1,2,4,5,6,7] might become:
+	[4,5,6,7,0,1,2] if it was rotated 4 times.
+	[0,1,2,4,5,6,7] if it was rotated 7 times.
+** Notice that rotating an array [a[0], a[1], a[2], ..., a[n-1]] 1 time results in the array [a[n-1], a[0], a[1], a[2], ..., a[n-2]].
+** Given the sorted rotated array nums of unique elements, return the minimum element of this array.
+** You must write an algorithm that runs in O(log n) time.
+*/
+// 2022-04-28 刷出此题
+func findMin(nums []int) int {
+	n := len(nums)
+	left, right := 0, n
+	for left < right{
+		mid := int(uint(left+right)>>1)
+		// 遗漏点-1 mid < n-1 设定 否则数组越界
+		if mid < n-1 && nums[mid] > nums[mid+1]{
+			return nums[mid+1]
+		}
+		if nums[mid] > nums[0]{
+			left = mid + 1
+		}else if nums[mid] < nums[n-1]{
+			right = mid
+		}else{ // 易漏点-2 搜不下去了 搜索区间长度为 1 即  nums[mid] == nums[0] 或者 nums[mid] == nums[n-1]
+			return nums[mid]
+		}
+	}
+	return nums[0]
+}
+// 官方解答 直接使用二分 比较 left right 两侧值，保证 断点在其中间
+func FindMin(nums []int) int {
+	low, high := 0, len(nums)-1
+	for low < high{
+		mid := (low^high)>>1 + (low&high)
+		if nums[mid] < nums[high]{
+			high = mid
+		}else{
+			low = mid+1
+		}
+	}
+	return nums[low]
+}
 
-
-
-
-
-
-
-
-
+/* 154. Find Minimum in Rotated Sorted Array II[寻找旋转排序数组中的最小值 II]
+** Suppose an array of length n sorted in ascending order is rotated between 1 and n times.
+** For example, the array nums = [0,1,4,4,5,6,7] might become:
+	[4,5,6,7,0,1,4] if it was rotated 4 times.
+	[0,1,4,4,5,6,7] if it was rotated 7 times.
+Notice that rotating an array [a[0], a[1], a[2], ..., a[n-1]] 1 time results in the array [a[n-1], a[0], a[1], a[2], ..., a[n-2]].
+Given the sorted rotated array nums that may contain duplicates, return the minimum element of this array.
+You must decrease the overall operation steps as much as possible.
+*/
+/* 区别在于 有重复元素
+** 考虑数组中的最后一个元素 x ：在最小值右侧的元素，它们的值一定都小于等于 x ， 而在最小值左侧的元素，他们的值一定都大于等于x。
+** 依据上述性质，可以通过二分查找找出最小值。
+** 一共分3种情况：
+** 1. nums[mid] > nums[high]
+** 2. nums[mid] < nums[high]
+** 3. nums[mid] == nums[high]
+** 由于重复元素的存在，我们并不能确定nums[mid]究竟在最小值的左侧还是右侧，因此我们不能莽撞地忽略某一部分的元素
+** 唯一可以知道的是，由于它们的值相同，所以无论nums[high]是不是最小值，都有一个它的「替代品」nums[mid],因此依然可以继续缩
+** 即忽略二分的右端点。
+ */
+func FindMinII(nums []int) int {
+	n := len(nums)
+	low, high := 0, n-1
+	//是有序单调数组
+	if nums[low] < nums[high]{
+		return nums[low]
+	}
+	for low < high{
+		mid := (low^high)>>1 + low&high
+		if nums[mid] > nums[high]{
+			low = mid+1
+		}else if nums[mid] < nums[high]{
+			high = mid
+		}else{
+			high--
+		}
+	}
+	return nums[low]
+}
+func FindMinIILeft(nums []int) int {
+	n := len(nums)
+	low, high := 0, n-1
+	//是有序单调数组
+	if nums[low] < nums[high]{
+		return nums[low]
+	}
+	for low < high{
+		//如果二分后的数组是有序数组，则返回最左元素，即为最小
+		if nums[low] < nums[high]{
+			return nums[low]
+		}
+		mid := (low^high)>>1 + low&high
+		//若最左小于mid元素，则最左到mid是严格递增的，那么最小元素必定在mid之后
+		if nums[mid] > nums[low]{
+			low = mid+1
+		}else if nums[mid] < nums[high]{
+			high = mid
+		}else{
+			high--
+		}
+	}
+	return nums[low]
+}
 
 
 

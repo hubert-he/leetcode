@@ -365,7 +365,49 @@ func countSubstrings_DP(s string) int {
 /* 5. Longest Palindromic Substring
 ** Given a string s, return the longest palindromic substring in s.
  */
-/* 中心扩展 */
+/* 中心扩展
+// 观察 状态方程：
+//      P(i,i)    = true
+//		P(i, i+1) = (S[i] == S[i+1]
+//		P(i, j)   = P(i+1, j-1) ^ (S[i] == S[j])
+** 找出其中的状态转移链： P(i,j) <-- P(i+1,j-1) <-- P(i+2,j-2) <-- ... <-- 某一边界情况
+** 可以发现，「所有的状态在转移的时候的可能性都是唯一的」
+** 也就是说，我们可以从每一种边界情况开始「扩展」，也可以得出所有的状态对应的答案。
+** 边界情况即为子串长度为 1 或 2 的情况。
+** 我们枚举每一种边界情况，并从对应的子串开始不断地向两边扩展。如果两边的字母相同，我们就可以继续扩展，
+** 例如从 P(i+1,j−1) 扩展到 P(i,j)；如果两边的字母不同，我们就可以停止扩展，因为在这之后的子串都不能是回文串了
+** 再进一步，「边界情况」对应的子串实际上就是我们「扩展」出的回文串的「回文中心」
+** 中心扩展法的本质即为：我们枚举所有的「回文中心」并尝试「扩展」，直到无法扩展为止，此时的回文串长度即为此「回文中心」下的最长回文串长度
+** 我们对所有的长度求出最大值，即可得到最终的答案。
+*/
+// 中心扩展法，相比较DP 优势 空间复杂度为 O(1)，时间复杂度 平方
+func longestPalindrome_expand(s string) string {
+	n := len(s)
+	if n < 2{ return s }
+	start, end := 0, 0 // 均是闭集合
+	expend := func(x, y int)(int, int){
+		for x >= 0 && y < n && s[x] == s[y]{
+			x--
+			y++
+		}
+		return x+1, y-1
+	}
+	for i := range s {
+		sub_start1, sub_end1 := expend(i, i)
+		sub_start2, sub_end2 := expend(i, i+1)
+		if sub_end1 - sub_start1 > end - start{
+			start, end = sub_start1, sub_end1
+		}
+		if sub_end2 - sub_start2 > end - start{
+			start, end = sub_start2, sub_end2
+		}
+	}
+	return s[start:end+1]
+}
+/* 上面中心扩展算法 是分奇偶的，单个元素为中心，2个元素为中心 向外扩展
+** 有没有办法可以统一起来呢，实际上是可以的，通过在每个字符之间加上相同符号，比如 #
+** 可统一转换为奇数处理，即当以#号为中心便是以2个元素为中心， 当以一个字母为中心 便是 以单个元素为中心。
+ */
 func longestPalindrome(s string) string {
 	ns := []byte{'^', '#'}
 	for i := range s{

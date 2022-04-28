@@ -1938,15 +1938,172 @@ func WidthOfBinaryTree(root *BiTreeNode) int {
 	return ans
 }
 
+/* 366. Find Leaves of Binary Tree
+** Given the root of a binary tree, collect a tree's nodes as if you were doing this:
+	Collect all the leaf nodes.
+	Remove all the leaf nodes.
+	Repeat until the tree is empty.
+ */
+// 2022-04-07 刷出此题 转化为图，借助拓扑排序解决
+type degree struct{
+	d      int
+	parent *BiTreeNode
+	value  int
+}
+func findLeaves_graph(root *BiTreeNode) [][]int {
+	const Node, Parent = 0, 1
+	ans := [][]int{}
+	if root == nil { return  ans }
+	out := map[*BiTreeNode]degree{}
+	st := [][2]*BiTreeNode{ [2]*BiTreeNode{root, nil} }
+	queue := []degree{}
+	for len(st) > 0{
+		top := st[len(st)-1]
+		cur := top[Node]
+		par := top[Parent]
+		st = st[:len(st)-1]
+		d := 0
+		if cur.Right != nil {
+			st = append(st, [2]*BiTreeNode{cur.Right, cur})
+			d++
+		}
+		if cur.Left != nil{
+			st = append(st, [2]*BiTreeNode{cur.Left, cur})
+			d++
+		}
+		out[cur] = degree{d, par, cur.Val.(int)}
+		if d == 0{  queue = append(queue, out[cur]) }
+	}
+	for len(queue) > 0{
+		q := queue
+		queue = nil
+		t := []int{}
+		for _, deg := range q{
+			t = append(t, deg.value)
+			par := out[deg.parent]
+			if deg.parent != nil{
+				par.d--
+				out[deg.parent] = par
+				if out[deg.parent].d == 0{
+					queue = append(queue, out[deg.parent])
+				}
+			}
+		}
+		ans = append(ans, t)
+	}
+	return ans
+}
 
+// 借助后序遍历，深度不再从根结点开始算，而是从叶子结点开始算
+// 即，叶子结点的深度为0，然后往上累加，叶子的父结点深度为1
+// 当某个结点的左右子树深度不相等，取更大值作为其深度
+func findLeaves(root *BiTreeNode) [][]int {
+	ans := [][]int{}
+	var dfs func(node *BiTreeNode)int
+	dfs = func(node *BiTreeNode)int{
+		if node == nil { return -1 }
+		left := dfs(node.Left)
+		right := dfs(node.Right)
+		height := max(left, right) + 1
+		if height >= len(ans){
+			ans = append(ans, []int{node.Val.(int)})
+		}else{
+			ans[height] = append(ans[height], node.Val.(int))
+		}
+		return height
+	}
+	dfs(root)
+	return ans
+}
 
+/* 958. Check Completeness of a Binary Tree
+** 判断是否为完全二叉树
+ */
+// 2022-04-24 刷出此题，
+// 在这里 收录是 注意  利用统计 节点数量 是有局限性的
+func isCompleteTree(root *BiTreeNode) bool {
+	if root == nil { return false }
+	queue := []*BiTreeNode{root}
+	end := false
+	//h := 0
+	for len(queue) > 0{
+		// n := len(queue)
+		q := queue
+		queue = nil
+		for i := range q{
+			if q[i].Left == nil{
+				end = true
+			}else{
+				queue = append(queue, q[i].Left)
+			}
+			if end && (q[i].Left != nil || q[i].Right != nil ){
+				return false
+			}
+			if q[i].Right == nil {
+				end = true
+			}else{
+				queue = append(queue, q[i].Right)
+			}
+		}
+		/*
+		if n != (1<<h) && len(queue) != 0{
+			return false
+		}
+		h++
+		*/
+	}
+	return true
+}
+/* 方法二： 思路
+** 这个问题可以简化成两个小问题：
+	用 （depth, position) 表示每个节点的位置；
+	确定如何定义所有节点都在最左边
+** 一个更简单的表示深度和位置的方法是：
+	用 1 表示根节点，对于任意一个节点 v，	它的左孩子为 2*v 右孩子为 2*v + 1。
+	这就是我们用的规则，在这个规则下，一颗二叉树是完全二叉树当且仅当节点编号依次为 1, 2, 3, ... 且没有间隙。
+** 算法：
+	1. 对于根节点，我们定义其编号为 1 对于每个节点，左节点编号为 2*v， 右节点编号： 2*v+1
+	2. 树中所有节点的编号按照广度优先搜索顺序正好是升序,也可以使用深度优先搜索，之后对序列排序
+	3. 然后，我们检测编号序列是否为无间隔的1 2 3 4，。。。 事实上，我们只需要检查最后一个编号是否正确，因为最后一个编号的值最大
+*/
+// 主体思路就是 完全依据完全二叉树 与 数组的关系 如果一一对应，则就是完全二叉树，否则不是
+func isCompleteTree2(root *BiTreeNode) bool {
+	var dfs func(node, parent *BiTreeNode)
+	dfs = func(node, parent *BiTreeNode){
+		if node == nil {return }
+		if parent.Left == node{
+			node.Val = parent.Val.(int) * 2
+		}
+		if parent.Right == node{
+			node.Val = parent.Val.(int) * 2 + 1
+		}
+		dfs(node.Left, node)
+		dfs(node.Right, node)
+	}
+	root.Val = 1
+	dfs(root.Left, root)
+	dfs(root.Right, root)
 
-
-
-
-
-
-
+	total := 1
+	q := []*BiTreeNode{root}
+	for len(q) > 0{
+		queue := q
+		q = nil
+		for i := range queue{
+			if queue[i].Val != total{
+				return false
+			}
+			total++
+			if queue[i].Left != nil{
+				q = append(q, queue[i].Left)
+			}
+			if queue[i].Right != nil{
+				q = append(q, queue[i].Right)
+			}
+		}
+	}
+	return true
+}
 
 
 

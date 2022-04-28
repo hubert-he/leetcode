@@ -1,9 +1,12 @@
 package greedy
 
 import (
+	"container/heap"
 	"math"
 	"sort"
 	"../../utils"
+	"strconv"
+	"strings"
 )
 
 /* 330. Patching Array
@@ -258,13 +261,325 @@ func smallestRangeII(nums []int, k int) int {
 	return ans
 }
 
+/* 402. Remove K Digits
+** Given string num representing a non-negative integer num, and an integer k,
+** return the smallest possible integer after removing k digits from num.
+ */
+// 2022-04-07 刷出此题，TLE
+// 填空法，枚举 复杂度  n*2^n
+// 有个易漏点是 case： 10200 k=1  ==>  可能会产生 0200 这类结果，需要trim prefix  这个点需要注意
+func removeKdigits_TLE(num string, k int) string {
+	ans := ""
+	smallest := math.MaxInt32
+	n := len(num)
+	if n <= k{ return "0" }
+	var dfs func(result []byte, idx int)
+	dfs = func(result []byte, idx int){
+		if len(result) == n-k{
+			t := string(result)
+			v, _ := strconv.Atoi(t)
+			if v < smallest{
+				smallest = v
+				ans = t
+			}
+			return
+		}
+		for i := idx; i < n; i++{
+			dfs(append(result, num[i]), i+1)
+		}
+	}
+	dfs([]byte{}, 0)
+	return strings.TrimPrefix(ans, "0")
+}
+// 考虑如何剪枝
+// 解法还存在一个 致命问题是  Atoi 整数范围， 当数字时字符串的时候 会溢出
+// 解决结果：剪枝后 依然 TLE
+func removeKdigits_dfs_TLE(num string, k int) string {
+	ans := ""
+	//smallest := math.MaxInt32
+	n := len(num)
+	if n <= k{ return "0" }
+	var dfs func(result []byte, idx int)
+	dfs = func(result []byte, idx int){
+		size := len(result)
+		if size == n-k{
+			t := string(result)
+			/* 转为整型，溢出
+			v, _ := strconv.Atoi(t)
+			if v < smallest{
+				smallest = v
+				ans = t
+			}
+			 */
+			if ans == "" || ans > t{
+				ans = t
+			}
+			return
+		}
+		/* 剪枝
+		   for i := idx; i < n; i++{
+		       dfs(append(result, num[i]), i+1)
+		   }*/
+		// end = n - ( n-k - size - 1)
+		c := min(num, idx, k+size+1)
+		dfs(append(result, num[c]), c+1)
+	}
+	dfs([]byte{}, 0)
+	ans = strings.TrimLeft(ans, "0")
+	if ans == ""{ return "0" }
+	return ans
+}
+func min(nums string, start, end int)int{// 返回索引
+	m := start
+	for i := start; i < end; i++{
+		if nums[m] > nums[i]{
+			m = i
+		}
+	}
+	return m
+}
 
+/* 题解：贪心 + 单调栈
+** 基本概念：对于两个「相同长度」的数字序列， 最左边不同的数字决定了 这两个数字的 大小
+** 潜在逻辑：若要使得剩下的数字最小，需要保证靠前的数字尽可能小
+** 给定一个数字序列，例如 425，如果要求我们只删除一个数字，那么从左到右，我们有 4、2 和 5 三个选择。
+** 我们将每一个数字和它的左邻居进行比较。从 2 开始，2 小于它的左邻居 4。假设我们保留数字 4，那么所有可能的组合都是以数字 4（即 42，45）开头的。
+** 相反，如果移掉 4，留下 2，我们得到的是以 2 开头的组合（即 25），这明显小于任何留下数字 4 的组合。
+** 因此我们应该移掉数字 4。如果不移掉数字 4，则之后无论移掉什么数字，都不会得到最小数。
+** 得出「删除一个数字」的贪心策略：
+** 给定一个长度为 n 的数字序列 D0 D1 D2 D3 ... Dn-1， 从左往右找到第一个位置 i 使得 Di < Di-1, 并删除 Di-1
+** 如果不存在，说明整个数字序列单调不降的，删除最后一个数字即可
+** 基于此，我们可以每次对整个数字序列执行一次这个策略；
+** 删除一个字符后，剩下的 n-1 长度的数字序列就形成了新的子问题，可以继续使用同样的策略，直至删除 k 次
+** 然而暴力的实现复杂度最差会达到 O(nk)（考虑整个数字序列是单调不降的），因此我们需要加速这个过程。
+** 上面的推理过程，也是 removeKdigits_dfs_TLE 实现过程
+** 「重点优化策略」
+** 考虑从左往右增量的构造最后的答案。
+** 我们可以用一个栈维护当前的答案序列，栈中的元素代表截止到当前位置，删除不超过 k 次个数字后，所能得到的最小整数。
+** 根据之前的讨论：在使用 k 个删除次数之前，栈中的序列从栈底到栈顶单调不降
+** 因此，对于每个数字，如果该数字 小于< 栈顶元素，我们就不断地弹出栈顶元素，直到
+ 	1. 栈空
+	2. 或者新的栈顶元素不大于当前数字
+	3. 或者我们已经删除了 k 位数字
+** 最后但也很重要的
+** 上述步骤结束后我们还需要针对一些情况做额外的处理：
+	1. 如果我们删除了 m 个数字且 m<k，这种情况下我们需要从序列尾部删除额外的k-m个数字
+	2. 如果最终的数字序列存在前导零，我们要删去前导零
+	3. 如果最终数字序列为空，我们应该返回 "0"
+ */
+func removeKdigits_stack(num string, k int) string {
+	n := len(num)
+	if n == 0 { return "" }
+	if n <= k { return "0" }
+	st := []byte{num[0]}
+	i := 0
+	cnt := n-k // 易漏点-2 参数k被逐步修改，但是 最后依然使用了 n-k 计算导致错误
+	for i = 1; i < n && k > 0; i++{
+		for len(st) > 0 && st[len(st)-1] > num[i]{
+			st = st[:len(st)-1]
+			k--
+			if k <= 0{ break } // 遗漏点-1
+		}
+		st = append(st, num[i])
+	}
+	//for len(st) < n-k{
+	for len(st) < cnt { // 易漏点-2
+		st = append(st, num[i])
+		i++
+	}
+	//ans := strings.TrimLeft(string(st), "0") 遗漏点-2：额外情况处理1：如果我们删除了 m 个数字且 m<k，这种情况下我们需要从序列尾部删除额外的k-m个数字
+	ans := strings.TrimLeft(string(st[:cnt]), "0")
+	if len(ans) == 0{ return "0" }
+	return ans
+}
+// 官方题解
+func removeKdigits(num string, k int) string {
+	st := []byte{}
+	for i := range num{
+		digit := num[i]
+		for k > 0 && len(st) > 0 && digit < st[len(st)-1]{
+			st = st[:len(st)-1]
+			k--
+		}
+		st = append(st, digit)
+	}
+	st = st[:len(st)-k]
+	ans := strings.TrimLeft(string(st), "0")
+	if len(ans) == 0{ return "0" }
+	return ans
+}
 
+/* 358. Rearrange String k Distance Apart
+** Given a string s and an integer k, rearrange s such that the same characters are at least distance k from each other.
+** If it is not possible to rearrange the string, return an empty string "".
+ */
+// 此题是 767. Reorganize String 的进阶版本
+// 2022-04-18 未刷出此题，❌ 解答： 考虑例子 s="abb"  k=2; 结果返回"" ， 应该是 "bab"
+// 思考漏洞点：应该先安排 数量最多的，而非下面的按字母顺序安排
+func rearrangeString_Error(s string, k int) string {
+	ans := []byte{}
+	n := len(s)
+	alp := [26]byte{}
+	for i := range s{
+		alp[s[i]-'a']++
+	}
+	disc := map[byte]int{}
+	pickone := func(idx int)byte{
+		for i := 0; i < 26; i++{
+			//fmt.Println(string(i+'a'), )
+			if alp[i] > 0 {
+				if d, ok := disc[byte(i)]; ok {
+					if idx - d < k{
+						continue
+					}
+				}
+				alp[i]--
+				disc[byte(i)] = idx
+				return byte(i)
+			}
+		}
+		return '#'
+	}
+	for i := 0; i < n; i++{
+		t := pickone(i)
+		if t == '#'{ return "" }
+		ans = append(ans, t+'a')
+	}
+	return string(ans)
+}
+type alpCnt struct{
+	cnt		int
+	char 	byte
+}
+type maxHeap [] alpCnt
+func(h maxHeap) Len()int{
+	return len(h)
+}
+func(h maxHeap) Less(i, j int)bool{
+	return h[i].cnt > h[j].cnt
+}
+func(h maxHeap) Swap(i, j int){
+	h[i], h[j] = h[j], h[i]
+}
+func(h *maxHeap)Push(x interface{}){
+	*h = append(*h, x.(alpCnt))
+}
+func(h *maxHeap)Pop()interface{}{
+	ret := (*h)[h.Len()-1]
+	// h.Swap(0, h.Len()-1) 堆使用错误： 不需要swap，heap主库函数会调用swap函数处理
+	(*h) = (*h)[:h.Len()-1]
+	return ret
+}
+// 学习借助队列来放置元素的思维技巧
+// 此题是 767. Reorganize String 的进阶版本
+func rearrangeString(s string, k int) string{
+	if k <= 1{ return s}
+	n := len(s)
+	alp := [26]int{}
+	for i := range s {
+		alp[s[i]-'a']++
+	}
+	h := maxHeap{}
+	for i := 0; i < 26; i++ {
+		if alp[i] > 0 {
+			h = append(h, alpCnt{alp[i], byte(i) + 'a'})
+		}
+	}
+	heap.Init(&h)
+	ans := []byte{}
+	// 先安排最多的，也即不好顺序操作
+	queue := []alpCnt{}
+	for h.Len() > 0{
+		top := heap.Pop(&h).(alpCnt)
+		ans = append(ans, top.char)
+		top.cnt--
+		queue = append(queue, top) // 放入到queue中，因为k距离后还要用。
+		if len(queue) == k{// queue的大小到达了k，也就是说我们已经越过了k个单位，在结果中应该要出现相同的字母了
+			head := queue[0]
+			queue = queue[1:]
+			if head.cnt > 0{
+				heap.Push(&h, head)
+			}
+		}
+	}
+	// 出现2种情况：
+	// 1. queue 中还存在剩余元素，无法放置。即 queue.size() == k 这个条件没有完全满足，即存在一些字符无法间隔 k 个距离
+	// 2. 完全放置
+	/* 不能通过queue是否为空判断，因为算法利用 cnt = 0 的情况进行占位
+	if len(queue) > 0{
+		return ""
+	}
+	 */
+	if len(ans) != n { return ""}
+	return string(ans)
+}
 
+/* 由  767. Reorganize String 引申
+** 贪心思路：先放出现次数多的，才有可能会有满足条件的结果
+** 以 aaaabbbcc 为例：
+** 1. 第一次都取出次数最多的字符 a 放置
+** 2. 第二次只能取出现次数第二多的字符 'b' 放置（因为不能取和 'a' 相同的字符）
+** 观察规律可以发现我们可以维护一个大顶堆 Q 和一个last元素。
+** Q 为字符频率为key的大顶堆
+** last元素包含某个字符和该字符的次数
+** 每pop出堆顶，返回值就加上堆顶的字符，并且堆顶字符出现的次数减去1，并保存在last中
+** 返回到 358 题目，将间距 2 改为 k，
+** 此时 可以把 last 元素 换成一个长度 为 k 的队列，如上面代码
+ */
+func reorganizeString(s string) string {
+	n := len(s)
+	if n <= 1{ return s}
+	alp := [26]int{}
+	for i := range s {
+		alp[s[i]-'a']++
+	}
+	h := maxHeap{}
+	for i := 0; i < 26; i++ {
+		if alp[i] > 0 {
+			h = append(h, alpCnt{alp[i], byte(i) + 'a'})
+		}
+	}
+	heap.Init(&h)
+	ans := []byte{}
+	last := alpCnt{}
+	for  h.Len() > 0{
+		top := heap.Pop(&h).(alpCnt)
+		top.cnt--
+		ans = append(ans, top.char)
+		if last.cnt > 0 { heap.Push(&h, last)}
+		last = top
+	}
+	if last.cnt > 0 { return "" }
+	return string(ans)
+}
 
-
-
-
+// 2021-01 刷出此题，思路是 一次放 2 个
+func reorganizeString_2(s string) string {
+	n := len(s)
+	if n <= 1{ return s }
+	alp := [26]int{}
+	for i := range s {
+		alp[s[i]-'a']++
+	}
+	h := maxHeap{}
+	for i := 0; i < 26; i++ {
+		if alp[i] > 0 {
+			h = append(h, alpCnt{alp[i], byte(i) + 'a'})
+		}
+	}
+	heap.Init(&h)
+	ans := []byte{}
+	for h.Len() > 1{ // 一次放2个
+		a, b := heap.Pop(&h).(alpCnt), heap.Pop(&h).(alpCnt)
+		if a.cnt--; a.cnt > 0{ heap.Push(&h, a) }
+		if b.cnt--; b.cnt > 0{ heap.Push(&h, b) }
+		ans = append(ans, a.char, b.char)
+	}
+	if h.Len() == 1{
+		ans = append(ans, h[0].char)
+	}
+	return string(ans)
+}
 
 
 
